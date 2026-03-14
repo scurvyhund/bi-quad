@@ -5,7 +5,7 @@
 # Clean:  make clean
 
 CC       = gcc
-CFLAGS   = -O2 -std=c99 -Wall -Wextra -fopenmp
+CFLAGS   = -O3 -march=znver2 -mtune=znver2 -std=c99 -Wall -Wextra -fopenmp
 LDLIBS   = -lgmp
 
 TARGET   = mod_obstruct

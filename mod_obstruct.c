@@ -17,17 +17,44 @@
  *   - first k digits of p → determined by magnitude of n
  *
  *   Both the p-side and q-side constraints are checked.
+ *
+ * Memory-efficient design (supports k up to ~13):
+ *   - is_valid_ending stored as bitset (1 bit/entry vs 1 byte)
+ *   - endings[] array eliminated — computed inline via __int128
+ *   - Phase 2b reverse-residue lookup replaced by Hensel lifting
+ *   - valid_firsts[] right-sized to actual count (not mod-sized)
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include <omp.h>
 #include <gmp.h>
 
 #define DEFAULT_MAX_D  50
 #define DEFAULT_MAX_K   6
 #define NUM_THREADS     8
+
+/* Bitset macros — compact bool array using 1 bit per entry */
+#define BITSET_WORDS(n) (((n) + 63) / 64)
+#define BITSET_SET(bs, i) ((bs)[(i) >> 6] |= (1ULL << ((i) & 63)))
+#define BITSET_GET(bs, i) (((bs)[(i) >> 6] >> ((i) & 63)) & 1)
+
+/* Compute (2r² + 2r + 1) mod m.
+ * Uses 64-bit arithmetic when mod ≤ 10^9 (k ≤ 9), since
+ * 2r² fits in unsigned long long.  Falls back to __int128
+ * for k ≥ 10 where r can exceed ~3×10^9. */
+static inline long ending_for_residue(long r, long m)
+{
+    if (__builtin_expect(m <= 1000000000L, 1)) {
+        unsigned long long rr = (unsigned long long)r;
+        return (long)((2*rr*rr + 2*rr + 1) % (unsigned long long)m);
+    }
+    __int128 rr = (__int128)r;
+    return (long)((2*rr*rr + 2*rr + 1) % (__int128)m);
+}
 
 /* Reverse a k-digit number (leading zeros preserved in digit sense). */
 static long reverse_k(long val, int k)
@@ -40,25 +67,17 @@ static long reverse_k(long val, int k)
     return result;
 }
 
-/* Compare function for qsort/bsearch on longs */
-static int cmp_long(const void *a, const void *b)
-{
-    long la = *(const long *)a;
-    long lb = *(const long *)b;
-    return (la > lb) - (la < lb);
-}
-
 /* Check if sorted array contains any value in [lo, hi] */
-static bool sorted_has_value_in_range(const long *arr, int len,
+static bool sorted_has_value_in_range(const long *arr, long len,
                                       long lo, long hi)
 {
     if (len == 0 || lo > hi)
         return false;
 
     /* Binary search for first element >= lo */
-    int left = 0, right = len;
+    long left = 0, right = len;
     while (left < right) {
-        int mid = left + (right - left) / 2;
+        long mid = left + (right - left) / 2;
         if (arr[mid] < lo)
             left = mid + 1;
         else
@@ -208,42 +227,75 @@ int main(int argc, char *argv[])
 
         long prefix_min = mod / 10;   /* 10^(k-1) */
 
-        /* Phase 1: Build VALID_ENDINGS and reverse lookup.
-         * For each valid ending, store which residues produce it. */
-        bool *is_valid_ending = calloc(mod, sizeof(bool));
-        long *endings = malloc(mod * sizeof(long));  /* ending for each r */
-        int num_endings = 0;
+        /* Phase 1: Build is_valid_ending bitset.
+         * Mark which last-k-digit values are achievable by 2n²+2n+1.
+         * Uses bitset (mod/8 bytes) instead of bool array (mod bytes).
+         * endings[] array eliminated — computed inline via __int128. */
+        size_t bs_words = BITSET_WORDS(mod);
+        uint64_t *is_valid_ending = calloc(bs_words, sizeof(uint64_t));
+        if (!is_valid_ending) {
+            fprintf(stderr, "Failed to allocate is_valid_ending "
+                    "bitset (%zu MB)\n", bs_words * 8 / (1024*1024));
+            return 1;
+        }
+        long num_endings = 0;
 
         for (long n = 0; n < mod; n++) {
-            unsigned long long nn = (unsigned long long)n;
-            long e = (long)((2*nn*nn + 2*nn + 1) % (unsigned long long)mod);
-            endings[n] = e;
-            if (!is_valid_ending[e]) {
-                is_valid_ending[e] = true;
+            long e = ending_for_residue(n, mod);
+            if (!BITSET_GET(is_valid_ending, e)) {
+                BITSET_SET(is_valid_ending, e);
                 num_endings++;
             }
         }
 
         /* Phase 2: Build VALID_FIRSTS as a sorted array for fast
          * range queries. A first-k prefix f is valid if reverse_k(f)
-         * is a valid ending (ensures last-k of q is achievable). */
-        long *valid_firsts = malloc(mod * sizeof(long));
-        int num_firsts = 0;
-        bool *is_valid_first = calloc(mod, sizeof(bool));
+         * is a valid ending (ensures last-k of q is achievable).
+         *
+         * Two-pass: count first, then right-size the allocation.
+         * Uses a temporary bitset for dedup instead of bool array. */
+        uint64_t *is_valid_first_bs = calloc(bs_words, sizeof(uint64_t));
+        if (!is_valid_first_bs) {
+            fprintf(stderr, "Failed to allocate is_valid_first "
+                    "bitset (%zu MB)\n", bs_words * 8 / (1024*1024));
+            free(is_valid_ending);
+            return 1;
+        }
+        long num_firsts = 0;
 
+        /* Pass 1: count unique valid firsts */
         for (long e = 0; e < mod; e++) {
-            if (!is_valid_ending[e])
+            if (!BITSET_GET(is_valid_ending, e))
                 continue;
             long f = reverse_k(e, k);
-            if (f >= prefix_min && !is_valid_first[f]) {
-                is_valid_first[f] = true;
-                valid_firsts[num_firsts++] = f;
+            if (f >= prefix_min && !BITSET_GET(is_valid_first_bs, f)) {
+                BITSET_SET(is_valid_first_bs, f);
+                num_firsts++;
             }
         }
-        qsort(valid_firsts, num_firsts, sizeof(long), cmp_long);
 
-        printf("  k=%d: valid_endings = %d / %ld (%.2f%%)  "
-               "valid_firsts = %d\n",
+        /* Pass 2: allocate right-sized array and fill */
+        long *valid_firsts = malloc(num_firsts * sizeof(long));
+        if (!valid_firsts) {
+            fprintf(stderr, "Failed to allocate valid_firsts "
+                    "(%ld entries, %zu MB)\n",
+                    num_firsts, num_firsts * sizeof(long) / (1024*1024));
+            free(is_valid_first_bs);
+            free(is_valid_ending);
+            return 1;
+        }
+
+        long fill_idx = 0;
+        for (long f = prefix_min; f < mod; f++) {
+            if (BITSET_GET(is_valid_first_bs, f))
+                valid_firsts[fill_idx++] = f;
+        }
+        free(is_valid_first_bs);
+
+        /* valid_firsts is already sorted (filled in ascending order) */
+
+        printf("  k=%d: valid_endings = %ld / %ld (%.2f%%)  "
+               "valid_firsts = %ld\n",
                k, num_endings, mod,
                100.0 * num_endings / mod, num_firsts);
         printf("  ---------------------------------------------------\n");
@@ -254,7 +306,7 @@ int main(int argc, char *argv[])
          *   1. Compute range of achievable first-k prefixes for p
          *   2. Check if any valid first falls in that range (p-side pass)
          *   3. For each matching first-k prefix f:
-         *      - q's last-k = reverse_k(f) → find m residues producing this
+         *      - q's last-k = reverse_k(f) → find m residues via Hensel
          *      - q's first-k = reverse_k(ending_of_p)
          *      - Check if any such m achieves that first-k prefix (q-side pass)
          *
@@ -287,12 +339,16 @@ int main(int argc, char *argv[])
 
                 #pragma omp for schedule(dynamic, 1024)
                 for (long r = 0; r < mod; r++) {
-                    long p_ending = endings[r];
 
-                    /* First n ≡ r (mod 10^k) in [n_min, n_max] */
+                    /* First n ≡ r (mod 10^k) in [n_min, n_max] —
+                     * check this BEFORE computing the ending to
+                     * skip residues with no n values cheaply
+                     * (at k=10 d=11, eliminates 99.999% of r). */
                     first_n_with_residue(t_first, n_min, r, mod);
                     if (mpz_cmp(t_first, n_max) > 0)
                         continue;
+
+                    long p_ending = ending_for_residue(r, mod);
 
                     /* Last n ≡ r (mod 10^k) in [n_min, n_max] */
                     last_n_with_residue(t_last, n_max, r, mod);
@@ -306,21 +362,27 @@ int main(int argc, char *argv[])
                                                    fk_min, fk_max))
                         continue;
 
+                    /* q's first-k digits = reverse_k(p_ending) — fixed for
+                     * this residue, so compute once */
+                    long q_first = reverse_k(p_ending, k);
+                    if (q_first < prefix_min)
+                        continue;
+
                     /* P-side passed. Now check q-side for each valid first
                      * in [fk_min, fk_max]. */
                     bool q_ok = false;
 
-                    /* Find valid firsts in [fk_min, fk_max] */
-                    int left = 0, right = num_firsts;
+                    /* Find valid firsts in [fk_min, fk_max] via binary search */
+                    long left = 0, right = num_firsts;
                     while (left < right) {
-                        int mid = left + (right - left) / 2;
+                        long mid = left + (right - left) / 2;
                         if (valid_firsts[mid] < fk_min)
                             left = mid + 1;
                         else
                             right = mid;
                     }
 
-                    for (int fi = left;
+                    for (long fi = left;
                          fi < num_firsts && valid_firsts[fi] <= fk_max;
                          fi++) {
                         long f = valid_firsts[fi];
@@ -328,17 +390,10 @@ int main(int argc, char *argv[])
                         /* q's last-k digits = reverse_k(f) */
                         long q_ending = reverse_k(f, k);
 
-                        /* q's first-k digits = reverse_k(p_ending) */
-                        long q_first = reverse_k(p_ending, k);
-
-                        /* q_first must be a valid k-digit prefix */
-                        if (q_first < prefix_min)
+                        if (!BITSET_GET(is_valid_ending, q_ending))
                             continue;
 
-                        if (!is_valid_ending[q_ending])
-                            continue;
-
-                        /* Solve for m residues on the fly */
+                        /* Solve for m residues on the fly via Hensel */
                         long m_sols[MAX_HENSEL_SOLS];
                         int qe_count = solve_residues(q_ending, k, m_sols);
 
@@ -402,10 +457,8 @@ int main(int argc, char *argv[])
                "digit counts tested\n\n",
                k, obstruction_count, max_d - k);
 
-        free(is_valid_ending);
-        free(is_valid_first);
-        free(endings);
         free(valid_firsts);
+        free(is_valid_ending);
 
         mpz_clear(n_min);
         mpz_clear(n_max);
