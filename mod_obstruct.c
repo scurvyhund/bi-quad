@@ -145,6 +145,51 @@ static void last_n_with_residue(mpz_t result, mpz_t hi,
     mpz_sub_ui(result, hi, (unsigned long)gap);
 }
 
+/* Solve 2m² + 2m + 1 ≡ target (mod 10^k) via Hensel lifting.
+ * Returns number of solutions stored in sols[].
+ * Max solutions bounded by ~4 * 2^(k-1).
+ */
+#define MAX_HENSEL_SOLS 4096
+static int solve_residues(long target, int k, long *sols)
+{
+    long tmp[MAX_HENSEL_SOLS];
+    int count = 0;
+
+    /* Base: solutions mod 10 */
+    long t10 = target % 10;
+    for (long r = 0; r < 10; r++) {
+        if ((2*r*r + 2*r + 1) % 10 == t10)
+            sols[count++] = r;
+    }
+
+    /* Hensel lift: mod 10^j → mod 10^(j+1) */
+    long pow10j = 10;
+    for (int j = 1; j < k; j++) {
+        long next_mod = pow10j * 10;
+        long target_next = target % next_mod;
+        int new_count = 0;
+
+        for (int i = 0; i < count; i++) {
+            long r = sols[i];
+            for (long c = 0; c < 10; c++) {
+                long r_new = r + c * pow10j;
+                long long rn = (long long)r_new;
+                long long fr = (2*rn*rn + 2*rn + 1) % (long long)next_mod;
+                if (fr == target_next && new_count < MAX_HENSEL_SOLS)
+                    tmp[new_count++] = r_new;
+            }
+        }
+
+        /* Swap: copy tmp → sols */
+        for (int i = 0; i < new_count; i++)
+            sols[i] = tmp[i];
+        count = new_count;
+        pow10j = next_mod;
+    }
+
+    return count;
+}
+
 int main(int argc, char *argv[])
 {
     int max_d = (argc > 1) ? atoi(argv[1]) : DEFAULT_MAX_D;
@@ -196,33 +241,6 @@ int main(int argc, char *argv[])
             }
         }
         qsort(valid_firsts, num_firsts, sizeof(long), cmp_long);
-
-        /* Phase 2b: Build reverse residue lookup.
-         * For each valid ending e, store the list of m residues
-         * that produce it (needed for q-side check). */
-        /* residues_for_ending[e] = array of r values where endings[r] == e */
-        int *ending_count = calloc(mod, sizeof(int));
-        for (long r = 0; r < mod; r++)
-            if (is_valid_ending[endings[r]])
-                ending_count[endings[r]]++;
-
-        /* Flatten into a single array with index pointers */
-        int *ending_offset = malloc(mod * sizeof(int));
-        int total_residues = 0;
-        for (long e = 0; e < mod; e++) {
-            ending_offset[e] = total_residues;
-            total_residues += ending_count[e];
-        }
-        long *ending_residues = malloc(total_residues * sizeof(long));
-        int *fill = calloc(mod, sizeof(int));
-        for (long r = 0; r < mod; r++) {
-            long e = endings[r];
-            if (is_valid_ending[e]) {
-                ending_residues[ending_offset[e] + fill[e]] = r;
-                fill[e]++;
-            }
-        }
-        free(fill);
 
         printf("  k=%d: valid_endings = %d / %ld (%.2f%%)  "
                "valid_firsts = %d\n",
@@ -320,12 +338,12 @@ int main(int argc, char *argv[])
                         if (!is_valid_ending[q_ending])
                             continue;
 
-                        /* Find m residues that produce q_ending */
-                        int qe_count = ending_count[q_ending];
-                        int qe_off = ending_offset[q_ending];
+                        /* Solve for m residues on the fly */
+                        long m_sols[MAX_HENSEL_SOLS];
+                        int qe_count = solve_residues(q_ending, k, m_sols);
 
                         for (int mi = 0; mi < qe_count; mi++) {
-                            long m_r = ending_residues[qe_off + mi];
+                            long m_r = m_sols[mi];
 
                             first_n_with_residue(t_mfirst, n_min, m_r, mod);
                             if (mpz_cmp(t_mfirst, n_max) <= 0) {
@@ -365,10 +383,19 @@ int main(int argc, char *argv[])
             if (survivors == 0) {
                 tag = "  *** OBSTRUCTION ***";
                 obstruction_count++;
+            } else if (survivors == mod) {
+                tag = "  (saturated)";
             }
 
             printf("    d=%2d  survivors = %6d%s\n", d, survivors, tag);
             fflush(stdout);
+
+            /* If fully saturated, all larger d will also saturate — skip */
+            if (survivors == mod) {
+                printf("    d=%2d..%2d  (skipped — saturated)\n",
+                       d + 1, max_d);
+                break;
+            }
         }
 
         printf("\n  k=%d summary: %d obstructions found out of %d "
@@ -379,9 +406,6 @@ int main(int argc, char *argv[])
         free(is_valid_first);
         free(endings);
         free(valid_firsts);
-        free(ending_count);
-        free(ending_offset);
-        free(ending_residues);
 
         mpz_clear(n_min);
         mpz_clear(n_max);
