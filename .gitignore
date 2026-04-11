@@ -1,0 +1,27 @@
+# Compiled binaries (rebuildable from source via `make`)
+/mod_obstruct
+/mod_obstruct_optB
+/mod_obstruct_debug
+/mod_obstruct_debug_optB
+/mod_obstruct-bkup
+
+# Helper binaries (sources tracked: check_d5.c, check_d9.c, check_survivors.c)
+/check_d5
+/check_d9
+/check_survivors
+
+# ctags index (regenerate with `ctags -R`)
+/tags
+
+# Editor swap files and backups
+.*.swp
+.*.swo
+.*.swn
+*~
+
+# Live runtime state (ephemeral, process-local)
+mod_obstruct.ckpt
+mod_obstruct.ckpt.tmp
+
+# Accidental empty files
+/docs/1
