@@ -66,6 +66,6 @@ step 7.)
 
 Solve for n by subtraction 1/2 from both sides of the equation:
 
-    n+1/2 = sqrt((2p-1)/2) - 1/2 ==> n = +-sqrt(2p-1)/2
+    n+1/2 = sqrt((2p-1)/2) - 1/2 ==> n = sqrt(2p-1)/2 - 1/2
 
     
