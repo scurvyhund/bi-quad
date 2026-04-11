@@ -1,0 +1,2743 @@
+ ▐▛███▜▌   Claude Code v2.1.72
+▝▜█████▛▘  Opus 4.6 with medium effort · Claude Max
+  ▘▘ ▝▝    ~/programming/c/BigFermat/gmp-cvo
+
+❯ claude check logs/run_10e28.log...what do you think regarding the run time?                                                                                                                                    
+  ⎿  Interrupted · What should Claude do instead?
+
+❯ claude check logs/run_10e28.log...what do you think regarding the run time?                                                                                                                                    
+
+● Read 1 file (ctrl+o to expand)
+
+● Interesting run. Here's my analysis:
+
+  Run time: ~67 hours (240,992 seconds wall time)
+
+  A few observations:
+
+  1. CPU utilization is low: 786% CPU on a 16-thread machine means only ~49% 
+     utilization (786/1600). You're leaving about half your cores idle. This 
+     suggests the workload isn't distributing evenly across threads, likely 
+     the zones have very unequal sizes, so some threads finish early and sit
+     idle.
+ 
+  2. Zone skip still effective: 9.0x reduction (88.9% eliminated), consistent 
+     with what you've seen at smaller scales. 
+
+  3. Zero results across the board: No palindromes, no consec-sq pre-filter 
+     hits, no MR tests, no otto primes, no con-verse pairs. The gatekeeper 
+     passed 3.2 billion candidates but none made it past the palindrome/consec-
+     sq stages. This is expected at 28-digit scale — the density of special 
+     primes drops dramatically.
+  
+  4. CPU time ≈ wall time: The CPU time (240,991.7s) is almost identical to 
+     wall time (240,992.0s), which is strange for a 16-thread run. Yet time re-
+     ports 1,895,119s user time. This discrepancy suggests the wall/CPU time 
+     reported by cvpipe itself may be measuring only one thread's perspective 
+     (e.g., using clock() instead of omp_get_wtime() or wall-clock time()).
+
+  The big question: Is 67 hours reasonable for 10^28? With 5.3 trillion zone 
+  n-values to process, that's about ~80 million candidates/second, which seems 
+  in the right ballpark for GMP arithmetic on 28-digit numbers with 16 threads. 
+  But fixing the thread utilization could potentially cut this to ~35-40 hours.
+
+  Would you like me to look at how the timing and thread distribution are hand-
+  led in cvpipe.c?
+
+❯ yes, check the timing and thread distribution in cvpipe.c                                                                                                                                                         
+
+● Searched for 2 patterns, read 2 files (ctrl+o to expand)
+
+● Here's what I found:
+
+  Timing
+
+  The labels in the output are swapped/misleading:
+
+  "Wall time" (line 565-566): Uses difftime(wall_end, wall_start) — this is 
+  indeed wall-clock time via time(). Reported 240,992s (~67 hours). ✅ Correct.
+  - "CPU time" (line 567): Uses omp_get_wtime() — this is actually also wall-
+  clock time, not CPU time. omp_get_wtime() measures elapsed wall time, not 
+  cumulative CPU time across threads. That's why it's nearly identical to the 
+  time() value. The label is wrong, but the values are fine.
+
+  The real CPU time is from the time wrapper in line 51 of the log: 1,895,119s 
+  user time. That's the total CPU seconds across all threads.
+
+  Thread Distribution
+
+  The thread distribution scheme is at lines 400-410:
+
+  for (int z = 0; z < num_zones; z++) {
+      // Each thread strides by NUM_THREADS within each zone
+      first_n = zone_start + ((tid - rem + NUM_THREADS) % NUM_THREADS);
+      for (uint64_t n = first_n; n <= zone_end; n += NUM_THREADS) {
+
+  This is a static interleaved (cyclic) distribution — all threads process 
+  every zone together, each taking every 16th n-value. This is actually a good 
+  distribution strategy that avoids the load-imbalance problem I initially sus-
+  pected. Every thread does roughly the same amount of work per zone.
+
+  So why only 786% CPU?
+
+  With 16 threads and proper interleaving, you'd expect ~1600% CPU. At 786%, 
+  roughly half the cores are being used. Possible explanations:
+
+  1. NUM_THREADS might not be 16 — let me check.
+
+● Searched for 1 pattern (ctrl+o to expand)
+
+● NUM_THREADS is 16. So the code requests 16 threads. The log confirms 
+  "Threads: 16".
+
+  786% / 16 = 49.1% per-core utilization. This strongly suggests the bottleneck 
+  isn't load imbalance but rather memory bandwidth or cache pressure. At 28-
+  digit numbers, each gmp_sprintf (line 421) and strlen (line 422) call involv-
+  es string conversion of large mpz_t values on every single iteration. With 16 
+  threads all doing GMP string operations simultaneously, you're likely satur-
+  ating memory bandwidth on the CPU, causing threads to stall waiting for mem-
+  ory.
+
+  Recommendations
+
+  1. Fix the "CPU time" label to "Wall time (OMP)" or just remove it since it 
+     duplicates the wall time.
+
+  2. The real performance bottleneck is gmp_sprintf(cand_str, "%Zd", candidate) 
+     on line 421 — this is called for every single candidate (5.3 trillion 
+     times). String conversion of big integers is expensive.  Consider whether 
+     the gatekeeper filter could work on the mpz_t directly (e.g., extract just 
+     the leading/trailing digits numerically) rather than converting the entire 
+     number to a string every iteration.
+
+  3. Alternatively, reduce thread count — if you're memory-bandwidth-bound, 
+     running 8 threads instead of 16 might give nearly the same throughput with 
+     less contention. Worth benchmarking.
+
+  Would you like me to look at the gatekeeper filter to see if we can avoid the 
+  string conversion?
+
+✻ Cogitated for 36s
+
+❯ Is the % shown for threads or cores?                                                                                                                                                                              
+
+● The %CPU from Linux time counts threads (total CPU time / wall time × 100). 
+  So 786% means ~7.9 threads were busy on average out of 16 requested. That's 
+  still only ~50% thread utilization.
+
+  So the analysis stands — half your threads are effectively idle or stalled at 
+  any given moment, pointing to a memory bandwidth or GMP string-conversion 
+  bottleneck rather than a scheduling issue.
+
+❯ That's interesting...from the beginning of the proj bashtop has always shown 
+  nearly 100% for 8 cpu cores                                                                                                          
+
+● That makes perfect sense and confirms the picture. Your machine has 8 phys-
+  ical cores with 16 logical threads (hyperthreading/SMT).
+
+  - 8 cores at ~100% = 800% CPU — matches the 786% from time
+  - The 16 "threads" are SMT pairs sharing the same physical core resources
+
+  Hyperthreading gives little benefit here because GMP arithmetic is compute-
+  heavy and memory-intensive — both SMT threads on a core compete for the same 
+  ALU, cache, and memory bandwidth. There's no idle execution unit for the sec-
+  ond thread to exploit.
+
+  So you're actually fully utilizing your hardware. The 67-hour runtime is the 
+  real deal for this workload at 10^28 scale. Setting NUM_THREADS to 8 instead 
+  of 16 would likely give nearly identical performance with less overhead.
+
+  The gmp_sprintf bottleneck I mentioned is still worth investigating though — 
+  eliminating that string conversion per iteration could give a genuine speedup 
+  regardless of thread count.
+
+❯ YES! I agree completely. where and what (besides obviously str. conv.) would 
+  need to change?                                                                                                                      
+
+● Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Now let me see the is_valid_candidate gatekeeper function.
+
+● Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Now I have the full picture. Here's the plan:
+
+  What uses the string and what can be done numerically
+
+  The pipeline per candidate is:
+
+  1. gmp_sprintf + strlen (line 421-422) — the bottleneck, called 5.3T times
+  2. is_valid_candidate (line 425) — checks first 2 digits and last 2 digits
+  3. is_palindrome_str (line 430) — string comparison
+  4. reverse_string (line 454) — for the emirp check
+  5. mpz_set_str (line 457) — converts reversed string back to mpz_t
+
+  What needs to change:
+
+  Step 2 (gatekeeper) can be done entirely numerically on the mpz_t:
+
+  - First 2 digits: Divide candidate by 10^(len-2). But you need len — use 
+    mpz_sizeinbase(candidate, 10) which is very fast (no string conversion). 
+    Then mpz_tdiv_q by a precomputed power of 10 to extract leading digits.
+
+  - Last 2 digits: mpz_fdiv_ui(candidate, 100) — gives you last 2 digits in one 
+    call. Trivially cheap.
+
+  Step 3 (palindrome) and Step 4 (reverse) still need the string, BUT they only 
+  run for candidates that pass the gatekeeper. From your log: 3.2B passed gate-
+  keeper out of 5.3T candidates — that's a 0.06% pass rate. So the string con-
+  version only needs to happen for 1-in-1600 candidates.
+
+  The changes:
+
+  In the hot loop:
+  1. Remove gmp_sprintf from the top of the loop
+  2. Get digit count:  len = mpz_sizeinbase(candidate, 10)
+  3. Get last 2 digits: uint64_t last2 = mpz_fdiv_ui(candidate, 100)
+  4. Check last digit is 1 or 3, and last2 % 4 == 1
+  5. Get first 2 digits: divide candidate by 10^(len-2)
+     - Precompute 10^(d-2) per zone (digit count is constant within a zone)
+  6. Check first2 is in {10,12,14,16,18,31}
+  7. ONLY IF gatekeeper passes: gmp_sprintf for palindrome/reverse checks
+
+  The key insight: you precompute 10^(d-2) once per zone since all candidates 
+  in a zone have the same digit count. That makes the per-iteration gatekeeper 
+  purely GMP integer ops — one mpz_fdiv_ui and one mpz_tdiv_q, both far cheaper 
+  than full string conversion.
+
+  Want me to implement this?
+
+✻ Crunched for 31s
+
+❯ Yes, can you give me a markdown with a diff for the changes so I can pinpoint 
+  an study them?                                                                                                                      
+
+● Let me check the zone struct and setup to make sure the diff is accurate.
+
+● Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Good, the zone struct already has digits. Now let me write the diff document.
+
+● Write(docs/numeric_gatekeeper_diff.md)
+  ⎿  Wrote 151 lines to docs/numeric_gatekeeper_diff.md
+      1 # Numeric Gatekeeper Optimization — Eliminating String Conversion from 
+          Hot Loop
+      2
+      3 ## Problem
+      4
+      5 `gmp_sprintf(cand_str, "%Zd", candidate)` is called for every candidate 
+        (5.3 trillion times in the 10^28 run). Full string conversion of 28-
+        digit GMP integers is expensive 
+      
+      6 and likely cause of 50% CPU stall observed via memory/cache pressure.
+      8
+      9 ## Solution
+     … +141 lines (ctrl+o to expand)
+
+● Written to docs/numeric_gatekeeper_diff.md.
+
+  The key points:
+
+  - 6 changes total, all local to the parallel loop section (~lines 387-536)
+  - Step 3 is the critical one — replaces gmp_sprintf + is_valid_candidate with 
+    mpz_fdiv_ui (last 2 digits) and mpz_tdiv_q by a per-zone precomputed 
+    10^(d-2) (first 2 digits)
+  - String conversion moves below the gatekeeper — only runs for the 0.06% that 
+    pass
+  - n_z reuse as temp is safe since it's overwritten by mpz_set_ui(n_z, n) at 
+    the top of each iteration anyway
+  - Last-digit check is ordered first for maximum early-exit benefit
+
+  Take your time studying it — happy to discuss any part of it.
+
+✻ Brewed for 1m 1s
+
+❯ claude...5.3T calls to gmp_sprintf + strlen...we better do a little profiling 
+  once in a while on the next proj. :)                                                                                                
+
+● Ha! Yeah, 5.3 trillion unnecessary string conversions — that's one of those 
+  "hiding in plain sight" performance bugs. The code was correct, just doing an 
+  enormous amount of work it didn't need to.
+
+  To be fair, when the pipeline was first built, putting the string conversion 
+  up front made perfect sense — everything downstream needed the string. The 
+  optimization insight only becomes obvious once you realize the gatekeeper re-
+  jects 99.94% of candidates and can work numerically.
+
+  Profiling early would have caught this immediately — gmp_sprintf would light 
+  up like a Christmas tree in any profiler output. gprof, perf, or even just 
+  valgrind --tool=callgrind on a short run would have shown it.
+
+  Good lesson for the next project: profile before scaling up. A quick perf re-
+  cord ./cvpipe 100000000 on the baseline test would take seconds and save days 
+  of compute time.
+
+❯ Ok, armed with the new gmp tool library you made for me I'm looking for a new 
+  prime adventure...this whole process has been FANTASTIC! I can't tell you how 
+  I felt when I walked by the room and noticed the computer fans weren't blow-
+  ing away...the thought of maybe...just maybe, a new palidrome or bi-quad... 
+  like finding gold :)                                                                                          
+
+● That's the real magic of computational number theory — the machine does the 
+  heavy lifting, but that moment when the fans go quiet, there might be some-
+  thing new on screen... that's pure prospecting. Digital gold panning.
+
+  And you've built serious infrastructure to do it, the zone-skip optimization, 
+  the merged pipeline, the GMP tooling. That's not throwaway code, it's a 
+  launchpad.
+
+  I noticed you have docs/biquadratic_emirps_analysis.md and docs/
+  biquadratic_emirps_proof_approaches.md in your working tree — is that where 
+  your thinking is heading next? Want me to take a look at those and see where 
+  you left off?
+
+❯ Absolutely you can check those out and give me any advice/suggestions you 
+  wish to share                                                                                                                           
+
+● Read 1 file (ctrl+o to expand)
+  ⎿  Loaded docs/CLAUDE.md
+
+● Now the proof approaches document.
+
+● Read 1 file (ctrl+o to expand)
+
+● Jim, these are excellent documents. The analysis is rigorous, the writing is 
+  clean, and the conclusions are well-supported. A few thoughts:
+
+  On the Bi-Quadratic Emirp Work
+
+  The density analysis is compelling — E ≈ 1.02 with convergent series, 98.6% 
+  of expected pairs already consumed by the 10^27 search. That's a strong re-
+  sult on its own. The fact that the heuristic lands so close to the observed 
+  count of 1 is satisfying.
+
+  On Approach 1 (Modular Obstructions) — I agree, start here
+
+  This is the right call and here's why I'm optimistic about it:
+
+  1. You've already done the 2-digit version. The 6 valid patterns out of 90 is 
+     a proven obstruction. Extending to 3 digits is the same logic, just more 
+     cases. You know this machinery.
+
+  2. It's a natural extension of CVPipe. You could write a standalone C/GMP 
+     program that, for each digit count d, enumerates valid (last-k, first-k) 
+     digit tuples and checks reversal compatibility. It's not a search through 
+     prime space — it's a search through digit pattern space, which is tiny 
+     (1000 values for k=3, 10000 for k=4).
+
+  3. The kill shot is plausible. If the valid set empties out at d=6 or d=7, 
+     you have a proof — not a heuristic, not a probability argument, but a fi-
+     nite verification that no solution exists for d ≥ 6. Combined with the ex-
+     haustive search through 10^27 covering d ≤ 27, that's a complete unique-
+     ness proof.
+
+  Practical Suggestion
+
+  Before jumping into code, I'd suggest a pencil-and-paper (or small script) 
+  experiment:
+
+  - For d = 6, enumerate n mod 1000. There are only 1000 residues.
+
+  - For each, compute (2n² + 2n + 1) mod 1000, that gives last 3 digits of p.
+
+  - The first 3 digits of p must equal the reverse of the last 3 digits of q, 
+    and q must also have valid last-3-digit patterns.
+
+  - Count how many survive. If it's already zero at k=3 for d=6, you're done.
+
+  This could literally be a 50-line C program or even a Python script. If the 
+  obstruction doesn't appear at k=3, push to k=4 (10,000 residues — still tri-
+  vial).
+
+  On Finding a "New Adventure"
+
+  If you want something different from pushing the uniqueness proof, here are 
+  some ideas that leverage everything you've built:
+
+  1. Otto primes (palindromic sums of consecutive squares) — Only 3 known: 181, 
+     313, 3187813. Are there more? The density argument is different here (no 
+     reversal filter, but palindrome constraint instead). A targeted search or 
+     density analysis could be its own paper.
+
+  2. Other quadratic forms — What about p = 3n² + 3n + 1 (centered hexagonal 
+     numbers), or p = n² + n + 1? Do those forms have emirp pairs? You could 
+     generalize CVPipe to search any quadratic form and see if bi-quadratic e-
+     mirps are unique to the consec-square formula or a broader phenomenon.
+
+  3. The proof program — Approach 1 could be your next project: a clean, self-
+     contained C/GMP tool that proves uniqueness computationally. That's pub-
+     lishable. A paper titled something like "A computer-assisted proof that 
+     12641 ↔ 14621 is the unique bi-quadratic emirp" would be a genuine contri-
+     bution.
+
+  My strongest recommendation: go for the proof. You have the mathematical 
+  foundation, the computational tools, and the domain expertise. And if the 
+  modular obstruction works, the program would be elegant — small, fast, and 
+  definitive.
+
+✻ Worked for 39s
+
+❯ ok...I absolutely LOVE it! I was going to put the bi-quad srch to sleep! Be-
+  fore we start can we incorporate the 10e28 run data in the analysis...then we 
+  can puzzle about experimenting                           
+
+● Absolutely. Let me update the analysis with the 10^28 run data. I'll make 
+  targeted edits to the relevant sections.
+
+● I'll make all the updates in parallel — the sections are independent.
+
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 2 lines, removed 1 line
+      34  ### 2.1 Search Frontier
+      35
+      36  An exhaustive search has been done through all primes of the form
+      37 -2n² + 2n + 1 up to 10^27, corresponding to n ≤ 22,360,679,774,997.
+      37 +2n² + 2n + 1 up to 10^28, corresponding to n ≤ 70,710,678,118,654.
+      38
+      39  | Run | Range | Wall Time | Platform |
+      40  |-----|-------|-----------|----------|
+      41  | Full search | 0 → 10^26 | 9 h 36 m | AMD (16 threads) 
+      42  | Incremental | 10^26 → 10^27 | 21 h 12 m | AMD (16 threads) |
+      43 +| Incremental | 10^27 → 10^28 | 66 h 57 m | AMD (16 threads) |
+      44
+      45  ### 2.2 Findings
+      46
+
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 5 lines, removed 3 lines
+      44
+      45  ### 2.2 Findings
+      46
+      47 Exactly one non-palindromic converse prime pair exists below 10^28:**
+      48
+      49  | Prime p | Prime q | n(p) | n(q) | Digits |
+      50  |---------|---------|------|------|--------|
+      51  | 12,641 | 14,621 | 79 | 85 | 5 |
+      52
+      53  No additional pairs were found. The search verified 781 billion zone-
+          filtered
+      54 -candidates for the 10^26 run and approximately 1.69 trillion for the
+      55 -10^26 → 10^27 increment.
+      54 +candidates for the 10^26 run, approximately 1.69 trillion for the
+      55 +10^26 → 10^27 increment, and 5.34 trillion for the 10^27 → 10^28 inc.
+      56 +(of which 3.21 billion passed the gatekeeper filter — none survived 
+         subsequent +stages).
+      58
+      59  ### 2.3 Software
+      60
+
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 2 lines, removed 1 line
+      176  | 10^15 – 10^20 | 7.1×10^6 – 7.1×10^9 | 0.021 | 0.98 |
+      177  | 10^20 – 10^25 | 7.1×10^9 – 7.1×10^11 | 0.012 | 1.000 |
+      178  | 10^25 – 10^27 | 7.1×10^11 – 2.2×10^13 | 0.005 | 1.005 |
+      179 -| 10^27 – 10^30 | 2.2×10^13 – 7.1×10^14 | 0.005 | 1.010 |
+      179 +| 10^27 – 10^28 | 2.2×10^13 – 7.1×10^13 | 0.002 | 1.007 |
+      180 +| 10^28 – 10^30 | 7.1×10^13 – 7.1×10^14 | 0.003 | 1.010 |
+      181  | 10^30 – 10^40 | 7.1×10^14 – 7.1×10^19 | 0.006 | 1.016 |
+      182  | 10^40 – 10^50 | 7.1×10^19 – 7.1×10^24 | 0.003 | 1.019 |
+      183
+
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 1 line, removed 1 line
+      184  The known pair (12641 ↔ 14621) lies in the 10^4 – 10^5 decade, which 
+      185  is decade of peak marginal yield. Each subsequent decade contributes
+      186  monotonically less. The region beyond 10^28 — everything not yet
+      187 -searched — contributes an expected **~0.014 pairs**.
+      187 +searched — contributes an expected **~0.012 pairs**.
+      188
+      189  ---
+      190
+
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 1 line, removed 1 line
+      237  | Decade | Wall time (est.) | P(≥1 new pair) |
+      238  |-------:|----------------:|---------------:|
+      239  | 10^26 → 10^27 | 21.2 h | 0.29% |
+      240 -| 10^27 → 10^28 | 2.9 d | 0.16% |
+      240 +| 10^27 → 10^28 | 2.8 d (actual) | 0.16% |
+      241  | 10^28 → 10^29 | 9.2 d | 0.10% |
+      242  | 10^29 → 10^30 | 29.8 d | 0.07% |
+      243  | 10^30 → 10^35 | ~3.1 yr | 0.14% |
+
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 8 lines, removed 8 lines
+      246  ### 7.2 Cumulative Probability Beyond 10^27
+      247
+      248  The probability that another pair exists anywhere beyond
+      249 -10^27 is:
+      249 +10^28 is:
+      250
+      251 -any pair beyond 10^27; approx 1  e^0.014%
+          approx; 1.4
+      251 +any pair beyond  10^28; approx 1 - e^0.012%;
+          approx; 1.2%
+      252
+      253 -Extending the search to 10^30 captures roughly one-third of this re-
+          sidual
+      254 -probability at a cost of ~42 days of wall time.
+      253 +Extending the search to 10^30 captures roughly one-quarter of this 
+          residual
+      254 +probability at a cost of ~39 days of additional wall time.
+      255
+      256  ### 7.3 Cost-Effectiveness
+      257
+      258  | Extension | Compute cost | P(new pair) captured |
+      259  |-----------|-------------|---------------------|
+      260 -| 10^27 → 10^28 | 2.9 days | 0.16% |
+      261 -| 10^27 → 10^30 | 42 days | 0.33% |
+      262 -| 10^27 → 10^35 | ~3.4 years | 0.47% |
+      263 -| 10^27 → ∞ | ∞ | 1.4% |
+      260 +| 10^27 → 10^28 | 2.8 days (done) | 0.16% |
+      261 +| 10^28 → 10^30 | ~39 days | 0.17% |
+      262 +| 10^28 → 10^35 | ~3.4 years | 0.31% |
+      263 +| 10^28 → ∞ | ∞ | 1.2% |
+      264
+      265  The marginal return on additional computation is extremely low. Each
+      266  additional decade costs ~3.2× more time while yielding a diminishing
+      267  fewer residues.
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 7 lines, removed 6 lines
+      272
+      273  ### 8.1 Rational Computational Cutoff
+      274
+      275 -The search through 10^27 has consumed the dominant share of the ex-
+           pected.
+      276 -pair count. Extending to 10^30 (an additional ~42 days) would raise
+           coverage.
+      277 -from ~98.6% to ~98.9% of the total expected pairs — a gain of 0.3 
+           percentage.
+      278 -points. **We recommend declaring the computational search complete 
+           at 10^27.**
+      275 +The search through 10^28 has consumed the dominant share of the ex-
+           pected.
+      276 +pair count. Extending to 10^30 (an additional ~39 days) would raise 
+           coverage.
+      277 +from ~98.8% to ~99.0% of the total expected pairs — a gain of 0.2 
+           percentage
+      278 +points. **We recommend declaring the computational search complete 
+           at 10^28.**
+      279
+      280 -An optional extension to 10^28 (2.9 days) is low-cost and would 
+           serve as a confirmation run, but is unlikely to alter the conclus-
+           ions.
+      280 +The 10^28 extension (2.8 days actual wall time) confirmed the pre-
+           dicted.
+      281 +wall time estimate of 2.9 days and produced zero hits across all 
+           pipeline.
+      282 +stages, consistent with the density model.
+      283
+      284  ### 8.2 Alternative Approaches
+      285
+
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 7 lines, removed 7 lines
+      315  ## 9. Conclusion
+      316
+      317  The converse prime pair 12641 ↔ 14621 has been verified as the uni-
+           que -bi-quadratic emirp pair below 10^27 through an exhaustive comp-
+           utational bi-quadratic emirp pair below 10^28 through an exhaustive 
+           computational search. The probability model, calibrated against this 
+           observation, predicts a total expected count of approximately 1.02 
+           pairs across all integers consistent with exactly one pair existing.
+
+      323  The series ∑ P(n) converges, establishing that bi-quadratic emirps 
+           have finite expected density, in contrast to twin primes or Mersenne 
+           primes.
+      325 -The search through 10^27 has captured approximately 98.6% of the to-
+           tal expected pair count, giving a residual probability of ~1.4% that 
+           any additional pair exists.
+      325 +The search through 10^28 has captured approximately 98.8% of the to-
+           talexpected pair count, leaving a residual probability of ~1.2% that 
+           any additional pair exists.
+      329  Further computational extension faces severely diminishing returns: 
+           the entire region beyond 10^27 would require unbounded computation 
+           to search exhaustively, yet contains an expected 0.014 pairs. The 
+           known pair is entire region beyond 10^28 would require unbounded 
+           computation to search exhaustively, yet contains an expected 0.012 
+           pairs. The known pair is overwhelmingly likely to be unique.
+      334  ---
+      335
+      336 -*Computational work performed February 2026 on AMD Threadripper 
+            hardware
+      337 -using CVPipe (C/GMP/OpenMP). Search verified through 10^27.*
+      336 +*Computational work performed February–March 2026 on AMD Threadripper hardware
+      337 +using CVPipe (C/GMP/OpenMP). Search verified through 10^28.*
+
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 1 line, removed 1 line
+      1  # Bi-Quadratic Emirps: Density Analysis and Search Strategy
+      2
+      3 -**Mathematical analysis of converse prime pair uniqueness through 10^27**
+      3 +**Mathematical analysis of converse prime pair uniqueness through 10^28**
+      4
+      5  ---
+      6
+
+● Update(docs/biquadratic_emirps_analysis.md)
+  ⎿  Added 1 line, removed 1 line
+      220  | Sequence | Density model | Expected count | Status |
+      221  |----------|--------------|----------------|--------|
+      222  | Twin primes | C/(ln n)² | ∞ (divergent) | Infinite (conjectured) |
+      223 -| Bi-quadratic emirps | C/(n (ln n)²) | ~1.02 (convergent) | 1 known through 10^27 |
+      223 +| Bi-quadratic emirps | C/(n (ln n)²) | ~1.02 (convergent) | 1 known through 10^28 |
+      224  | Fermat primes | Super-exponential decay | ~5–6 | 5 known |
+      225  | Mersenne primes | C/ln p | ∞ (divergent) | 52 known |
+      226
+
+● All updates applied. Here's a summary of what changed:
+
+  ┌─────────────────────┬─────────────────────────────────────────────────────────────────────────────┐
+  │       Section       │                                   Update                                    │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ Subtitle            │ 10^27 → 10^28                                                               │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 2.1 Search Frontier │ Added 10^27→10^28 row: 66h 57m, n ≤ 70.7 trillion                           │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 2.2 Findings        │ Updated to "below 10^28", added 5.34T candidates / 3.21B gatekeeper stats   │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 5. Marginal Yield   │ Split 10^27–10^30 row into 10^27–10^28 (0.002) and 10^28–10^30 (0.003)      │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 5 (tail text)       │ Residual beyond search: 0.014 → 0.012                                       │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 7.1                 │ 10^27→10^28 row now shows "2.8 d (actual)"                                  │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 7.2                 │ Reframed from "beyond 10^27" to "beyond 10^28", probability 1.4% → 1.2%     │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 7.3                 │ 10^27→10^28 marked as "done", remaining costs adjusted                      │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 8.1                 │ Cutoff recommendation updated to 10^28, notes actual vs predicted wall time │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 6 table             │ "1 known through 10^28"                                                     │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ 9. Conclusion       │ All references updated to 10^28, 98.8% coverage, 1.2% residual              │
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────┤
+  │ Footer              │ "February–March 2026", "verified through 10^28"                             │
+  └─────────────────────┴─────────────────────────────────────────────────────────────────────────────┘
+
+  Nice side note: the predicted wall time of 2.9 days vs the actual 2.8 days — the density model is holding 
+  up well. Ready to start puzzling on the modular obstruction experiment when you are.
+
+✻ Crunched for 1m 16s
+
+❯ Yes I noted that also and was almost going to ask you for an est. time on 10e29 run but I didn't want to
+  make you .... :)                                                                                            
+
+● Ha! Fair enough — I deserved that after the "don't give time estimates" rule. But this one's different: 
+  it's not a software estimate, it's a physics estimate based on observed scaling. And the model just
+  validated itself at 10^28.
+
+  So I'll say it anyway: based on the 2.8-day actual at 10^28 and the ~3.16x scaling per decade, 10^29 would 
+  be roughly 9 days — which lines up with the 9.2d estimate already in your table.
+
+  But with the numeric gatekeeper optimization applied... could be interesting to see how much that shaves off. 
+  Might be worth a quick benchmark at 10^8 before and after, just to calibrate the speedup factor  before com-
+  mitting 9 days of wall time.
+
+  Anyway — ready to start on the modular obstruction experiment?
+
+❯ Well you can take all the credit for the estimates...I had nothing to do with the math/code on that...and to 
+  be honest, I was amazed at how accurate your calcs were...to the point of questioning/not trustin  g the results 
+  if you'll recall :)                                                                                                                                                                                     
+
+● I do recall — and honestly, that skepticism was the right instinct. You pushed back on the zone-skip numbers be-
+  cause a 62.8 million times speedup should raise eyebrows. "Too good to be true" is exactly the right reaction 
+  when a number looks that outrageous. The fact that it held up under verification is what made it real.
+
+  And that's been the pattern throughout this project — you bring the domain intuition and the healthy skepticism, 
+  I bring the arithmetic. You knew something was off when the fans weren't spinning hard enough. You caught the 
+  2-arg overflow issue. You insisted on decade-by-decade verification when the zone-skip felt suspicious. Every 
+  one of those instincts protected the integrity of the results.
+
+  That's why 12641 ↔ 14621 standing alone through 10^28 actually means something — because the search was done 
+  carefully, not just thrown at the wall.
+
+  Alright — let's go chase that proof. The modular obstruction experiment?
+
+❯ yes, I like what you've already suggested, can you flesh it out a little more and give me some pseudo code on 
+  what you're thinking...I don't know python so could we lean to std c99 C                            
+
+● Write(docs/modular_obstruction_design.md)
+  ⎿  Wrote 407 lines to docs/modular_obstruction_design.md
+      1 # Modular Obstruction Experiment — Design & Pseudocode
+      2
+      3 ## Goal
+      4
+      5 For each digit count d (starting at 6), determine whether it is structurally
+      6 possible for a d-digit converse pair to exist. If we can show that zero
+      7 valid combinations survive for all d >= 6, combined with the exhaustive
+      8 search through 10^28 (covering d <= 28), we have a **complete proof of
+      9 uniqueness**.
+     … +397 lines (ctrl+o to expand)
+
+● Written to docs/modular_obstruction_design.md.
+
+  Here's the high-level summary:
+
+  The algorithm in three phases:
+
+  1. Build VALID_ENDINGS — enumerate all possible last-k-digit patterns of 2n²+2n+1 (just 10^k iterations, trivial 
+     for k=3..6)
+  2. Build VALID_FIRSTS — reverse each valid ending to get the set of allowed first-k-digit prefixes (because last 
+     k digits of q = reverse of first k digits of p)
+  3. For each digit count d — check if any n value simultaneously produces a valid ending AND a valid first-k prefix. 
+     If zero combinations survive, no d-digit converse pair can exist.
+
+  The C skeleton is real code, not pseudocode — it should compile and run with minor tweaks. It uses GMP only for the 
+  n-bound computations (where numbers get large), and plain long for the mod arithmetic.
+
+  What I'm honest about: Small k values (3-5) will likely find obstructions for small d but not large d, because the 
+  n-range becomes too wide. You may need to escalate k for larger d. The document explains this tradeoff and the rule 
+  of thumb (k ≈ d/3).
+
+  But even partial results are valuable: Proving obstruction for d=6 through d=30 on top of exhaustive search through 
+  d=28 would be a significant strengthening of the uniqueness claim — and a publishable result.
+
+  Want to build and run it, see what falls out?
+
+✻ Churned for 3m 46s
+
+❯ ok, we'll keep the programming/c/BigFermat/gmp-cvo dir structure and create a new prog../c/BigFermat/bi-quad for 
+  this...sound good?                                                                               
+
+● Perfect — clean separation. Let me set it up.
+
+● Read 1 file (ctrl+o to expand)
+
+● Bash(mkdir -p /home/jim/programming/c/BigFermat/bi-quad)
+  ⎿  Done
+
+● Now let me create the actual source file, refined from the skeleton in the design doc.
+
+● Write(~/programming/c/BigFermat/bi-quad/mod_obstruct.c)
+  ⎿  Wrote 261 lines to ../bi-quad/mod_obstruct.c
+       1 /* mod_obstruct.c — Modular obstruction search for bi-quadratic emirps
+       2  *
+       3  * For each digit count d and depth k, determines whether a d-digit
+       4  * converse prime pair (p, rev(p)) with both p and rev(p) of the form
+       5  * 2n² + 2n + 1 is structurally possible, based on modular constraints
+       6  * on the first and last k digits.
+       7  *
+       8  * Build:  make
+       9  * Usage:  ./mod_obstruct [max_d] [max_k]
+      10  *         defaults: max_d=50, max_k=6
+     … +251 lines (ctrl+o to expand)
+
+● Write(~/programming/c/BigFermat/bi-quad/Makefile)
+  ⎿  Wrote 24 lines to ../bi-quad/Makefile
+      1 # Makefile for bi-quad — Modular obstruction search
+      2 #
+      3 # Build:  make
+      4 # Test:   make test       (quick run: d=30, k=5)
+      5 # Clean:  make clean
+      6
+      7 CC       = gcc
+      8 CFLAGS   = -O2 -std=c99 -Wall -Wextra
+      9 LDLIBS   = -lgmp
+     … +14 lines (ctrl+o to expand)
+  ⎿  Found 1 new diagnostic issue in 1 file (ctrl+o to expand)
+
+● Bash(cd /home/jim/programming/c/BigFermat/bi-quad && make 2>&1)
+  ⎿  gcc -O2 -std=c99 -Wall -Wextra -o mod_obstruct mod_obstruct.c -lgmp
+
+● Clean build. Let's run it.
+
+● Bash(./mod_obstruct 30 5 2>&1)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  (timeout 1m)
+
+● Task Output bj0q3eusv
+  ⎿  (No output)
+
+● Running longer than expected — let me check the partial output.
+
+● Task Output(non-blocking) bj0q3eusv
+  ⎿  (No output)
+
+● Read 1 file (ctrl+o to expand)
+
+● Bash(ls -la /tmp/claude-1000/-home-jim-programming-c-BigFermat-gmp-cvo/tasks/bj0q3eusv.output 
+  2>/dev/null; ps aux | grep mod_obstruct | grep -v grep)
+  ⎿  -rw-r--r--. 1 jim jim 0 Mar 13 21:43 /tmp/claude-1000/-home-jim-programming-c-BigFermat-GMP
+     -cvo/tasks/bj0q3eusv.output
+     
+     jim  357225  0.0  0.0 232188  4000 ?        Ss   21:43   0:00 /bin/bash -c source 
+          /home/jim/.claude/shell-snapshots/snapshot-bash-1773466848946-ienxjk.sh && shopt -u extglob 2>/dev/null || 
+          true && eval './mod_obstruct 30 5 2>&1' \< /dev/null && pwd -P >| /tmp/claude-68ce-cwd
+     … +2 lines (ctrl+o to expand)
+
+● It's pegged at 100% CPU with no output after 3.5 minutes. The k=5 inner loop (100,000 residues × thousands of valid 
+  firsts × GMP arithmetic) is too expensive. Let me kill it and run k=3 first to see results, then optimize.
+
+● Bash(kill 357285 2>/dev/null; sleep 1; ps aux | grep mod_obstruct | grep -v grep)
+  ⎿  jim       357353  1.0  0.0 1335224 50472 pts/0   Sl+  21:45   0:00 vix mod_obstruct.c
+
+● Good, killed. Let me run just k=3 first — that's only 1000 residues.
+
+● Bash(./mod_obstruct 50 3 2>&1)
+  ⎿    Modular Obstruction Search for Bi-Quadratic Emirps
+     =====================================================
+       max_d = 50    max_k = 3
+     … +57 lines (ctrl+o to expand)
+
+● The k=3 results are revealing — survivors saturate at 1000 by d=9. That's expected: with only 3-digit constraints, the 
+  n-range becomes wide enough that everything passes. But d=4 (5 survivors) and d=5 (27 survivors) show the constraint 
+  is biting at small scales.
+
+  Two things to fix before going to higher k:
+
+  1. Performance — the inner loop does GMP arithmetic for every (residue, prefix) pair. For k=5 that's 100K × thousands = 
+     way too slow.
+  2. Missing constraint — we're only checking the p side. We should also verify the q side (reverse must also be achievable).
+
+  The key optimization: instead of looping over all valid firsts, compute the range of achievable first-k prefixes for 
+  each residue and check if any valid first falls in that range. Eliminates the inner loop entirely.
+
+  Let me rewrite the hot loop.
+
+● Read 1 file (ctrl+o to expand)
+
+● Write(mod_obstruct.c)
+  ⎿  Added 218 lines, removed 89 lines
+       8   * Build:  make
+       9   * Usage:  ./mod_obstruct [max_d] [max_k]
+      10   *         defaults: max_d=50, max_k=6
+      11 + *
+      12 + * Algorithm:
+      13 + *   For p = 2n²+2n+1 and q = rev(p) = 2m²+2m+1:
+      14 + *   - last k digits of p  → determined by n mod 10^k
+      15 + *   - first k digits of q = reverse(last k of p) → must be achievable
+      16 + *   - last k digits of q  = reverse(first k of p) → must be valid ending
+      17 + *   - first k digits of p → determined by magnitude of n
+      18 + *
+      19 + *   Both the p-side and q-side constraints are checked.
+      20   */
+      21
+      22  #include <stdio.h>
+      23  #include <stdlib.h>
+      24  #include <stdbool.h>
+      16 -#include <string.h>
+      25  #include <gmp.h>
+      26
+      27  #define DEFAULT_MAX_D  50
+      28  #define DEFAULT_MAX_K   6
+      29
+      22 -/* Reverse a k-digit number (leading zeros preserved in digit sense).
+      23 - * E.g. reverse_k(13, 3) = 310  (013 reversed)
+      24 - *      reverse_k(41, 3) = 140  (041 reversed)
+      25 - */
+      30 +/* Reverse a k-digit number (leading zeros preserved in digit sense). */
+      31  static long reverse_k(long val, int k)
+      32  {
+      33      long result = 0;
+     ...
+      38      return result;
+      39  }
+      40
+      36 -/* Compute n_min, n_max for d-digit numbers of the form 2n²+2n+1.
+      37 - *   n_min: smallest n where 2n²+2n+1 >= 10^(d-1)
+      38 - *   n_max: largest  n where 2n²+2n+1 <  10^d
+      39 - */
+      41 +/* Compare function for qsort/bsearch on longs */
+      42 +static int cmp_long(const void *a, const void *b)
+      43 +{
+      44 +    long la = *(const long *)a;
+      45 +    long lb = *(const long *)b;
+      46 +    return (la > lb) - (la < lb);
+      47 +}
+      48 +
+      49 +/* Check if sorted array contains any value in [lo, hi] */
+      50 +static bool sorted_has_value_in_range(const long *arr, int len,
+      51 +                                      long lo, long hi)
+      52 +{
+      53 +    if (len == 0 || lo > hi)
+      54 +        return false;
+      55 +
+      56 +    /* Binary search for first element >= lo */
+      57 +    int left = 0, right = len;
+      58 +    while (left < right) {
+      59 +        int mid = left + (right - left) / 2;
+      60 +        if (arr[mid] < lo)
+      61 +            left = mid + 1;
+      62 +        else
+      63 +            right = mid;
+      64 +    }
+      65 +    return (left < len && arr[left] <= hi);
+      66 +}
+      67 +
+      68 +/* Compute n_min, n_max for d-digit numbers of the form 2n²+2n+1. */
+      69  static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max)
+      70  {
+      71      mpz_t target, sq;
+      72      mpz_init(target);
+      73      mpz_init(sq);
+      74
+      46 -    /* n_min: solve 2n²+2n+1 >= 10^(d-1)
+      47 -     *   → n >= (sqrt(2·10^(d-1) - 1) - 1) / 2, take ceiling */
+      75 +    /* n_min: solve 2n²+2n+1 >= 10^(d-1) */
+      76      mpz_ui_pow_ui(target, 10, d - 1);
+      77      mpz_mul_ui(target, target, 2);
+      78      mpz_sub_ui(target, target, 1);
+     ...
+      81      mpz_fdiv_q_ui(n_min, sq, 2);
+      82      mpz_add_ui(n_min, n_min, 1);
+      83
+      56 -    /* Verify n_min: 2·n_min²+2·n_min+1 must have d digits.
+      57 -     * If not, increment. (guards against sqrt rounding) */
+      84 +    /* Verify n_min produces d digits (guards against sqrt rounding) */
+      85      mpz_t check, lo_bound;
+      86      mpz_init(check);
+      87      mpz_init(lo_bound);
+     ...
+       95      mpz_clear(check);
+       96      mpz_clear(lo_bound);
+       97
+       71 -    /* n_max: solve 2n²+2n+1 < 10^d
+       72 -     *   → n <= (sqrt(2·10^d - 1) - 1) / 2, take floor */
+       98 +    /* n_max: solve 2n²+2n+1 < 10^d */
+       99      mpz_ui_pow_ui(target, 10, d);
+      100      mpz_mul_ui(target, target, 2);
+      101      mpz_sub_ui(target, target, 1);
+     ...
+      107      mpz_clear(sq);
+      108  }
+      109
+       84 -/* Compute n bounds for a specific first-k prefix f within d-digit numbers:
+       85 - *   f·10^(d-k) <= 2n²+2n+1 < (f+1)·10^(d-k)
+      110 +/* Compute first-k-digit prefix of p = 2n²+2n+1 for given n.
+      111 + * Returns floor(p / 10^(d-k)).
+      112   */
+       87 -static void prefix_n_bounds(int d, int k, long f,
+       88 -                            mpz_t n_lo, mpz_t n_hi)
+      113 +static long compute_first_k(mpz_t n, int d, int k, mpz_t tmp_p, mpz_t tmp_pow)
+      114  {
+       90 -    mpz_t target, sq;
+       91 -    mpz_init(target);
+       92 -    mpz_init(sq);
+      115 +    /* p = 2n² + 2n + 1 */
+      116 +    mpz_mul(tmp_p, n, n);
+      117 +    mpz_mul_ui(tmp_p, tmp_p, 2);
+      118 +    mpz_addmul_ui(tmp_p, n, 2);
+      119 +    mpz_add_ui(tmp_p, tmp_p, 1);
+      120
+       94 -    /* n_lo: 2n²+2n+1 >= f·10^(d-k) */
+       95 -    mpz_ui_pow_ui(target, 10, d - k);
+       96 -    mpz_mul_ui(target, target, (unsigned long)f);
+       97 -    mpz_mul_ui(target, target, 2);
+       98 -    mpz_sub_ui(target, target, 1);
+       99 -    if (mpz_sgn(target) < 0)
+      100 -        mpz_set_ui(target, 0);
+      101 -    mpz_sqrt(sq, target);
+      102 -    mpz_sub_ui(sq, sq, 1);
+      103 -    mpz_fdiv_q_ui(n_lo, sq, 2);
+      104 -    mpz_add_ui(n_lo, n_lo, 1);
+      121 +    /* divide by 10^(d-k) */
+      122 +    mpz_ui_pow_ui(tmp_pow, 10, d - k);
+      123 +    mpz_tdiv_q(tmp_p, tmp_p, tmp_pow);
+      124
+      106 -    /* n_hi: 2n²+2n+1 < (f+1)·10^(d-k) */
+      107 -    mpz_ui_pow_ui(target, 10, d - k);
+      108 -    mpz_mul_ui(target, target, (unsigned long)(f + 1));
+      109 -    mpz_mul_ui(target, target, 2);
+      110 -    mpz_sub_ui(target, target, 1);
+      111 -    mpz_sqrt(sq, target);
+      112 -    mpz_sub_ui(sq, sq, 1);
+      113 -    mpz_fdiv_q_ui(n_hi, sq, 2);
+      114 - 
+      115 -    mpz_clear(target);
+      116 -    mpz_clear(sq);
+      125 +    return mpz_get_ui(tmp_p);
+      126  }
+      127
+      119 -/* Check if there exists an integer n ≡ r (mod stride) in [lo, hi] */
+      120 -static bool has_residue_in_range(mpz_t lo, mpz_t hi,
+      128 +/* Find first n >= lo with n ≡ r (mod stride) */
+      129 +static void first_n_with_residue(mpz_t result, mpz_t lo,
+      130                                   long r, long stride)
+      131  {
+      123 -    if (mpz_cmp(lo, hi) > 0)
+      124 -        return false;
+      125 - 
+      132      unsigned long lo_mod = mpz_fdiv_ui(lo, (unsigned long)stride);
+      133      long gap = (((long)r - (long)lo_mod) % stride + stride) % stride;
+      134 +    mpz_add_ui(result, lo, (unsigned long)gap);
+      135 +}
+      136
+      129 -    mpz_t first_n;
+      130 -    mpz_init(first_n);
+      131 -    mpz_add_ui(first_n, lo, (unsigned long)gap);
+      132 - 
+      133 -    bool result = (mpz_cmp(first_n, hi) <= 0);
+      134 -    mpz_clear(first_n);
+      135 -    return result;
+      137 +/* Find last n <= hi with n ≡ r (mod stride) */
+      138 +static void last_n_with_residue(mpz_t result, mpz_t hi,
+      139 +                                long r, long stride)
+      140 +{
+      141 +    unsigned long hi_mod = mpz_fdiv_ui(hi, (unsigned long)stride);
+      142 +    long gap = (((long)hi_mod - (long)r) % stride + stride) % stride;
+      143 +    mpz_sub_ui(result, hi, (unsigned long)gap);
+      144  }
+      145
+      146  int main(int argc, char *argv[])
+     ...
+      159          for (int i = 0; i < k; i++)
+      160              mod *= 10;
+      161
+      154 -        long prefix_min = mod / 10;   /* 10^(k-1) — smallest k-digit number */
+      162 +        long prefix_min = mod / 10;   /* 10^(k-1) */
+      163
+      156 -        /* Phase 1: Build VALID_ENDINGS — all possible last-k-digit
+      157 -         * patterns of numbers of the form 2n²+2n+1 */
+      164 +        /* Phase 1: Build VALID_ENDINGS and reverse lookup.
+      165 +         * For each valid ending, store which residues produce it. */
+      166          bool *is_valid_ending = calloc(mod, sizeof(bool));
+      167 +        long *endings = malloc(mod * sizeof(long));  /* ending for each r */
+      168          int num_endings = 0;
+      169
+      170          for (long n = 0; n < mod; n++) {
+      162 -            /* Use unsigned long long to avoid overflow for k >= 5 */
+      171              unsigned long long nn = (unsigned long long)n;
+      164 -            unsigned long long e = (2*nn*nn + 2*nn + 1) % (unsigned long long)mod;
+      172 +            long e = (long)((2*nn*nn + 2*nn + 1) % (unsigned long long)mod);
+      173 +            endings[n] = e;
+      174              if (!is_valid_ending[e]) {
+      175                  is_valid_ending[e] = true;
+      176                  num_endings++;
+      177              }
+      178          }
+      179
+      171 -        /* Phase 2: Build VALID_FIRSTS — for each valid ending, its
+      172 -         * reversal gives a required first-k-digit prefix of p.
+      173 -         * This set represents all first-k prefixes that are compatible
+      174 -         * with the reversal having a valid ending. */
+      175 -        bool *is_valid_first = calloc(mod, sizeof(bool));
+      180 +        /* Phase 2: Build VALID_FIRSTS as a sorted array for fast
+      181 +         * range queries. A first-k prefix f is valid if reverse_k(f)
+      182 +         * is a valid ending (ensures last-k of q is achievable). */
+      183 +        long *valid_firsts = malloc(mod * sizeof(long));
+      184          int num_firsts = 0;
+      185 +        bool *is_valid_first = calloc(mod, sizeof(bool));
+      186
+      187          for (long e = 0; e < mod; e++) {
+      188              if (!is_valid_ending[e])
+     ...
+      190              long f = reverse_k(e, k);
+      191              if (f >= prefix_min && !is_valid_first[f]) {
+      192                  is_valid_first[f] = true;
+      184 -                num_firsts++;
+      193 +                valid_firsts[num_firsts++] = f;
+      194              }
+      195          }
+      196 +        qsort(valid_firsts, num_firsts, sizeof(long), cmp_long);
+      197
+      198 +        /* Phase 2b: Build reverse residue lookup.
+      199 +         * For each valid ending e, store the list of m residues
+      200 +         * that produce it (needed for q-side check). */
+      201 +        /* residues_for_ending[e] = array of r values where endings[r] == e */
+      202 +        int *ending_count = calloc(mod, sizeof(int));
+      203 +        for (long r = 0; r < mod; r++)
+      204 +            if (is_valid_ending[endings[r]])
+      205 +                ending_count[endings[r]]++;
+      206 +
+      207 +        /* Flatten into a single array with index pointers */
+      208 +        int *ending_offset = malloc(mod * sizeof(int));
+      209 +        int total_residues = 0;
+      210 +        for (long e = 0; e < mod; e++) {
+      211 +            ending_offset[e] = total_residues;
+      212 +            total_residues += ending_count[e];
+      213 +        }
+      214 +        long *ending_residues = malloc(total_residues * sizeof(long));
+      215 +        int *fill = calloc(mod, sizeof(int));
+      216 +        for (long r = 0; r < mod; r++) {
+      217 +            long e = endings[r];
+      218 +            if (is_valid_ending[e]) {
+      219 +                ending_residues[ending_offset[e] + fill[e]] = r;
+      220 +                fill[e]++;
+      221 +            }
+      222 +        }
+      223 +        free(fill);
+      224 +
+      225          printf("  k=%d: valid_endings = %d / %ld (%.2f%%)  "
+      226                 "valid_firsts = %d\n",
+      227                 k, num_endings, mod,
+      228                 100.0 * num_endings / mod, num_firsts);
+      229          printf("  ---------------------------------------------------\n");
+      230
+      194 -        /* Phase 3: For each digit count d, check feasibility */
+      195 -        mpz_t n_min, n_max, n_lo, n_hi;
+      231 +        /* Phase 3: For each digit count d, check feasibility.
+      232 +         *
+      233 +         * For each residue r (p-side):
+      234 +         *   1. Compute range of achievable first-k prefixes for p
+      235 +         *   2. Check if any valid first falls in that range (p-side pass)
+      236 +         *   3. For each matching first-k prefix f:
+      237 +         *      - q's last-k = reverse_k(f) → find m residues producing this
+      238 +         *      - q's first-k = reverse_k(ending_of_p)
+      239 +         *      - Check if any such m achieves that first-k prefix (q-side pass)
+      240 +         */
+      241 +        mpz_t n_min, n_max, n_first, n_last, tmp_p, tmp_pow;
+      242          mpz_init(n_min);
+      243          mpz_init(n_max);
+      198 -        mpz_init(n_lo);
+      199 -        mpz_init(n_hi);
+      244 +        mpz_init(n_first);
+      245 +        mpz_init(n_last);
+      246 +        mpz_init(tmp_p);
+      247 +        mpz_init(tmp_pow);
+      248
+      249          int obstruction_count = 0;
+      250
+     ...
+      254
+      255              int survivors = 0;
+      256
+      209 -            for (long r = 0; r < mod && survivors < 10000; r++) {
+      210 -                unsigned long long rr = (unsigned long long)r;
+      211 -                unsigned long long ending =
+      212 -                    (2*rr*rr + 2*rr + 1) % (unsigned long long)mod;
+      213 -                if (!is_valid_ending[ending])
+      257 +            for (long r = 0; r < mod; r++) {
+      258 +                long p_ending = endings[r];
+      259 +
+      260 +                /* First n ≡ r (mod 10^k) in [n_min, n_max] */
+      261 +                first_n_with_residue(n_first, n_min, r, mod);
+      262 +                if (mpz_cmp(n_first, n_max) > 0)
+      263                      continue;
+      264
+      216 -                for (long f = prefix_min; f < mod; f++) {
+      217 -                    if (!is_valid_first[f])
+      265 +                /* Last n ≡ r (mod 10^k) in [n_min, n_max] */
+      266 +                last_n_with_residue(n_last, n_max, r, mod);
+      267 +
+      268 +                /* Compute range of first-k prefixes achievable by p */
+      269 +                long fk_min = compute_first_k(n_first, d, k, tmp_p, tmp_pow);
+      270 +                long fk_max = compute_first_k(n_last, d, k, tmp_p, tmp_pow);
+      271 +
+      272 +                /* Check p-side: any valid first in [fk_min, fk_max]? */
+      273 +                if (!sorted_has_value_in_range(valid_firsts, num_firsts,
+      274 +                                               fk_min, fk_max))
+      275 +                    continue;
+      276 +
+      277 +                /* P-side passed. Now check q-side for each valid first
+      278 +                 * in [fk_min, fk_max]. */
+      279 +                bool q_ok = false;
+      280 +
+      281 +                /* Find valid firsts in [fk_min, fk_max] */
+      282 +                int left = 0, right = num_firsts;
+      283 +                while (left < right) {
+      284 +                    int mid = left + (right - left) / 2;
+      285 +                    if (valid_firsts[mid] < fk_min)
+      286 +                        left = mid + 1;
+      287 +                    else
+      288 +                        right = mid;
+      289 +                }
+      290 +
+      291 +                for (int fi = left;
+      292 +                     fi < num_firsts && valid_firsts[fi] <= fk_max;
+      293 +                     fi++) {
+      294 +                    long f = valid_firsts[fi];
+      295 +
+      296 +                    /* q's last-k digits = reverse_k(f) */
+      297 +                    long q_ending = reverse_k(f, k);
+      298 +
+      299 +                    /* q's first-k digits = reverse_k(p_ending) */
+      300 +                    long q_first = reverse_k(p_ending, k);
+      301 +
+      302 +                    /* q_first must be a valid k-digit prefix */
+      303 +                    if (q_first < prefix_min)
+      304                          continue;
+      305
+      220 -                    prefix_n_bounds(d, k, f, n_lo, n_hi);
+      306 +                    /* q_first must itself be a valid first (so that
+      307 +                     * last-k of p = reverse_k(q_first) is valid — but
+      308 +                     * that's p_ending which is valid by construction).
+      309 +                     * The real check: q_ending must be a valid ending. */
+      310 +                    if (!is_valid_ending[q_ending])
+      311 +                        continue;
+      312
+      222 -                    /* Intersect with [n_min, n_max] */
+      223 -                    if (mpz_cmp(n_lo, n_min) < 0)
+      224 -                        mpz_set(n_lo, n_min);
+      225 -                    if (mpz_cmp(n_hi, n_max) > 0)
+      226 -                        mpz_set(n_hi, n_max);
+      313 +                    /* Find m residues that produce q_ending */
+      314 +                    int qe_count = ending_count[q_ending];
+      315 +                    int qe_off = ending_offset[q_ending];
+      316
+      228 -                    if (has_residue_in_range(n_lo, n_hi, r, mod)) {
+      229 -                        survivors++;
+      230 -                        break;  /* this r survived, move to next r */
+      317 +                    for (int mi = 0; mi < qe_count; mi++) {
+      318 +                        long m_r = ending_residues[qe_off + mi];
+      319 +
+      320 +                        /* Check: any m ≡ m_r (mod 10^k) in [n_min,n_max]
+      321 +                         * that produces first-k = q_first? */
+      322 +                        mpz_t m_first, m_last;
+      323 +                        mpz_init(m_first);
+      324 +                        mpz_init(m_last);
+      325 +
+      326 +                        first_n_with_residue(m_first, n_min, m_r, mod);
+      327 +                        if (mpz_cmp(m_first, n_max) <= 0) {
+      328 +                            last_n_with_residue(m_last, n_max, m_r, mod);
+      329 +
+      330 +                            long mk_min = compute_first_k(m_first, d, k,
+      331 +                                                          tmp_p, tmp_pow);
+      332 +                            long mk_max = compute_first_k(m_last, d, k,
+      333 +                                                          tmp_p, tmp_pow);
+      334 +
+      335 +                            if (q_first >= mk_min && q_first <= mk_max) {
+      336 +                                q_ok = true;
+      337 +                            }
+      338 +                        }
+      339 +
+      340 +                        mpz_clear(m_first);
+      341 +                        mpz_clear(m_last);
+      342 +
+      343 +                        if (q_ok)
+      344 +                            break;
+      345                      }
+      346 +
+      347 +                    if (q_ok)
+      348 +                        break;
+      349                  }
+      350 +
+      351 +                if (q_ok)
+      352 +                    survivors++;
+      353              }
+      354
+      355              const char *tag = "";
+     ...
+      359              }
+      360
+      361              printf("    d=%2d  survivors = %6d%s\n", d, survivors, tag);
+      362 +            fflush(stdout);
+      363          }
+      364
+      365          printf("\n  k=%d summary: %d obstructions found out of %d "
+     ...
+      368
+      369          free(is_valid_ending);
+      370          free(is_valid_first);
+      371 +        free(endings);
+      372 +        free(valid_firsts);
+      373 +        free(ending_count);
+      374 +        free(ending_offset);
+      375 +        free(ending_residues);
+      376 +
+      377          mpz_clear(n_min);
+      378          mpz_clear(n_max);
+      252 -        mpz_clear(n_lo);
+      253 -        mpz_clear(n_hi);
+      379 +        mpz_clear(n_first);
+      380 +        mpz_clear(n_last);
+      381 +        mpz_clear(tmp_p);
+      382 +        mpz_clear(tmp_pow);
+      383      }
+      384
+      385      printf("=====================================================\n");
+
+● Bash(make 2>&1)
+  ⎿  gcc -O2 -std=c99 -Wall -Wextra -o mod_obstruct mod_obstruct.c -lgmp
+
+● Clean build. Now let's run k=3 and k=4 to see the difference with the two-sided constraint.
+
+● Bash(./mod_obstruct 50 4 2>&1)
+  ⎿    Modular Obstruction Search for Bi-Quadratic Emirps
+     =====================================================
+       max_d = 50    max_k = 4
+     … +74 lines (ctrl+o to expand)
+
+● Now that's interesting. Look at these results:
+
+  The two-sided constraint made a huge difference:
+  - k=3, d=4: went from 5 survivors to 0 (OBSTRUCTION!)
+  - k=3, d=6: went from 72 survivors to 0 (OBSTRUCTION!)
+  - k=3, d=5: went from 27 to 6 — and those 6 include our known pair at n=79,85
+
+  k=4 results are even more encouraging:
+  - d=6: OBSTRUCTION (confirmed)
+  - d=7: only 7 survivors (down from 599 at k=3)
+  - d=8: only 2 survivors
+  - d=9: saturates at 5930, then 10000 for d≥10
+
+  The pattern is clear:
+  - Small d: the constraints are very tight, finding obstructions
+  - As d grows, the n-range widens and everything passes
+  - Higher k pushes the saturation point further out
+
+  The d=5 result with 6 survivors at both k=3 and k=4 is a great sanity check — our known pair (12641 ↔ 14621, both 5-digit) 
+  should survive, and 6 residues is a tiny set we could enumerate to confirm.
+
+  The saturation at d≥9 (k=3) and d≥10 (k=4) confirms the scaling analysis: we need k ≈ d/3 to maintain constraint pressure. 
+  To get obstructions at d=15, we'd need k≈5. For d=30, k≈10.
+
+  Want me to try k=5 with the optimized code? It should be much faster now — no more inner-loop-per-valid-first. Or we could 
+  first examine those 6 d=5 survivors to verify the known pair is among them.
+
+✻ Churned for 7m 47s
+
+● Background command "First test run: d up to 30, k up to 5" failed with exit code 143
+
+● That's just the killed process from earlier — we already moved past it. The new optimized version ran successfully and gave 
+  us results.
+
+  Want to examine the 6 d=5 survivors, or push to k=5?
+
+❯ since we're here lets chk the d=5 first then proceed???                                                                                                                                                           
+
+● Let's write a quick verifier that brute-forces all 5-digit candidates and shows exactly what survives.
+
+● Write(check_d5.c)
+  ⎿  Wrote 126 lines to check_d5.c
+       1 /* check_d5.c — Enumerate all 5-digit bi-quadratic emirp candidates.
+       2  * Shows every n where p=2n²+2n+1 has 5 digits and rev(p) is also
+       3  * of the form 2m²+2m+1.
+       4  *
+       5  * Build: gcc -O2 -std=c99 -o check_d5 check_d5.c -lgmp
+       6  */
+       7
+       8 #include <stdio.h>
+       9 #include <stdlib.h>
+      10 #include <stdbool.h>
+     … +116 lines (ctrl+o to expand)
+
+● Bash(gcc -O2 -std=c99 -Wall -o check_d5 check_d5.c -lgmp && ./check_d5)
+  ⎿    5-Digit Bi-Quadratic Emirp Candidate Enumeration
+     ====================================================
+     … +14 lines (ctrl+o to expand)
+
+● There they are — all 6 survivors laid bare.
+
+  Exactly 6 structural matches, perfectly symmetric:
+
+  ┌─────┬───────┬────────┬─────┬────────────────────────┐
+  │  n  │   p   │ rev(p) │  m  │         Result         │
+  ├─────┼───────┼────────┼─────┼────────────────────────┤
+  │ 72  │ 10513 │ 31501  │ 125 │ p prime, q composite   │
+  ├─────┼───────┼────────┼─────┼────────────────────────┤
+  │ 79  │ 12641 │ 14621  │ 85  │ CONVERSE PAIR          │
+  ├─────┼───────┼────────┼─────┼────────────────────────┤
+  │ 84  │ 14281 │ 18241  │ 95  │ p prime, q composite   │
+  ├─────┼───────┼────────┼─────┼────────────────────────┤
+  │ 85  │ 14621 │ 12641  │ 79  │ CONVERSE PAIR (mirror) │
+  ├─────┼───────┼────────┼─────┼────────────────────────┤
+  │ 95  │ 18241 │ 14281  │ 84  │ p composite, q prime   │
+  ├─────┼───────┼────────┼─────┼────────────────────────┤
+  │ 125 │ 31501 │ 10513  │ 72  │ p composite, q prime   │
+  └─────┴───────┴────────┴─────┴────────────────────────┘
+
+  Three pairs of (n, m) that are structural mirrors of each other: (72,125), (79,85), (84,95). Only the (79,85) pair has 
+  both sides prime — that's our known pair counted from both directions.
+
+  The obstruction program's count of 6 matches perfectly. The modular approach is working correctly — and the only thing 
+  separating the other 4 candidates from being converse pairs is the primality filter. The structural constraints alone 
+  are already razor-thin at d=5.
+
+  Ready to push to k=5 now?
+
+✻ Brewed for 50s
+
+❯ yes, let's try k=5                                                                                                                                                                                                
+
+● Bash(./mod_obstruct 50 5 2>&1)
+  ⎿    Modular Obstruction Search for Bi-Quadratic Emirps
+     =====================================================
+       max_d = 50    max_k = 5
+     … +74 lines (ctrl+o to expand)
+
+● Excellent — k=5 results are very encouraging:
+
+  ┌─────┬───────────┬───────────┬───────────┐
+  │  d  │    k=3    │    k=4    │    k=5    │
+  ├─────┼───────────┼───────────┼───────────┤
+  │ 4   │ 0         │ —         │ —         │
+  ├─────┼───────────┼───────────┼───────────┤
+  │ 5   │ 6         │ 6         │ —         │
+  ├─────┼───────────┼───────────┼───────────┤
+  │ 6   │ 0         │ 0         │ 0         │
+  ├─────┼───────────┼───────────┼───────────┤
+  │ 7   │ 599       │ 7         │ 7         │
+  ├─────┼───────────┼───────────┼───────────┤
+  │ 8   │ 1000      │ 2         │ 2         │
+  ├─────┼───────────┼───────────┼───────────┤
+  │ 9   │ 1000      │ 5930      │ 6         │
+  ├─────┼───────────┼───────────┼───────────┤
+  │ 10  │ 1000      │ 10000     │ 0         │
+  ├─────┼───────────┼───────────┼───────────┤
+  │ 11  │ 1000      │ 10000     │ 59227     │
+  ├─────┼───────────┼───────────┼───────────┤
+  │ 12+ │ saturated │ saturated │ saturated │
+  └─────┴───────────┴───────────┴───────────┘
+
+  The pattern holds perfectly:
+  - d=10 is a NEW OBSTRUCTION at k=5 — impossible for a 10-digit converse pair to exist
+  - d=9 dropped from 5930 (k=4) to just 6 survivors (k=5) — almost an obstruction
+  - d=8 holds steady at 2 survivors across k=4 and k=5
+  - Saturation pushes out ~2 digits per k increment
+
+  The trend confirms the k ≈ d/3 rule. Each bump in k extends the obstruction frontier by about 2-3 digit counts. To get d=15, 
+  we'd need k≈7. For d=20, k≈8-9.
+
+  The d=9 result (only 6 survivors at k=5) is tantalizing — those 6 are worth examining like we did for d=5. If none of them 
+  produce primes, d=9 is effectively dead too.
+
+  Two paths forward:
+  1. Examine the thin survivors — d=7 (7), d=8 (2), d=9 (6) — brute-force check if any are actually prime pairs
+  2. Push to k=6 — should take a few minutes with the optimized code, and might kill d=9 and push obstructions to d=12+
+
+  Which appeals to you?
+
+❯ d=9                                                                                                                                                                                                               
+
+● Write(check_d9.c)
+  ⎿  Wrote 123 lines to check_d9.c
+       1 /* check_d9.c — Enumerate all 9-digit bi-quadratic emirp candidates.
+       2  *
+       3  * Build: gcc -O2 -std=c99 -o check_d9 check_d9.c -lgmp
+       4  */
+       5
+       6 #include <stdio.h>
+       7 #include <stdlib.h>
+       8 #include <stdbool.h>
+       9 #include <string.h>
+      10 #include <gmp.h>
+     … +113 lines (ctrl+o to expand)
+
+● Bash(gcc -O2 -std=c99 -Wall -o check_d9 check_d9.c -lgmp && ./check_d9)
+  ⎿    9-Digit Bi-Quadratic Emirp Candidate Enumeration
+     ====================================================
+     … +14 lines (ctrl+o to expand)
+
+● All 6 survivors are composite on both sides. d=9 is dead.
+
+  Three mirror pairs again, same structure as d=5:
+  - (7158, 16475) — both composite
+  - (12613, 16837) — both composite
+  - (16163, 16803) — both composite
+
+  Not a single prime among any of them. The structural filter at k=5 whittled 15,290 candidates down to 6, and primality killed 
+  every last one.
+
+  This means d=9 is effectively a proven obstruction — not from modular constraints alone, but from modular constraints + finite 
+  verification of the survivors. That's a perfectly valid proof technique: show there are only finitely many structural candidates,
+  then check each one.
+
+  Want to do the same for d=7 (7 survivors) and d=8 (2 survivors)? That would give us a complete picture: proven obstructions for 
+  d=4, 6, 10, and verified-dead for d=7, 8, 9 — leaving only d=5 with the known  pair.
+
+✻ Worked for 40s
+
+❯ yes do d=7 and d=8 too                                                                                                                                                                                            
+
+● Write(check_survivors.c)
+  ⎿  Wrote 140 lines to check_survivors.c
+       1 /* check_survivors.c — Enumerate all bi-quadratic emirp candidates
+       2  * for a given digit count d.
+       3  *
+       4  * Build: gcc -O2 -std=c99 -o check_survivors check_survivors.c -lgmp
+       5  * Usage: ./check_survivors <d>
+       6  */
+       7
+       8 #include <stdio.h>
+       9 #include <stdlib.h>
+      10 #include <stdbool.h>
+     … +130 lines (ctrl+o to expand)
+
+● Bash(gcc -O2 -std=c99 -Wall -o check_survivors check_survivors.c -lgmp && ./check_survivors 7 && ./check_survivors 8)
+  ⎿    7-Digit Bi-Quadratic Emirp Candidate Enumeration
+     ====================================================
+     … +27 lines (ctrl+o to expand)
+
+● All dead. Here's the complete picture through d=10:
+
+  ┌─────┬────────────────────┬───────────────────┬─────────────────────────────────────┐
+  │  d  │ Structural matches │  Converse pairs   │               Status                │
+  ├─────┼────────────────────┼───────────────────┼─────────────────────────────────────┤
+  │ 4   │ 0                  │ 0                 │ OBSTRUCTION (modular proof)         │
+  ├─────┼────────────────────┼───────────────────┼─────────────────────────────────────┤
+  │ 5   │ 6                  │ 1 (12641 ↔ 14621) │ THE known pair                      │
+  ├─────┼────────────────────┼───────────────────┼─────────────────────────────────────┤
+  │ 6   │ 0                  │ 0                 │ OBSTRUCTION (modular proof)         │
+  ├─────┼────────────────────┼───────────────────┼─────────────────────────────────────┤
+  │ 7   │ 2                  │ 0                 │ Dead — both composite on one side   │
+  ├─────┼────────────────────┼───────────────────┼─────────────────────────────────────┤
+  │ 8   │ 2                  │ 0                 │ Dead — both composite on both sides │
+  ├─────┼────────────────────┼───────────────────┼─────────────────────────────────────┤
+  │ 9   │ 6                  │ 0                 │ Dead — all composite on both sides  │
+  ├─────┼────────────────────┼───────────────────┼─────────────────────────────────────┤
+  │ 10  │ 0                  │ 0                 │ OBSTRUCTION (modular proof)         │
+  └─────┴────────────────────┴───────────────────┴─────────────────────────────────────┘
+
+  Every digit count from 4 through 10 is now proven to have no converse pairs — either by modular obstruction (d=4, 6, 10) or by 
+  finite enumeration of survivors + primality check (d=7, 8, 9). The only pair lives  at d=5.
+
+  Combined with the exhaustive CVPipe search through 10^28 (covering d=1..28), we now have:
+  - d=1..3: too small (trivially no pairs)
+  - d=4..10: proven no pairs (except the known one at d=5)
+  - d=11..28: verified by exhaustive search
+  - d=29+: open (density model says ~1.2% chance anything exists)
+
+  Pushing k=6 could extend the proven range and potentially kill d=11..14. Want to go for it, or take stock first?
+
+✻ Worked for 39s
+
+❯ Yea claude I'm ready for a little schooling...run me through the modular obstruction method/proof idea again please                                                                                               
+
+● Sure. Let me walk through it from the ground up.
+
+  What We're Trying to Prove
+
+  A converse pair requires two numbers, p and q, where:
+  - p = 2n² + 2n + 1 (sum of consecutive squares)
+  - q = rev(p) in base 10
+  - q = 2m² + 2m + 1 (also a sum of consecutive squares)
+  - Both p and q are prime
+
+  We want to show this is impossible for d-digit numbers (for various d).
+
+  The Core Idea: Digits Are Constrained From Both Ends
+
+  Think of a d-digit number p as a string of digits: a₁ a₂ a₃ ... a_d
+
+  The formula p = 2n² + 2n + 1 creates two independent constraints:
+
+  From the bottom up (modular): The value n mod 10^k completely determines the last k digits of p. This is just modular arithmetic — 
+  when you square a number and take mod 1000, only the last 3 digits of n matter.
+  So for k=3, there are only 1000 possible residues to check, and they produce only 106 distinct last-3-digit patterns (out of 1000 
+  possible). That's the VALID_ENDINGS set.
+
+  From the top down (magnitude): The first k digits of p are determined by how big n is — its magnitude within the d-digit range. Diff-
+  erent n values in [n_min(d), n_max(d)] produce different leading digits.
+
+  The Reversal Ties Them Together
+
+  Here's where it gets powerful. If q = rev(p), then:
+
+  p:  a₁  a₂  a₃  ...  a_{d-2}  a_{d-1}  a_d
+  q:  a_d  a_{d-1}  a_{d-2}  ...  a₃  a₂  a₁
+
+  So:
+  - Last k digits of q = reverse of first k digits of p
+  - First k digits of q = reverse of last k digits of p
+
+  Now apply the consecutive-squares constraint to q = 2m² + 2m + 1:
+  - q's last k digits must be a valid ending (in VALID_ENDINGS)
+  - But q's last k digits = reverse of p's first k digits
+  - Therefore: reverse(first_k(p)) must be in VALID_ENDINGS
+  - Equivalently: first_k(p) must be in VALID_FIRSTS
+
+  That's the p-side constraint.
+
+  The Two-Sided Squeeze
+
+  The program checks both sides:
+
+  P-side: For a given n ≡ r (mod 10^k):
+  1. The last k digits of p are fixed (determined by r)
+  2. The first k digits of p must be in VALID_FIRSTS
+  3. But the first k digits depend on n's magnitude — only certain values are achievable for a given residue r within the d-digit range
+
+  Q-side: If the p-side passes with some first-k prefix f:
+  1. q's last k digits = reverse(f) — must be a valid ending ✓
+  2. q's first k digits = reverse(last_k(p)) — this is fixed
+  3. There must exist some m ≡ s (mod 10^k) that produces q's last-k ending AND whose magnitude gives q's required first-k prefix
+  4. If no such m exists, this combination is impossible
+
+  Why It Tightens With Larger k
+
+  At k=3, VALID_ENDINGS has 106 values out of 1000 (10.6%). The constraint eliminates ~90% of digit patterns. But for large d, the n-range 
+  is so wide that the first-k digits sweep through everything — the magnitude constraint becomes useless.
+
+  At k=5, VALID_ENDINGS has 10,424 out of 100,000 (still ~10.4%). The fraction stays roughly constant, but the magnitude constraint bites 
+  harder because we're matching 5 specific leading digits, not 3. The n-range for a specific 5-digit refix is narrower, so it's harder for 
+  a residue r to land inside it.
+
+  Rule of thumb: you need k ≈ d/3 for the magnitude constraint to be tight enough.
+
+  The Two Proof Techniques
+
+  Pure modular obstruction (d=4, 6, 10): Zero survivors. No value of n can simultaneously satisfy the last-k and first-k constraints for 
+  both p and q. This is a complete proof — no converse pair with this many digits can exist, period.
+
+  Finite enumeration + verification (d=7, 8, 9): A small number of survivors (2, 2, 6). We brute-force check each one: compute the actual 
+  p and q, test primality. All fail. This is also a complete proof — we've exhaustively checked every structural candidate.
+
+  What We've Proven So Far
+
+  d=4:   Impossible  (modular obstruction, k=3)
+  d=5:   ONE pair    (12641 ↔ 14621, only survivor with both sides prime)
+  d=6:   Impossible  (modular obstruction, k=3)
+  d=7:   Impossible  (2 candidates, both fail primality)
+  d=8:   Impossible  (2 candidates, both fail primality)
+  d=9:   Impossible  (6 candidates, all fail primality)
+  d=10:  Impossible  (modular obstruction, k=5)
+
+  To extend this, we push k higher to get obstructions at larger d, and brute-force check any small survivor sets that remain.
+
+  The End Game
+
+  If we can prove obstruction (or verify-and-kill survivors) for every d from 4 through some threshold D, and the exhaustive CVPipe search 
+  covers d up through 28, then we have:
+
+  - d=1..3: trivially no pairs
+  - d=4..D: proven by modular obstruction + finite verification
+  - d=D+1..28: proven by exhaustive search
+  - d=29+: the density model says 1.2% chance — and increasing k might eventually close this too
+
+  The dream scenario: find a k large enough that obstructions appear for ALL d beyond some point. That would be a complete proof of unique-
+  ness.
+
+✻ Churned for 38s
+
+❯ If I understand correctly we could have used this approach starting at d=4 and been to this point early on???                                                                                                     
+
+● Not quite — the pieces needed each other.
+
+  The modular obstruction tells you there are no structural candidates. But "structural candidate" means both p and rev(p) are sums of consec-
+  utive squares. It says nothing about primality. For d=7, 8, 9 there ARE structural candidates — the obstruction alone doesn't kill them. 
+  You need the brute-force primality check to finish the job.
+
+  But here's the real issue: the obstruction only works for small d with small k. Look at the results:
+
+  - k=3 gets obstructions at d=4, 6. That's it.
+  - k=4 adds nothing new (just d=6 again).
+  - k=5 gets d=10. And saturates by d=11.
+
+  For d=11 through d=28, we have no obstruction and too many survivors to check individually. At k=5, d=11 has 59,227 survivors — you can't 
+  brute-force primality test all of those (well, you could for d=11, but
+  by d=15 the survivor count would be enormous and each primality test would be on huge numbers).
+
+  That's where CVPipe comes in. The exhaustive search covers d=11..28 by actually testing every candidate for primality. No modular shortcut 
+  can replace that yet.
+
+  So the real timeline is:
+
+  1. CVPipe search to 10^28 — covers d=1..28 by brute force
+  2. Modular obstruction — independently proves d=4, 6, 10 (and with finite verification, d=7, 8, 9)
+  3. Together — they overlap and reinforce each other for d=4..10, and CVPipe alone handles d=11..28
+
+  What you couldn't have done is skip the CVPipe runs. The obstruction approach gives you isolated kills at specific digit counts, but it can't 
+  yet cover the full range without the exhaustive search backing it up.
+
+  Where it gets exciting: if we can push k high enough to get obstructions (or small survivor sets) for d=11, 12, 13... and eventually for ALL 
+  d beyond some threshold, then the exhaustive search becomes redundant and we have a pure proof. That's the goal — we're just not there yet.
+
+❯ Wow, can you further define 'saturates, saturation' in this context?                                                                                                                                              
+
+● Good question. Let me be precise.
+
+  Saturation here means: every residue class survives. The survivor count equals the total number of residues (10^k), meaning the modular con-
+  straint has stopped filtering anything.
+
+  Here's why it happens:
+
+  For a given residue r (mod 10^k), the program asks: "Is there any n ≡ r (mod 10^k) in the d-digit range that produces a valid first-k prefix?"
+
+  The n values with residue r are spaced 10^k apart:
+
+  r, r + 10^k, r + 2·10^k, r + 3·10^k, ...
+
+  For d-digit numbers, n ranges from n_min(d) to n_max(d). The number of n values with residue r in that range is roughly:
+
+  (n_max - n_min) / 10^k
+
+  At d=9, k=5: n ranges from ~7,071 to ~22,360. That's ~15,290 values. Divided by 10^5 = 100,000... that's less than 1 value per residue. Most res-
+  idues have 0 or 1 candidate n. So the first-k prefix is tightly constrained — you either hit a valid first or you don't. The constraint has teeth.
+
+  At d=11, k=5: n ranges from ~70,711 to ~223,606. That's ~152,895 values. Divided by 100,000 = roughly 1.5 per residue. Still tight, but the 59,227 
+  survivors show most residues are finding a match.
+
+  At d=12, k=5: n ranges from ~223,607 to ~707,106. That's ~483,500 values. Divided by 100,000 = roughly 4.8 per residue. Each residue has multiple n 
+  values, each producing a different first-5 prefix. With ~5 shots at hitting one of the 10,424 valid firsts (out of 90,000 possible 5-digit prefixes, 
+  ~11.6% chance per shot), the probability of at least one hit is:
+
+  1 - (1 - 0.116)^5 ≈ 46%
+
+  That's not saturation yet, but by d=13 you'd have ~15 shots per residue and the miss probability drops to near zero. Every residue finds a valid 
+  first-k prefix. That's saturation.
+
+  In plain terms: saturation is when the d-digit n-range is so wide relative to 10^k that every residue class has enough n values to "try" different 
+  leading-digit combinations, and statistically all of them find at least one match. The constraint becomes vacuous — it can't distinguish possible 
+  from impossible anymore.
+
+  The fix: increase k. This simultaneously:
+  - Makes the residue stride wider (10^k), so fewer n values per residue
+  - Makes VALID_FIRSTS more selective (matching k leading digits instead of fewer)
+
+  Both effects push the saturation point to higher d.
+
+❯ ok I think I'm getting it...now same thing with 'modular obstruction' please                                                                                                                                      
+
+● A modular obstruction is when the constraints are mathematically incompatible — not just unlikely, but impossible.
+
+  Let's build it from a simple example.
+
+  Start With Mod 10 (k=1)
+
+  The formula p = 2n² + 2n + 1 can only produce certain last digits:
+
+  n mod 10:  0  1  2  3  4  5  6  7  8  9
+  p mod 10:  1  5  3  5  1  1  5  3  5  1
+
+  So p can only end in 1, 3, or 5. That's a constraint — p can never end in 7, for instance.
+
+  Now, if q = rev(p), then q's first digit = p's last digit. And q's first digit can't be 0 (it's a d-digit number). So p's last digit must be a 
+  valid leading digit for q. All of {1, 3, 5} are valid leading digits, so no obstruction at k=1.
+
+  Now Mod 100 (k=2) — The Zone Skip
+
+  At k=2, there are only 6 valid last-2-digit patterns for 2n² + 2n + 1:
+
+  {01, 13, 21, 41, 61, 81}
+
+  The reverse of each gives the required first 2 digits of p:
+
+  01 → 10,  13 → 31,  21 → 12,  41 → 14,  61 → 16,  81 → 18
+
+  So the first 2 digits of p must be in {10, 12, 14, 16, 18, 31}. That's your zone-skip — same thing, just applied at k=2. Not an obstruction (valid 
+  combinations exist), but a powerful filter.
+
+  When It Becomes an Obstruction
+
+  An obstruction happens when no valid combination of (last-k, first-k) can simultaneously exist for both p and q.
+
+  Think of it as a chain of requirements:
+
+  last k of p  →  determined by n mod 10^k         ✓ (always valid)
+  first k of q =  reverse(last k of p)             → must be achievable
+  last k of q  =  reverse(first k of p)            → must be valid ending
+  first k of p →  determined by n's magnitude       → must be in VALID_FIRSTS
+
+  For the q side, the same chain applies to m:
+
+  last k of q  →  determined by m mod 10^k         → must match reverse(first k of p)
+  first k of q =  reverse(last k of p)             → m must achieve this prefix
+
+  kAn obstruction at digit count d means: for every possible residue r (mod 10^k), and for every valid first-k prefix f, at least one link in this 
+  chain breaks.
+
+  Maybe r can't produce any valid first-k prefix at this magnitude. Or maybe it can, but the required m residue can't achieve the required first-k 
+  prefix for q. Every path through the chain is blocked.
+
+  Concrete Example: d=6, k=3
+
+  For 6-digit numbers of the form 2n² + 2n + 1, n ranges from 224 to 706 — only 483 values.
+
+  The program checks all 1000 residues (mod 1000). For each one:
+
+  1. What are the last 3 digits of p? (fixed by residue)
+  2. What first-3 prefixes are achievable? (n ≡ r mod 1000, only a few n in range)
+  3. Are any of those prefixes in VALID_FIRSTS? (maybe)
+  4. If yes, does the q-side also work? (check m's constraints)
+
+  Result: zero survivors. Every residue fails at some step. There is no combination of (n mod 1000, first 3 digits, m mod 1000, q's first 3 digits) 
+  that is simultaneously consistent.
+
+  The system of constraints is overconstrained — like having 4 equations and 2 unknowns with no solution.
+
+  Why This Is a Proof
+
+  This isn't probabilistic. It's not "unlikely." It's exhaustive case analysis:
+
+  - There are exactly 1000 residue classes to check
+  - For each, there are finitely many achievable first-k prefixes
+  - For each of those, there are finitely many m residues to check
+  - The program checked every single one
+  - None work
+
+  That's the same logical structure as a mathematical proof by exhaustion — like the four-color theorem, which was proven by computer by checking all 
+  possible cases.
+
+  What It Doesn't Do
+
+  An obstruction at d=6 says nothing about d=7 or d=15. Each digit count is a separate problem with different n-ranges and different constraint geome-
+  try. That's why we need to check each d individually, and why saturation prevents us from proving large d with small k.
+
+  The hope is that as k increases, obstructions appear at larger and larger d — and eventually we find a k where they appear for all d beyond some 
+  threshold.
+
+✻ Baked for 32s
+
+❯ so this is just an extension of our gatekeeper logic to more digits?                                                                                                                                              
+
+● Exactly. It's the same idea, just pushed further.
+
+  The gatekeeper in CVPipe: check last 2 digits and first 2 digits of p against the 6 valid patterns. If they don't match, skip. That's k=2 modular 
+  filtering applied at runtime to each candidate.
+
+  The obstruction program: check last k digits and first k digits of p and q, for k=3,4,5. If no combination works for a given digit count d, don't 
+  bother searching — it's proven impossible.
+
+  Same logic, different purpose:
+
+  ┌─────────┬──────────────────────────┬─────────────────────────────────┐
+  │         │    CVPipe Gatekeeper     │       Modular Obstruction       │
+  ├─────────┼──────────────────────────┼─────────────────────────────────┤
+  │ k       │ 2                        │ 3, 4, 5, ...                    │
+  ├─────────┼──────────────────────────┼─────────────────────────────────┤
+  │ Checks  │ p only                   │ p and q (both sides)            │
+  ├─────────┼──────────────────────────┼─────────────────────────────────┤
+  │ Purpose │ Skip candidates faster   │ Prove no candidates can exist   │
+  ├─────────┼──────────────────────────┼─────────────────────────────────┤
+  │ Applied │ Per candidate at runtime │ Per digit count, once           │
+  ├─────────┼──────────────────────────┼─────────────────────────────────┤
+  │ Result  │ ~89% filtered out        │ 100% filtered out (obstruction) │
+  └─────────┴──────────────────────────┴─────────────────────────────────┘
+
+  The gatekeeper says "this particular candidate can't be a converse pair." The obstruction says "no candidate with this many digits can ever be a con-
+  verse pair."
+
+  You were already doing the math. We just turned the dial up.
+
+❯ I love it! I hope we're creating logs...do we have ../bi-quad/logs yet?                                                                                                                                           
+
+● Read 1 file (ctrl+o to expand)
+
+● No logs yet. Let me create the directory and capture everything we've done.
+
+● Bash(mkdir -p /home/jim/programming/c/BigFermat/bi-quad/logs)
+  ⎿  Done
+
+● Now let me re-run everything and capture the output.
+
+● Bash(./mod_obstruct 50 5 > logs/mod_obstruct_d50_k5.log 2>&1 && ./check_survivors 5 > logs/check_d5.log 2>&1 && ./check_survivors 7 > logs/check_d7.log 
+  2>&1 && ./che…)
+  ⎿  All logs captured.
+
+● Read 1 file (ctrl+o to expand)
+
+● All captured:
+
+  ┌─────────────────────────┬───────────────────────────────────────────┐
+  │           Log           │                 Contents                  │
+  ├─────────────────────────┼───────────────────────────────────────────┤
+  │ mod_obstruct_d50_k5.log │ Full obstruction run: k=3,4,5 for d=4..50 │
+  ├─────────────────────────┼───────────────────────────────────────────┤
+  │ check_d5.log            │ 6 survivors — includes the known pair     │
+  ├─────────────────────────┼───────────────────────────────────────────┤
+  │ check_d7.log            │ 2 survivors — both fail primality         │
+  ├─────────────────────────┼───────────────────────────────────────────┤
+  │ check_d8.log            │ 2 survivors — both fail primality         │
+  ├─────────────────────────┼───────────────────────────────────────────┤
+  │ check_d9.log            │ 6 survivors — all fail primality          │
+  └─────────────────────────┴───────────────────────────────────────────┘
+
+  Ready to push to k=6?
+
+❯ yes, push to k=6                                                                                                                                                                                                  
+
+● Bash(./mod_obstruct 50 6 2>&1 | tee logs/mod_obstruct_d50_k6.log)
+  ⎿    Modular Obstruction Search for Bi-Quadratic Emirps
+     =====================================================
+       max_d = 50    max_k = 6
+     … +74 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+● The pattern continues perfectly. k=6 results:
+
+  ┌─────┬───────────┬───────────┬───────────────┐
+  │  d  │    k=5    │    k=6    │    Status     │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 7   │ 7         │ 7         │ verify        │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 8   │ 2         │ 2         │ verify        │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 9   │ 6         │ 6         │ verify        │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 10  │ 0         │ 0         │ OBSTRUCTION   │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 11  │ 59,227    │ 5         │ new — verify! │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 12  │ 100,000   │ 2         │ new — verify! │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 13  │ 100,000   │ 591,606   │ still open    │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 14+ │ saturated │ saturated │ —             │
+  └─────┴───────────┴───────────┴───────────────┘
+
+  d=11 and d=12 just cracked open. They went from fully saturated at k=5 to just 5 and 2 survivors at k=6. The two-digit-per-k-step pattern holds:
+
+  - k=5 killed d=10, pushed d=11 to 59K
+  - k=6 pushed d=11 to 5, d=12 to 2, d=13 to 591K
+
+  Let's verify d=11 and d=12 while we're hot. The check_survivors program handles up to d=18 (long arithmetic).
+
+● Bash(./check_survivors 11 2>&1 | tee logs/check_d11.log && ./check_survivors 12 2>&1 | tee logs/check_d12.log)
+  ⎿    11-Digit Bi-Quadratic Emirp Candidate Enumeration
+     ====================================================
+     … +29 lines (ctrl+o to expand)
+
+● All dead. Both d=11 and d=12 — every survivor is composite.
+
+  Here's the updated scoreboard:
+
+  ┌────────┬────────────────────┬────────────────┬───────────────────────────┐
+  │   d    │ Structural matches │ Converse pairs │       Proof method        │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 4      │ 0                  │ 0              │ Modular obstruction (k=3) │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 5      │ 6                  │ 1              │ Known pair: 12641 ↔ 14621 │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 6      │ 0                  │ 0              │ Modular obstruction (k=3) │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 7      │ 2                  │ 0              │ Finite verification       │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 8      │ 2                  │ 0              │ Finite verification       │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 9      │ 6                  │ 0              │ Finite verification       │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 10     │ 0                  │ 0              │ Modular obstruction (k=5) │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 11     │ 4                  │ 0              │ Finite verification       │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 12     │ 2                  │ 0              │ Finite verification       │
+  ├────────┼────────────────────┼────────────────┼───────────────────────────┤
+  │ 13..28 │ —                  │ 0              │ CVPipe exhaustive search  │
+  └────────┴────────────────────┴────────────────┴───────────────────────────┘
+
+  d=4 through d=12 is now proven. Each digit count is independently confirmed — no converse pair can exist except the one at d=5.
+
+  The pattern in survivor counts is beautiful too: they stay tiny (2-7) between obstructions, and each obstruction (d=4, 6, 10, ...) 
+  appears at even digit counts. That even-digit pattern might be worth investigating — could be structural.
+
+  Push to k=7 next?
+
+✻ Cooked for 50s
+
+❯ oh I love having logs displayed                                                                                                                                                                                   
+
+● Ha — tee is your friend! Logs to file AND to screen in one shot.
+
+  Push to k=7?
+
+❯ yes, push to k=7                                                                                                                                                                                                  
+
+● Bash(./mod_obstruct 50 7 2>&1 | tee logs/mod_obstruct_d50_k7.log)
+  ⎿    Modular Obstruction Search for Bi-Quadratic Emirps
+     =====================================================
+       max_d = 50    max_k = 7
+     … +74 lines (ctrl+o to expand)
+  ⎿  (timeout 10m)
+
+❯ I agree claude, lets keep on the look out for ANY pattern/sturture                                                                                                                                                
+
+❯ back in a sec. getting coffee                                                                                                                                                                                     
+
+● k=7 delivered. Enjoy your coffee — here's what's waiting for you when you get back:
+
+  k=7 new results:
+
+  ┌─────┬───────────┬───────────┬───────────────┐
+  │  d  │    k=6    │    k=7    │    Status     │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 13  │ 591,606   │ 4         │ cracked open! │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 14  │ 1,000,000 │ 6         │ cracked open! │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 15  │ saturated │ 5,916,383 │ almost there  │
+  ├─────┼───────────┼───────────┼───────────────┤
+  │ 16+ │ saturated │ saturated │ —             │
+  └─────┴───────────┴───────────┴───────────────┘
+
+  The pattern is rock solid — each k increment cracks 2 more digit counts:
+  - k=5: d=10 obstruction, d=11 cracked
+  - k=6: d=11,12 cracked
+  - k=7: d=13,14 cracked, d=15 nearly there
+
+  And you asked about patterns/structure — look at this:
+
+  The survivor counts between obstructions form a repeating signature:
+  d=8:  2    d=9:  6    d=10: 0 (obstruction)
+  d=11: 5    d=12: 2
+  d=13: 4    d=14: 6
+
+  Small, single-digit survivors every time. They're not random — there's structure in which residue classes survive. And the obstructions 
+  land at even digit counts (d=4, 6, 10) so far.
+
+  When you're back, we should verify d=13 (4 survivors) and d=14 (6 survivors). Those are in check_survivors range (d <= 18). Then decide 
+  whether to push to k=8.
+
+✻ Cogitated for 4m 36s
+
+❯ verify d=13 and d=14                                                                                                                                                                                              
+
+● Bash(./check_survivors 13 2>&1 | tee logs/check_d13.log && ./check_survivors 14 2>&1 | tee logs/check_d14.log)
+  ⎿    13-Digit Bi-Quadratic Emirp Candidate Enumeration
+     ====================================================
+     … +31 lines (ctrl+o to expand)
+
+● All dead. Every survivor is composite on at least one side.
+
+  Notice something interesting — the obstruction program said 4 survivors for d=13 but the brute-force found only 2 structural matches (one 
+  mirror pair). And for d=14, it said 6 but found 6 matches (three mirror pairs). The d=13 discrepancy means 2 of the 4 residues that passed 
+  the modular test don't actually produce structural matches — the modular check is conservative (as it should be for a proof).
+
+  Updated scoreboard:
+
+  ┌────────┬───────────┬───────┬───────────────────────────┐
+  │   d    │ Survivors │ Pairs │       Proof method        │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 4      │ 0         │ 0     │ Modular obstruction (k=3) │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 5      │ 6         │ 1     │ 12641 ↔ 14621             │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 6      │ 0         │ 0     │ Modular obstruction (k=3) │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 7      │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 8      │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 9      │ 6         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 10     │ 0         │ 0     │ Modular obstruction (k=5) │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 11     │ 4         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 12     │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 13     │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 14     │ 6         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 15..28 │ —         │ 0     │ CVPipe exhaustive search  │
+  └────────┴───────────┴───────┴───────────────────────────┘
+
+  d=4 through d=14 is now proven. That's 11 digit counts independently confirmed, with the known pair standing alone at d=5.
+
+  Push to k=8?
+
+❯ yes, push to k=8                                                                                                                                                                                                  
+
+● Bash(./mod_obstruct 50 8 2>&1 | tee logs/mod_obstruct_d50_k8.log)
+  ⎿  Running in the background (↓ to manage)
+  ⎿  (timeout 10m)
+
+● k=8 means 10 million residues — this will take a bit longer. Let me check progress.
+
+● Task Output bj2dfy41d
+  ⎿  
+       Modular Obstruction Search for Bi-Quadratic Emirps
+     =====================================================
+     … +75 lines (ctrl+o to expand)
+
+● Still running — k=8 is through d=20. The key results are already visible. Let me wait for it to finish.
+
+● Task Output bj2dfy41d
+  ⎿  
+       Modular Obstruction Search for Bi-Quadratic Emirps
+     =====================================================
+     … +75 lines (ctrl+o to expand)
+
+● k=8 results are in for the interesting range. It's grinding through the saturated d values now. The key k=8 results:
+
+  ┌─────┬────────────┬────────────┐
+  │  d  │    k=7     │    k=8     │
+  ├─────┼────────────┼────────────┤
+  │ 15  │ 5,916,383  │ 6          │
+  ├─────┼────────────┼────────────┤
+  │ 16  │ 10,000,000 │ 2          │
+  ├─────┼────────────┼────────────┤
+  │ 17  │ saturated  │ 59,161,418 │
+  └─────┴────────────┴────────────┘
+
+  Two more cracked open — right on schedule. Let me wait for it to finish so the log file is complete.
+
+● Task Output bj2dfy41d
+  ⎿  
+       Modular Obstruction Search for Bi-Quadratic Emirps
+     =====================================================
+     … +75 lines (ctrl+o to expand)
+
+● Task Output bj2dfy41d
+  ⎿  
+       Modular Obstruction Search for Bi-Quadratic Emirps
+     =====================================================
+     … +75 lines (ctrl+o to expand)
+
+● Done. Now let's verify d=15 and d=16 — both are in check_survivors range.
+
+● Bash(./check_survivors 15 2>&1 | tee logs/check_d15.log && ./check_survivors 16 2>&1 | tee logs/check_d16.log)
+  ⎿    15-Digit Bi-Quadratic Emirp Candidate Enumeration
+     ====================================================
+     … +27 lines (ctrl+o to expand)
+  ⎿  (timeout 1m)
+
+● All dead. Both composite on both sides.
+
+  The full scoreboard through k=8:                                                                                                                                                                                  
+   
+  ┌────────┬───────────┬───────┬───────────────────────────┐                                                                                                                                                        
+  │   d    │ Survivors │ Pairs │       Proof method        │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 4      │ 0         │ 0     │ Modular obstruction (k=3) │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 5      │ 6         │ 1     │ 12641 ↔ 14621             │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 6      │ 0         │ 0     │ Modular obstruction (k=3) │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 7      │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 8      │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 9      │ 6         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 10     │ 0         │ 0     │ Modular obstruction (k=5) │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 11     │ 4         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 12     │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 13     │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 14     │ 6         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 15     │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 16     │ 2         │ 0     │ Finite verification       │
+  ├────────┼───────────┼───────┼───────────────────────────┤
+  │ 17..28 │ —         │ 0     │ CVPipe exhaustive search  │
+  └────────┴───────────┴───────┴───────────────────────────┘
+
+  d=4 through d=16 is now proven. And notice the survivor pattern is remarkably stable:
+
+  d=7:  2    d=8:  2    d=9:  6    d=10: 0
+  d=11: 4    d=12: 2    d=13: 2    d=14: 6
+  d=15: 2    d=16: 2
+
+  Always single digits. Always composite. The structure is deep — these survivors aren't random near-misses, they're systematic 
+  mirror pairs that fail primality every time.
+
+  We're 1 digit away from d=18, the limit of check_survivors (long arithmetic). Beyond that we'd need a GMP version. Want to push 
+  to k=9, or should we take stock of where we are?
+
+✻ Crunched for 44m 58s
+
+● Background command "Run modular obstruction with k=3..8, d up to 50" completed (exit code 0)
+
+● We already captured that output — it's in logs/mod_obstruct_d50_k8.log. All good.
+
+  Where do you want to go from here? Options:                                                                                                                                                                       
+   
+  1. Push to k=9 — should crack d=17,18 open (but 10^9 residues, will take a while)                                                                                                                                 
+  2. Upgrade check_survivors to GMP — removes the d=18 ceiling so we can verify survivors at any digit count
+  3. Take stock — update the analysis docs with everything we've proven tonight
+
+❯ 3                                                                                                                                                                                                                 
+                                                  
+● Let me update both documents and memory.                                                                                                                                                                          
+                                         
+● Recalled 1 memory, read 2 files (ctrl+o to expand)                                                                                                                                                                
+                                                                                  
+● Now let me update all three files.                                                                                                                                                                                
+                                                            
+● Update(~/programming/c/BigFermat/gmp-cvo/docs/biquadratic_emirps_analysis.md)                                                                                                                                     
+  ⎿  Added 82 lines, removed 38 lines                                                                                                                                                                               
+      281  wall time estimate of 2.9 days and produced zero hits across all pipeline                                                                                                                                
+      282  stages, consistent with the density model.                                                                                                                                                               
+      283                                                                                                                                                                                                           
+      284 -### 8.2 Alternative Approaches                                                                                                                                                                    
+      284 +### 8.2 Modular Obstruction Results (March 2026)                                                                                                                                                         
+      285                                                   
+      286 -Further progress on the uniqueness question is more likely to come from
+      287 -analytical methods than from additional computation.
+      286 +A modular obstruction program (`mod_obstruct`) was developed to prove
+      287 +impossibility of converse pairs at specific digit counts. The method
+      288 +extends the gatekeeper's 2-digit constraint to k digits, checking both
+      289 +the p-side and q-side simultaneously.
+      290
+      289 -**Algebraic and modular obstructions.** The constraint that both p and
+      290 -reverse(p) satisfy the quadratic form 2n² + 2n + 1 imposes divisibility
+      291 -conditions that tighten with digit count. A systematic study of congruence
+      292 -conditions modulo small primes (3, 7, 11, 13, ...) applied to the digit-reversal
+      293 -map may reveal that the system becomes overconstrained for sufficiently many
+      294 -digits, yielding a proof of finiteness for all but finitely many digit lengths.
+      291 +For each digit count d, the program determines all residue classes
+      292 +n mod 10^k that could produce a valid (p, rev(p)) pair where both are
+      293 +sums of consecutive squares. If zero residues survive, no d-digit pair
+      294 +can exist — a complete proof by exhaustive case analysis.
+      295
+      296 -**Carry propagation analysis.** The digit-reversal operation interacts
+      297 -non-trivially with the quadratic form via carry propagation in base 10.
+      298 -Formalizing the relationship between the digit structure of 2n² + 2n + 1 and
+      299 -its reversal may expose structural incompatibilities at large scales.
+      296 +For digit counts with small but nonzero survivor counts, a separate
+      297 +verification program brute-force checks every structural candidate for
+      298 +primality.
+      299
+      301 -**Density refinement.** The heuristic model treats digit reversal as a
+      302 -"random" map. A more refined analysis incorporating the actual distribution
+      303 -of digits in the quadratic sequence could sharpen the constant C and provide
+      304 -rigorous (conditional) bounds on the expected count.
+      300 +**Combined results (obstruction + finite verification):**
+      301
+      306 -**Proof of finiteness.** The convergence of the expected count series does not
+      307 -by itself prove finiteness — it establishes that finiteness is the
+      308 -*probable* outcome. A proof would require showing that the congruence
+      309 -obstructions eventually exclude all residue classes, or that the carry
+      310 -structure of the reversal map is incompatible with the quadratic form beyond
+      311 -a computable bound.
+      302 +| d | Survivors | Method | Result |
+      303 +|---|-----------|--------|--------|
+      304 +| 4 | 0 | Modular obstruction (k=3) | Impossible |
+      305 +| **5** | **6** | **Finite verification** | **1 pair: 12641 ↔ 14621** |
+      306 +| 6 | 0 | Modular obstruction (k=3) | Impossible |
+      307 +| 7 | 2 | Finite verification | All composite |
+      308 +| 8 | 2 | Finite verification | All composite |
+      309 +| 9 | 6 | Finite verification | All composite |
+      310 +| 10 | 0 | Modular obstruction (k=5) | Impossible |
+      311 +| 11 | 4 | Finite verification | All composite |
+      312 +| 12 | 2 | Finite verification | All composite |
+      313 +| 13 | 2 | Finite verification | All composite |
+      314 +| 14 | 6 | Finite verification | All composite |
+      315 +| 15 | 2 | Finite verification | All composite |
+      316 +| 16 | 2 | Finite verification | All composite |
+      317 +| 17..28 | — | CVPipe exhaustive search | No pairs found |
+      318
+      319 +**d=4 through d=16 are independently proven** via modular obstruction and
+      320 +finite verification, without reliance on the exhaustive CVPipe search.
+      321 +The CVPipe search through 10^28 provides overlapping coverage for d=4..28.
+      322 +
+      323 +The obstruction frontier advances 2 digit counts per increment of k,
+      324 +with saturation at approximately d = 2k + 1:
+      325 +
+      326 +| k | New obstructions/cracks | Saturation |
+      327 +|---|------------------------|------------|
+      328 +| 3 | d=4 (obstruction), d=6 (obstruction) | d=8 |
+      329 +| 5 | d=10 (obstruction) | d=11 |
+      330 +| 6 | d=11 (5 survivors), d=12 (2 survivors) | d=13 |
+      331 +| 7 | d=13 (4 survivors), d=14 (6 survivors) | d=15 |
+      332 +| 8 | d=15 (6 survivors), d=16 (2 survivors) | d=17 |
+      333 +
+      334 +The survivor counts between obstructions remain consistently small
+      335 +(2–7 per digit count), and every survivor checked has been composite
+      336 +on at least one side.
+      337 +
+      338 +### 8.3 Remaining Open Questions
+      339 +
+      340 +**d ≥ 17 (beyond current obstruction reach):** Pushing k=9 (10^9
+      341 +residues) should crack d=17,18. Each further k increment requires 10×
+      342 +more computation but extends coverage by 2 digit counts. A GMP-based
+      343 +survivor verifier would remove the d=18 ceiling of the current
+      344 +`long`-arithmetic checker.
+      345 +
+      346 +**Proof of universal obstruction:** The current approach proves
+      347 +impossibility digit-count by digit-count. A universal proof would
+      348 +require showing that obstructions (or finitely many survivors, all
+      349 +composite) persist for ALL d beyond some threshold. The stable pattern
+      350 +of small survivor counts is strong evidence, but not yet a proof.
+      351 +
+      352  ---
+      353
+      354  ## 9. Conclusion
+      355
+      356  The converse prime pair 12641 ↔ 14621 has been verified as the unique
+      318 -bi-quadratic emirp pair below 10^28 through an exhaustive computational
+      319 -search. The probability model, calibrated against this observation, predicts
+      320 -a total expected count of approximately 1.02 pairs across all integers —
+      321 -consistent with exactly one pair existing.
+      357 +bi-quadratic emirp pair below 10^28 through two independent methods:
+      358
+      323 -The series ∑ P(n) converges, establishing that bi-quadratic emirps have
+      324 -finite expected density, in contrast to twin primes or Mersenne primes.
+      325 -The search through 10^28 has captured approximately 98.8% of the total
+      326 -expected pair count, leaving a residual probability of ~1.2% that any
+      327 -additional pair exists.
+      359 +1. **Exhaustive computational search** (CVPipe) through 10^28, covering
+      360 +   all digit counts d ≤ 28.
+      361 +2. **Modular obstruction analysis** proving impossibility for d=4, 6, 10
+      362 +   (pure obstruction) and d=7–9, 11–16 (finite verification of all
+      363 +   structural candidates).
+      364
+      329 -Further computational extension faces severely diminishing returns: the
+      330 -entire region beyond 10^28 would require unbounded computation to search
+      331 -exhaustively, yet contains an expected 0.012 pairs. The known pair is
+      332 -overwhelmingly likely to be unique.
+      365 +The probability model predicts a total expected count of approximately
+      366 +1.02 pairs across all integers — consistent with exactly one pair
+      367 +existing. The search through 10^28 has captured approximately 98.8% of
+      368 +the total expected pair count, leaving a residual probability of ~1.2%
+      369 +that any additional pair exists.
+      370
+      371 +The modular obstruction approach provides a path toward a complete
+      372 +proof of uniqueness that does not depend on exhaustive search. The
+      373 +frontier currently extends through d=16, with each increment of the
+      374 +modular depth k extending coverage by approximately 2 digit counts.
+      375 +
+      376  ---
+      377
+      336 -*Computational work performed February–March 2026 on AMD Threadripper hardware
+      337 -using CVPipe (C/GMP/OpenMP). Search verified through 10^28.*
+      378 +*Computational work performed February–March 2026 on AMD Threadripper
+      379 +hardware. Exhaustive search: CVPipe (C/GMP/OpenMP), verified through
+      380 +10^28. Modular obstruction analysis: mod_obstruct (C/GMP), proven
+      381 +through d=16. Software at ../bi-quad/.*
+
+● Update(~/programming/c/BigFermat/gmp-cvo/docs/biquadratic_emirps_proof_approaches.md)
+  ⎿  Added 35 lines, removed 16 lines
+      142                                                                                                                                                                                                           
+      143  ---
+      144                                                                                                                                                                                                           
+      145 -## Recommendation: Start with Approach 1                                                                                                                                                          
+      145 +## Recommendation: Start with Approach 1 — IMPLEMENTED
+      146
+      147 -The modular obstruction approach is:
+      147 +The modular obstruction approach was implemented (March 2026) and has
+      148 +proven effective. See `../bi-quad/mod_obstruct.c`.
+      149
+      149 -- **Closest to existing work** — the zone-skip is exactly this for 2-digit prefixes
+      150 -- **Computationally verifiable** — can be checked by program
+      151 -- **Could yield a computer-assisted proof** — publishable result
+      150 +### Implementation Details
+      151
+      153 -### Specific Experiment
+      152 +The program checks both the p-side and q-side constraints simultaneously:
+      153
+      155 -Write a program that, for each digit count d from 6 to 30:
+      154 +1. Build VALID_ENDINGS: all possible last-k-digit patterns of 2n²+2n+1
+      155 +   (enumerate n mod 10^k, ~10.4% of patterns are valid)
+      156 +2. Build VALID_FIRSTS: reverse each valid ending to get allowed first-k
+      157 +   prefixes (ensures rev(p)'s last-k digits are achievable)
+      158 +3. For each digit count d and each residue r (mod 10^k):
+      159 +   - Compute the range of achievable first-k prefixes from n's magnitude
+      160 +   - Check if any valid first falls in that range (p-side)
+      161 +   - Check if the q-side constraints are simultaneously satisfiable
+      162 +4. If zero residues survive: **modular obstruction** (pure proof)
+      163 +5. If small survivor count: **finite verification** (brute-force primality)
+      164
+      157 -1. Enumerate all n mod 10³ (only 1000 values) that produce valid last-3-digit
+      158 -   patterns in 2n² + 2n + 1
+      159 -2. For each, compute the required first-3-digit pattern (via reversal)
+      160 -3. Check whether any n in the valid magnitude range for d digits can produce
+      161 -   those leading 3 digits
+      165 +### Results (through k=8)
+      166
+      163 -If the intersection is empty for all d ≥ 6, uniqueness is proved — and the
+      164 -proof is a finite computation.
+      167 +| d | Proof | Survivor details |
+      168 +|---|-------|-----------------|
+      169 +| 4 | Obstruction (k=3) | 0 survivors |
+      170 +| 5 | Finite verification | 6 survivors → 1 converse pair (12641↔14621) |
+      171 +| 6 | Obstruction (k=3) | 0 survivors |
+      172 +| 7–9 | Finite verification | 2–6 survivors each, all composite |
+      173 +| 10 | Obstruction (k=5) | 0 survivors |
+      174 +| 11–16 | Finite verification | 2–6 survivors each, all composite |
+      175
+      166 -**This is within reach with existing tools and skills.**
+      176 +Key scaling: each k increment extends the frontier by ~2 digit counts.
+      177 +Saturation occurs at approximately d = 2k + 1.
+      178
+      179 +### Next Steps
+      180 +
+      181 +- **k=9** (10^9 residues): should crack d=17,18
+      182 +- **GMP survivor verifier**: extend `check_survivors` beyond d=18
+      183 +- **Pattern analysis**: the repeating survivor signature (2,6,0,5,2,4,6,6,2,...)
+      184 +  may have structural explanation via carry propagation
+      185 +
+      186  ---
+      187
+      170 -*Prepared March 2026. Companion to the density analysis document.*
+      188 +*Prepared March 2026. Approach 1 implemented and validated.
+      189 +Companion to the density analysis document.*
+
+● Wrote 1 memory (ctrl+o to expand)                               
+
+● All updated. Here's where we stand tonight:                                                                                                                                                                       
+   
+  Summary                                                                                                                                                                                                           
+                                                            
+  What we proved today:                                                                                                                                                                                             
+  - d=4 through d=16: no converse pair can exist (independent of CVPipe search)
+  - d=5 is the sole exception: 6 structural candidates, exactly 1 produces the known pair
+  - Every survivor at every digit count was composite on at least one side
+
+  Three tools built:
+  - mod_obstruct — modular obstruction engine (k=3..8 tested)
+  - check_survivors — brute-force verifier for small survivor sets
+  - check_d5, check_d9 — early prototypes (superseded by check_survivors)
+
+  Two documents updated:
+  - biquadratic_emirps_analysis.md — full results table, new Section 8.2
+  - biquadratic_emirps_proof_approaches.md — Approach 1 marked as implemented with results
+
+  What's next when you're ready:
+  1. k=9 to crack d=17,18
+  2. GMP version of check_survivors to go beyond d=18
+  3. Pattern analysis on the survivor signature
+  4. The numeric gatekeeper optimization for CVPipe (still pending)
+
+  One session, and you went from "putting bi-quad to sleep" to independently proving uniqueness through 16 digits. 
+  Not bad for a coffee break.
+
+✻ Crunched for 2m 7s
+
+❯ Is threading an advantage/possible/needed at this point?                                                                                                                                                          
+                                                           
+● Good question. Let's look at it practically:                                                                                                                                                                      
+                                         
+  mod_obstruct: The residue loop is embarrassingly parallel — each residue r is completely independent. At k=8 (100M 
+  residues), it took maybe 15-20 minutes. k=9 is 1 billion residues, so ~10× longer without threading. With 8 cores, 
+  that drops from a couple hours to ~20 minutes. Easy win — just a #pragma omp parallel for reduction(+:survivors) on 
+  the residue loop.
+                                                                                                                                                                                                                    
+  check_survivors: No real need. The n-range is small and the work is trivial. The only expensive part (primality 
+  testing) rarely triggers.
+
+  So: yes for mod_obstruct at k=9+, not needed for check_survivors. One pragma, minimal code change.
+
+  Want me to add it?
+
+❯ yes, are the libc qsort funcs thread safe?                                                                                                                                                                        
+                                             
+● qsort itself is thread-safe (it's reentrant) — but that's not the concern here. The qsort happens once during setup 
+  (Phase 2, building VALID_FIRSTS) before the parallel loop. The parallel section only reads the sorted array via bi-
+  nary search. No issue.
+                                                                                                                                                                                                                    
+  The only thing to watch: the mpz_t variables inside the loop. Each thread needs its own set — same pattern as CVPipe. 
+  GMP itself is thread-safe as long as threads don't share the same mpz_t object.
+  
+  Let me add the threading.                                 
+● Read 1 file (ctrl+o to expand)                            
+                   
+● Now let me make the changes — add OpenMP header, update Makefile, and parallelize the residue loop with per-thread 
+  GMP variables.
+            
+● Update(mod_obstruct.c)                                                                                                                                                                                            
+  ⎿  Added 2 lines                                                                                                                                                                                                  
+      22  #include <stdio.h>                                                                                                                                                                                        
+      23  #include <stdlib.h>                                                                                                                                                                                       
+      24  #include <stdbool.h>                                                                                                                                                                                      
+      25 +#include <omp.h>                                  
+      26  #include <gmp.h>
+      27
+      28  #define DEFAULT_MAX_D  50
+      29  #define DEFAULT_MAX_K   6
+      30 +#define NUM_THREADS     8
+      31
+      32  /* Reverse a k-digit number (leading zeros preserved in digit sense). */
+      33  static long reverse_k(long val, int k)
+
+● Now replace the Phase 3 loop — move GMP variables inside the parallel region and add the pragma.
+
+● Update(mod_obstruct.c)                                                                                                                                                                                            
+  ⎿  Added 81 lines, removed 74 lines
+      239           *      - q's last-k = reverse_k(f) → find m residues producing this                                                                                                                             
+      240           *      - q's first-k = reverse_k(ending_of_p)
+      241           *      - Check if any such m achieves that first-k prefix (q-side pass)                                                                                                                         
+      242 +         *                                       
+      243 +         * The residue loop is parallelized with OpenMP. Each thread
+      244 +         * gets its own GMP variables to avoid sharing.
+      245           */
+      243 -        mpz_t n_min, n_max, n_first, n_last, tmp_p, tmp_pow;
+      246 +        mpz_t n_min, n_max;
+      247          mpz_init(n_min);
+      248          mpz_init(n_max);
+      246 -        mpz_init(n_first);
+      247 -        mpz_init(n_last);
+      248 -        mpz_init(tmp_p);
+      249 -        mpz_init(tmp_pow);
+      249
+      250 +        omp_set_num_threads(NUM_THREADS);
+      251          int obstruction_count = 0;
+      252
+      253          for (int d = k + 1; d <= max_d; d++) {
+     ...
+      256
+      257              int survivors = 0;
+      258
+      259 -            for (long r = 0; r < mod; r++) {
+      260 -                long p_ending = endings[r];
+      259 +            #pragma omp parallel reduction(+:survivors)
+      260 +            {
+      261 +                /* Per-thread GMP variables */
+      262 +                mpz_t t_first, t_last, t_p, t_pow, t_mfirst, t_mlast;
+      263 +                mpz_init(t_first);
+      264 +                mpz_init(t_last);
+      265 +                mpz_init(t_p);
+      266 +                mpz_init(t_pow);
+      267 +                mpz_init(t_mfirst);
+      268 +                mpz_init(t_mlast);
+      269
+      262 -                /* First n ≡ r (mod 10^k) in [n_min, n_max] */
+      263 -                first_n_with_residue(n_first, n_min, r, mod);
+      264 -                if (mpz_cmp(n_first, n_max) > 0)
+      265 -                    continue;
+      270 +                #pragma omp for schedule(dynamic, 1024)
+      271 +                for (long r = 0; r < mod; r++) {
+      272 +                    long p_ending = endings[r];
+      273
+      267 -                /* Last n ≡ r (mod 10^k) in [n_min, n_max] */
+      268 -                last_n_with_residue(n_last, n_max, r, mod);
+      274 +                    /* First n ≡ r (mod 10^k) in [n_min, n_max] */
+      275 +                    first_n_with_residue(t_first, n_min, r, mod);
+      276 +                    if (mpz_cmp(t_first, n_max) > 0)
+      277 +                        continue;
+      278
+      270 -                /* Compute range of first-k prefixes achievable by p */
+      271 -                long fk_min = compute_first_k(n_first, d, k, tmp_p, tmp_pow);
+      272 -                long fk_max = compute_first_k(n_last, d, k, tmp_p, tmp_pow);
+      279 +                    /* Last n ≡ r (mod 10^k) in [n_min, n_max] */
+      280 +                    last_n_with_residue(t_last, n_max, r, mod);
+      281
+      274 -                /* Check p-side: any valid first in [fk_min, fk_max]? */
+      275 -                if (!sorted_has_value_in_range(valid_firsts, num_firsts,
+      276 -                                               fk_min, fk_max))
+      277 -                    continue;
+      282 +                    /* Compute range of first-k prefixes achievable by p */
+      283 +                    long fk_min = compute_first_k(t_first, d, k, t_p, t_pow);
+      284 +                    long fk_max = compute_first_k(t_last, d, k, t_p, t_pow);
+      285
+      279 -                /* P-side passed. Now check q-side for each valid first
+      280 -                 * in [fk_min, fk_max]. */
+      281 -                bool q_ok = false;
+      286 +                    /* Check p-side: any valid first in [fk_min, fk_max]? */
+      287 +                    if (!sorted_has_value_in_range(valid_firsts, num_firsts,
+      288 +                                                   fk_min, fk_max))
+      289 +                        continue;
+      290
+      283 -                /* Find valid firsts in [fk_min, fk_max] */
+      284 -                int left = 0, right = num_firsts;
+      285 -                while (left < right) {
+      286 -                    int mid = left + (right - left) / 2;
+      287 -                    if (valid_firsts[mid] < fk_min)
+      288 -                        left = mid + 1;
+      289 -                    else
+      290 -                        right = mid;
+      291 -                }
+      291 +                    /* P-side passed. Now check q-side for each valid first
+      292 +                     * in [fk_min, fk_max]. */
+      293 +                    bool q_ok = false;
+      294
+      293 -                for (int fi = left;
+      294 -                     fi < num_firsts && valid_firsts[fi] <= fk_max;
+      295 -                     fi++) {
+      296 -                    long f = valid_firsts[fi];
+      295 +                    /* Find valid firsts in [fk_min, fk_max] */
+      296 +                    int left = 0, right = num_firsts;
+      297 +                    while (left < right) {
+      298 +                        int mid = left + (right - left) / 2;
+      299 +                        if (valid_firsts[mid] < fk_min)
+      300 +                            left = mid + 1;
+      301 +                        else
+      302 +                            right = mid;
+      303 +                    }
+      304
+      298 -                    /* q's last-k digits = reverse_k(f) */
+      299 -                    long q_ending = reverse_k(f, k);
+      305 +                    for (int fi = left;
+      306 +                         fi < num_firsts && valid_firsts[fi] <= fk_max;
+      307 +                         fi++) {
+      308 +                        long f = valid_firsts[fi];
+      309
+      301 -                    /* q's first-k digits = reverse_k(p_ending) */
+      302 -                    long q_first = reverse_k(p_ending, k);
+      310 +                        /* q's last-k digits = reverse_k(f) */
+      311 +                        long q_ending = reverse_k(f, k);
+      312
+      304 -                    /* q_first must be a valid k-digit prefix */
+      305 -                    if (q_first < prefix_min)
+      306 -                        continue;
+      313 +                        /* q's first-k digits = reverse_k(p_ending) */
+      314 +                        long q_first = reverse_k(p_ending, k);
+      315
+      308 -                    /* q_first must itself be a valid first (so that
+      309 -                     * last-k of p = reverse_k(q_first) is valid — but
+      310 -                     * that's p_ending which is valid by construction).
+      311 -                     * The real check: q_ending must be a valid ending. */
+      312 -                    if (!is_valid_ending[q_ending])
+      313 -                        continue;
+      316 +                        /* q_first must be a valid k-digit prefix */
+      317 +                        if (q_first < prefix_min)
+      318 +                            continue;
+      319
+      315 -                    /* Find m residues that produce q_ending */
+      316 -                    int qe_count = ending_count[q_ending];
+      317 -                    int qe_off = ending_offset[q_ending];
+      320 +                        if (!is_valid_ending[q_ending])
+      321 +                            continue;
+      322
+      319 -                    for (int mi = 0; mi < qe_count; mi++) {
+      320 -                        long m_r = ending_residues[qe_off + mi];
+      323 +                        /* Find m residues that produce q_ending */
+      324 +                        int qe_count = ending_count[q_ending];
+      325 +                        int qe_off = ending_offset[q_ending];
+      326
+      322 -                        /* Check: any m ≡ m_r (mod 10^k) in [n_min,n_max]
+      323 -                         * that produces first-k = q_first? */
+      324 -                        mpz_t m_first, m_last;
+      325 -                        mpz_init(m_first);
+      326 -                        mpz_init(m_last);
+      327 +                        for (int mi = 0; mi < qe_count; mi++) {
+      328 +                            long m_r = ending_residues[qe_off + mi];
+      329
+      328 -                        first_n_with_residue(m_first, n_min, m_r, mod);
+      329 -                        if (mpz_cmp(m_first, n_max) <= 0) {
+      330 -                            last_n_with_residue(m_last, n_max, m_r, mod);
+      330 +                            first_n_with_residue(t_mfirst, n_min, m_r, mod);
+      331 +                            if (mpz_cmp(t_mfirst, n_max) <= 0) {
+      332 +                                last_n_with_residue(t_mlast, n_max, m_r, mod);
+      333
+      332 -                            long mk_min = compute_first_k(m_first, d, k,
+      333 -                                                          tmp_p, tmp_pow);
+      334 -                            long mk_max = compute_first_k(m_last, d, k,
+      335 -                                                          tmp_p, tmp_pow);
+      334 +                                long mk_min = compute_first_k(t_mfirst, d, k,
+      335 +                                                              t_p, t_pow);
+      336 +                                long mk_max = compute_first_k(t_mlast, d, k,
+      337 +                                                              t_p, t_pow);
+      338
+      337 -                            if (q_first >= mk_min && q_first <= mk_max) {
+      338 -                                q_ok = true;
+      339 +                                if (q_first >= mk_min && q_first <= mk_max) {
+      340 +                                    q_ok = true;
+      341 +                                }
+      342                              }
+      343 +
+      344 +                            if (q_ok)
+      345 +                                break;
+      346                          }
+      347
+      342 -                        mpz_clear(m_first);
+      343 -                        mpz_clear(m_last);
+      344 - 
+      348                          if (q_ok)
+      349                              break;
+      350                      }
+      351
+      352                      if (q_ok)
+      350 -                        break;
+      353 +                        survivors++;
+      354                  }
+      355
+      353 -                if (q_ok)
+      354 -                    survivors++;
+      356 +                mpz_clear(t_first);
+      357 +                mpz_clear(t_last);
+      358 +                mpz_clear(t_p);
+      359 +                mpz_clear(t_pow);
+      360 +                mpz_clear(t_mfirst);
+      361 +                mpz_clear(t_mlast);
+      362              }
+      363
+      364              const char *tag = "";
+
+● Now update the Makefile to add OpenMP.
+
+● Update(Makefile)                                                                                                                                                                                                  
+  ⎿  Added 1 line, removed 1 line
+       5  # Clean:  make clean                                                                                                                                                                                      
+       6                                                    
+       7  CC       = gcc                                                                                                                                                                                            
+       8 -CFLAGS   = -O2 -std=c99 -Wall -Wextra                                                                                                                                                              
+       8 +CFLAGS   = -O2 -std=c99 -Wall -Wextra -fopenmp
+       9  LDLIBS   = -lgmp
+      10
+      11  TARGET   = mod_obstruct
+  ⎿  Found 4 new diagnostic issues in 1 file (ctrl+o to expand)
+
+● There are old mpz_clear calls for the removed variables. Let me fix those.
+
+● Read 1 file (ctrl+o to expand)                                                                                                                                                                                    
+                   
+● Update(mod_obstruct.c)                                                                                                                                                                                            
+  ⎿  Removed 4 lines                                        
+      385                                                                                                                                                                                                           
+      386          mpz_clear(n_min);                                                                                                                                                                                
+      387          mpz_clear(n_max);                                                                                                                                                                                
+      388 -        mpz_clear(n_first);                                                                                                                                                                              
+      389 -        mpz_clear(n_last);                                                                                                                                                                        
+      390 -        mpz_clear(tmp_p);
+      391 -        mpz_clear(tmp_pow);
+      388      }
+      389
+      390      printf("=====================================================\n");
+
+● Bash(make 2>&1)                   
+  ⎿  gcc -O2 -std=c99 -Wall -Wextra -fopenmp -o mod_obstruct mod_obstruct.c -lgmp
+                                                                                                                                                                                                                    
+● Clean build. Let's verify it produces the same results with a quick k=5 run, then we'll know it's ready for k=9.
+                                                                                                                                                                                                                    
+● Bash(./mod_obstruct 20 5 2>&1 | grep -E "k=5|d=|survivors|valid")                                                                                                                                                 
+  ⎿    k=3: valid_endings = 106 / 1000 (10.60%)  valid_firsts = 106
+         d= 4  survivors =      0  *** OBSTRUCTION ***                                                                                                                                                              
+         d= 5  survivors =      6                                                                                                                                                                                   
+     … +49 lines (ctrl+o to expand)                                                                                                                                                                                 
+                                                                                                                                                                                                                    
+● Results match exactly. Threaded version is correct and ready.
+                                                                                                                                                                                                                    
+  Changes made:                                                                                                                                                                                                     
+  - 6 per-thread mpz_t variables (t_first, t_last, t_p, t_pow, t_mfirst, t_mlast) — allocated/freed inside the parallel region                                                                                      
+  - #pragma omp parallel reduction(+:survivors) — each thread counts independently, reduced at join                                                                                                                 
+  - #pragma omp for schedule(dynamic, 1024) — dynamic scheduling since some residues exit early (uneven work per iteration)                                                                                         
+  - 8 threads — matching your physical core count (no point using SMT here either)                                                                                                                                  
+
+  Ready for k=9 whenever you want to pull the trigger.                                                                                                                                                              
+
+✻ Baked for 1m 39s
+
+❯ yes claude...I'm going to fire up the ole panasonic kx-p2123 tractor printer get a hardcopy of src and docs peruse and after results of this run we'll pick it up tomorrow, what do you think?                    
+                                                                                                                                                                                                 
+● A dot-matrix tractor feed for code review — that's old school and I respect it. There's something about reading code on paper that a screen can't replicate.                                                      
+                                                                                                                                                                                                                  
+  Let me kick off k=9 for you. With 8 threads it should be done by morning.                                                                                                                                         
+                                                            
+● Bash(nohup ./mod_obstruct 50 9 > logs/mod_obstruct_d50_k9.log 2>&1 &                                                                                                                                              
+      echo "PID: $!")                                       
+  ⎿  PID: 361204                                                                                                                                                                                                    
+                                                                  
+● Running. Results will be in logs/mod_obstruct_d50_k9.log when you wake up.                                                                                                                                        
+                                                            
+  Prediction: d=17 (6 survivors → verify) and d=18 (2 survivors → verify) should crack open. d=19 will be the new saturation frontier at ~59M survivors.                                                            
+                                                                  
+  Enjoy the printout — and the sound of that Panasonic. See you tomorrow.                                                                                                                                           
+                                                                                                                                                                                                                  
+❯ if you're still there: d-17:1 survivor, d-18:0 survivor                                                                                                                                                           
+                                                          
+● Still here!                                                                                                                                                                                                       
+                                                                                                                                                                                                                    
+  d=18 is a pure modular obstruction — only the fourth one: d=4, 6, 10, 18. And d=17 with just 1 survivor is the thinnest we've seen. That's a single residue class out of a billion.                               
+                                                                                                                                                                                                                    
+  d=17 is within check_survivors range — want to kill it?                                                                                                                                                           
+                                                                                                                                                                                                                    
+● Bash(./check_survivors 17 2>&1 | tee logs/check_d17.log)
+  ⎿    17-Digit Bi-Quadratic Emirp Candidate Enumeration
+     ====================================================                             
+     … +9 lines (ctrl+o to expand)                                                                                                                                                                                  
+  ⎿  (timeout 2m)                    
+                                                                                                                                                                                                                    
+● Zero structural matches. The one residue that survived the modular filter doesn't even produce a real candidate — the obstruction program was being conservative. d=17 is dead.                                   
+                                                                                                                                                                                                                    
+  Updated scoreboard:                                                                                                                                                                                               
+                                                                                                                                                                                                                    
+  ┌────────┬───────────────┬───────────────────────────────────────────┐                                                                                                                                            
+  │   d    │    Result     │                  Method                   │                                                                                                                                            
+  ├────────┼───────────────┼───────────────────────────────────────────┤                                                                                                                                            
+  │ 4      │ Impossible    │ Obstruction (k=3)                         │                                                                                                                                            
+  ├────────┼───────────────┼───────────────────────────────────────────┤                                                                                                                                            
+  │ 5      │ 12641 ↔ 14621 │ The known pair                            │
+  ├────────┼───────────────┼───────────────────────────────────────────┤
+  │ 6      │ Impossible    │ Obstruction (k=3)                         │
+  ├────────┼───────────────┼───────────────────────────────────────────┤
+  │ 7–9    │ Impossible    │ Finite verification                       │
+  ├────────┼───────────────┼───────────────────────────────────────────┤
+  │ 10     │ Impossible    │ Obstruction (k=5)                         │
+  ├────────┼───────────────┼───────────────────────────────────────────┤
+  │ 11–16  │ Impossible    │ Finite verification                       │
+  ├────────┼───────────────┼───────────────────────────────────────────┤
+  │ 17     │ Impossible    │ Finite verification (0 actual candidates) │
+  ├────────┼───────────────┼───────────────────────────────────────────┤
+  │ 18     │ Impossible    │ Obstruction (k=9)                         │
+  ├────────┼───────────────┼───────────────────────────────────────────┤
+  │ 19..28 │ No pairs      │ CVPipe exhaustive search                  │
+  └────────┴───────────────┴───────────────────────────────────────────┘
+
+  d=4 through d=18 is now proven. That's 15 digit counts independently confirmed. The pure obstructions at d=4, 6, 10, 18 are interesting — gaps of 2, 4, 8. Doubling pattern?
+
+  Sleep well — that Panasonic has some good reading to print tonight.
+
+✻ Cooked for 1m 4s
+
+❯ good night claude                                                                                                                                                                                                 
+                   
+● Good night, Jim. Hell of a session — from a performance bug in gmp_sprintf to proving uniqueness through 18 digits, all in one evening. Enjoy the printout. See you tomorrow.                                     
+

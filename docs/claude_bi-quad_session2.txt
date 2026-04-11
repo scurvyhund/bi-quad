@@ -1,0 +1,112 @@
+================================================================
+ Claude Code Session 2 — k=10 Status Check
+ Date: 2026-03-31
+ Model: Claude Opus 4.6 (1M context)
+================================================================
+
+CONTEXT
+-------
+mod_obstruct.c performs a modular obstruction search for
+bi-quadratic emirps (primes p = 2n²+2n+1 where rev(p) is
+also of that form). At precision k, it checks all 10^k
+residue classes for each digit count d, proving no d-digit
+pair can exist when survivors = 0 (obstruction).
+
+The k=10 run was launched to independently verify cvpipe
+pipeline results and push obstruction coverage further.
+
+CURRENT RUN STATUS
+------------------
+Process:   PID 7028
+Command:   ./mod_obstruct 50 10 10 21
+Started:   2026-03-19 22:50 (resumed from k=10, d=21)
+Wall time: 11 days, 15 hours (as of check)
+CPU time:  92 days (across 8 threads, ~100% utilization)
+Memory:    ~9 GB RSS
+Status:    Still computing d=21. No log output since
+           startup — the printf/fflush fires only after
+           each d value completes.
+
+CONFIRMED k=10 RESULTS (through d=20)
+--------------------------------------
+  d=11:  5 survivors
+  d=12:  2 survivors
+  d=13:  4 survivors
+  d=14:  6 survivors
+  d=15:  6 survivors
+  d=16:  2 survivors
+  d=17:  1 survivor
+  d=18:  OBSTRUCTION  (persists from k=9)
+  d=19:  3 survivors   (was 591,606,462 at k=9!)
+  d=20:  OBSTRUCTION  (was SATURATED at k=9!)
+  d=21:  computing...
+
+WHY d=21 IS SLOW
+----------------
+At k=10, mod = 10^10 (10 billion residues per d value).
+For small d (e.g., d=11), the range [10^10, 10^11-1] is
+small relative to mod, so 99.999% of residues have no
+representatives and skip instantly.
+
+For d=21, the range [10^20, 10^21-1] contains ~9×10^10
+values per residue class. Virtually no residues skip.
+All 10 billion must go through the full computation:
+GMP big-number arithmetic, binary search over ~1 billion
+valid_firsts, and Hensel lifting for q-side verification.
+
+Previous d values with obstructions or few survivors
+computed fast because most residues failed early filter
+checks. d=21 is at the saturation boundary where most
+residues pass all filters.
+
+COMPLETION ESTIMATE
+-------------------
+Original estimate: ~12+ days for d=21.
+Current elapsed:   11.6 days.
+Remaining:         ~2-5 days (rough estimate).
+
+Once d=21 completes, if it saturates (survivors = 10^10),
+d=22..50 are skipped automatically and k=10 is DONE.
+
+Based on the k=9 pattern (saturation at d=2k+2=20), the
+expected saturation at k=10 is d=22. However, the
+dramatic collapse at d=19-20 suggests d=21 might also
+show few survivors, which would be unprecedented.
+
+CHECKPOINTING
+-------------
+No mid-d-value checkpointing exists. The program only
+writes checkpoints after completing each d value. If the
+process dies, d=21 must restart from scratch (~12 days).
+
+Results through d=20 are safely on disk in:
+  logs/mod_obstruct_d50_k10_v2.log
+
+SIGNIFICANCE
+------------
+1. Independent verification of cvpipe negative results
+   at d=10, d=18, d=20 — mathematical proof that no
+   bi-quadratic emirp pairs exist at those digit counts.
+
+2. The d=20 obstruction is entirely new — it was fully
+   saturated at k=9 but collapsed to zero at k=10.
+
+3. The "squeeze" at k=10 is dramatically tighter than
+   all prior k values, raising the possibility that
+   higher k could push obstructions to all d values,
+   opening a potential proof path.
+
+NEXT STEPS (pending d=21 result)
+--------------------------------
+If d=21 saturates:
+  - k=10 complete. Solid results through d=20.
+  - Consider k=11 (mod=10^11) — would need ~100GB+
+    memory, likely requires algorithmic changes.
+
+If d=21 shows few survivors:
+  - Remaining d=22..50 would compute quickly (minutes
+    to hours each, not days).
+  - Could push obstruction coverage much further.
+  - Qualitatively different from all prior k values.
+  - Strongest evidence yet for a universal proof path.
+================================================================
