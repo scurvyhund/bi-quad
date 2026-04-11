@@ -1,0 +1,20 @@
+
+  9-Digit Bi-Quadratic Emirp Candidate Enumeration
+====================================================
+
+  n range for 9-digit p: [7071, 22360]
+  Total n values: 15290
+
+  n         p            rev(p)       m         Status
+  --------  ------------  ------------  --------  -------------------------
+  n=7158    p=102488245    q=542884201    m=16475   both composite
+  n=12613   p=318200765    q=567002813    m=16837   both composite
+  n=16163   p=522517465    q=564715225    m=16803   both composite
+  n=16475   p=542884201    q=102488245    m=7158    both composite
+  n=16803   p=564715225    q=522517465    m=16163   both composite
+  n=16837   p=567002813    q=318200765    m=12613   both composite
+
+  Total structural matches (both consec-sq): 6
+  Converse pairs found: 0
+====================================================
+

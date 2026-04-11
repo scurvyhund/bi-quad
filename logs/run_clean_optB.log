@@ -1,0 +1,18 @@
+
+  Modular Obstruction Search for Bi-Quadratic Emirps
+=====================================================
+  max_d = 50    max_k = 10    (resuming from k=10, d=11)
+=====================================================
+
+  k=10: valid_endings = 541666816 / 10000000000 (5.42%)  valid_firsts = 541666816
+  ---------------------------------------------------
+    d=11  survivors =      0  *** OBSTRUCTION ***
+    d=12  survivors =      0  *** OBSTRUCTION ***
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors =      5
+    d=16  survivors =      0  *** OBSTRUCTION ***
+    d=17  survivors =      1
+    d=18  survivors =      0  *** OBSTRUCTION ***
+    d=19  survivors =      0  *** OBSTRUCTION ***
+    d=20  survivors =      0  *** OBSTRUCTION ***

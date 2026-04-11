@@ -1,0 +1,16 @@
+
+  16-Digit Bi-Quadratic Emirp Candidate Enumeration
+====================================================
+
+  n range for 16-digit p: [22360680, 70710677]
+  Total n values: 48349998
+
+  n         p                   rev(p)              m         Status
+  --------  ------------        ------------        --------  -------------------------
+  n=22739458  p=1034165945746445    q=5446475495614301    m=52184650  both composite
+  n=52184650  p=5446475495614301    q=1034165945746445    m=22739458  both composite
+
+  Total structural matches (both consec-sq): 2
+  Converse pairs found: 0
+====================================================
+

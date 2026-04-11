@@ -1,0 +1,16 @@
+
+  8-Digit Bi-Quadratic Emirp Candidate Enumeration
+====================================================
+
+  n range for 8-digit p: [2236, 7070]
+  Total n values: 4835
+
+  n         p           rev(p)      m         Status
+  --------  ------------  ------------  --------  -------------------------
+  n=2732    p=14933113    q=31133941    m=3945    both composite
+  n=3945    p=31133941    q=14933113    m=2732    both composite
+
+  Total structural matches (both consec-sq): 2
+  Converse pairs found: 0
+====================================================
+

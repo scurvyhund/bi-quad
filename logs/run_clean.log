@@ -1,0 +1,116 @@
+
+  Modular Obstruction Search for Bi-Quadratic Emirps
+=====================================================
+  max_d = 50    max_k = 10
+=====================================================
+
+  k=3: valid_endings = 56 / 1000 (5.60%)  valid_firsts = 56
+  ---------------------------------------------------
+    d= 4  survivors =      0  *** OBSTRUCTION ***
+    d= 5  survivors =      6
+    d= 6  survivors =      0  *** OBSTRUCTION ***
+    d= 7  survivors =    541
+    d= 8  survivors =   1000  (saturated)
+    d= 9..50  (skipped — saturated)
+
+  k=3 summary: 2 obstructions found out of 47 digit counts tested
+
+  k=4: valid_endings = 544 / 10000 (5.44%)  valid_firsts = 544
+  ---------------------------------------------------
+    d= 5  survivors =      6
+    d= 6  survivors =      0  *** OBSTRUCTION ***
+    d= 7  survivors =      5
+    d= 8  survivors =      2
+    d= 9  survivors =   5373
+    d=10  survivors =  10000  (saturated)
+    d=11..50  (skipped — saturated)
+
+  k=4 summary: 1 obstructions found out of 46 digit counts tested
+
+  k=5: valid_endings = 5424 / 100000 (5.42%)  valid_firsts = 5424
+  ---------------------------------------------------
+    d= 6  survivors =      0  *** OBSTRUCTION ***
+    d= 7  survivors =      5
+    d= 8  survivors =      2
+    d= 9  survivors =      2
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =  53715
+    d=12  survivors = 100000  (saturated)
+    d=13..50  (skipped — saturated)
+
+  k=5 summary: 2 obstructions found out of 45 digit counts tested
+
+  k=6: valid_endings = 54176 / 1000000 (5.42%)  valid_firsts = 54176
+  ---------------------------------------------------
+    d= 7  survivors =      5
+    d= 8  survivors =      2
+    d= 9  survivors =      2
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      2
+    d=12  survivors =      1
+    d=13  survivors = 536970
+    d=14  survivors = 1000000  (saturated)
+    d=15..50  (skipped — saturated)
+
+  k=6 summary: 1 obstructions found out of 44 digit counts tested
+
+  k=7: valid_endings = 541696 / 10000000 (5.42%)  valid_firsts = 541696
+  ---------------------------------------------------
+    d= 8  survivors =      2
+    d= 9  survivors =      2
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      2
+    d=12  survivors =      1
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors = 5369802
+    d=16  survivors = 10000000  (saturated)
+    d=17..50  (skipped — saturated)
+
+  k=7 summary: 1 obstructions found out of 43 digit counts tested
+
+  k=8: valid_endings = 5416704 / 100000000 (5.42%)  valid_firsts = 5416704
+  ---------------------------------------------------
+    d= 9  survivors =      2
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      2
+    d=12  survivors =      1
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors =      5
+    d=16  survivors =      1
+    d=17  survivors = 53697122
+    d=18  survivors = 100000000  (saturated)
+    d=19..50  (skipped — saturated)
+
+  k=8 summary: 1 obstructions found out of 42 digit counts tested
+
+  k=9: valid_endings = 54166784 / 1000000000 (5.42%)  valid_firsts = 54166784
+  ---------------------------------------------------
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      2
+    d=12  survivors =      1
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors =      5
+    d=16  survivors =      1
+    d=17  survivors =      1
+    d=18  survivors =      0  *** OBSTRUCTION ***
+    d=19  survivors = 536971724
+    d=20  survivors = 1000000000  (saturated)
+    d=21..50  (skipped — saturated)
+
+  k=9 summary: 2 obstructions found out of 41 digit counts tested
+
+  k=10: valid_endings = 541666816 / 10000000000 (5.42%)  valid_firsts = 541666816
+  ---------------------------------------------------
+    d=11  survivors =      2
+    d=12  survivors =      1
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors =      5
+    d=16  survivors =      1
+    d=17  survivors =      1
+    d=18  survivors =      0  *** OBSTRUCTION ***
+    d=19  survivors =      0  *** OBSTRUCTION ***
+    d=20  survivors =      0  *** OBSTRUCTION ***

@@ -1,0 +1,16 @@
+
+  7-Digit Bi-Quadratic Emirp Candidate Enumeration
+====================================================
+
+  n range for 7-digit p: [707, 2235]
+  Total n values: 1529
+
+  n         p          rev(p)     m         Status
+  --------  ------------  ------------  --------  -------------------------
+  n=844     p=1426361    q=1636241    m=904     p prime, rev(p) composite
+  n=904     p=1636241    q=1426361    m=844     p composite, rev(p) prime
+
+  Total structural matches (both consec-sq): 2
+  Converse pairs found: 0
+====================================================
+

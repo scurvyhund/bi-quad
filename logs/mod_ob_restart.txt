@@ -1,0 +1,153 @@
+mod_obstruct.c — Debug Session Reference
+=========================================
+Date: 2026-04-09
+Topic: is_valid_ending bitset bug + fix + test instrumentation plan
+
+
+THE BUG
+-------
+Phase 1 of main() marks endings in the is_valid_ending bitset purely
+because 2n²+2n+1 ≡ e (mod 10^k) for some n.  It does NOT filter out
+e values whose last digit is 5.  Since 2n²+2n+1 is always odd, a last
+digit of 5 means the number is divisible by 5 — composite, never prime.
+These dirty endings propagate into valid_firsts (via reverse_k) and then
+into the Hensel lifting stage, causing spurious survivors and potentially
+masking real obstructions.
+
+
+IMPACT ON RESULTS
+-----------------
+- Obstructions already printed are VALID (dirt only inflates, never deflates).
+- Survivor counts are inflated — some d values that should show 0 survivors
+  (a real obstruction) may have shown nonzero.  Those obstructions are missed.
+- Estimated ~15-25% excess work in Phase 3 / Hensel lifting from dirty entries.
+- For a mathematical proof, a clean restart is required.
+
+
+BEFORE KILLING THE RUN — save state first
+------------------------------------------
+cp mod_obstruct.ckpt mod_obstruct.ckpt.dirty_run
+cp run.log run.log.dirty_run        # or whatever your nohup log is named
+
+Find pid and kill cleanly:
+pgrep mod_obstruct
+kill -TERM <pid>
+
+
+THE FIX — Phase 1 loop in main()
+---------------------------------
+Current code (around line 309):
+
+    for (long n = 0; n < mod; n++) {
+        long e = ending_for_residue(n, mod);
+        if (!BITSET_GET(is_valid_ending, e)) {
+            BITSET_SET(is_valid_ending, e);
+            num_endings++;
+        }
+    }
+
+Fixed code — add digit filter before setting bit:
+
+    for (long n = 0; n < mod; n++) {
+        long e = ending_for_residue(n, mod);
+        long last_digit = e % 10;
+        /* 2n²+2n+1 always odd; last digit 5 → div by 5 → composite */
+        if (last_digit == 5 || last_digit == 0)
+            continue;
+        if (!BITSET_GET(is_valid_ending, e)) {
+            BITSET_SET(is_valid_ending, e);
+            num_endings++;
+        }
+    }
+
+
+DEBUG INSTRUMENTATION (gated on #ifdef DEBUG)
+----------------------------------------------
+Add after the fix, inside the Phase 1 loop (or as a separate check pass):
+
+Phase 1 — ending validation:
+
+    #ifdef DEBUG
+    if (e % 2 == 0)
+        fprintf(stderr, "\n*** BUG: EVEN ENDING e=%ld n=%ld mod=%ld"
+                " (2n²+2n+1 must be odd)\n", e, n, mod);
+    if (e % 10 == 5)
+        fprintf(stderr, "\n*** BUG: ENDING DIVISIBLE BY 5 e=%ld n=%ld"
+                " (composite — not prime-eligible)\n", e, n, mod);
+    if (e % 10 == 0)
+        fprintf(stderr, "\n*** BUG: ENDING DIVISIBLE BY 10 e=%ld n=%ld\n",
+                e, n, mod);
+    #endif
+
+Phase 2 — valid_firsts sanity check (after building the array):
+
+    #ifdef DEBUG
+    for (long fi = 0; fi < num_firsts; fi++) {
+        long f = valid_firsts[fi];
+        long rev = reverse_k(f, k);
+        if (rev % 10 == 5 || rev % 10 == 0 || rev % 2 == 0)
+            fprintf(stderr, "\n*** BUG: DIRTY valid_first f=%ld"
+                    " reverse=%ld last_digit=%ld\n",
+                    f, rev, rev % 10);
+        if (f < prefix_min)
+            fprintf(stderr, "\n*** BUG: valid_first f=%ld below"
+                    " prefix_min=%ld\n", f, prefix_min);
+    }
+    #endif
+
+Phase 3 — Hensel target sanity (before solve_residues() call):
+
+    #ifdef DEBUG
+    if (q_ending % 10 == 5 || q_ending % 10 == 0 || q_ending % 2 == 0)
+        fprintf(stderr, "\n*** BUG: DIRTY q_ending=%ld passed"
+                " bitset check — filter broken\n", q_ending);
+    #endif
+
+
+MAKEFILE — add test target
+--------------------------
+Add to Makefile alongside existing targets:
+
+    # Debug build with invariant checks
+    mod_obstruct_debug: mod_obstruct.c
+    	gcc mod_obstruct.c -o mod_obstruct_debug -O3 -march=znver2 \
+    	    -mtune=znver2 -std=c99 -Wall -fopenmp -lgmp -DDEBUG
+
+    # Quick invariant test — runs k<=4 d<=10, greps for BUG lines
+    test: mod_obstruct_debug
+    	@echo "=== mod_obstruct invariant test (k<=4, d<=10) ==="
+    	@./mod_obstruct_debug 10 4 2>&1 | grep -E "\*\*\* BUG" \
+    	    && echo "*** INVARIANT VIOLATIONS FOUND — SEE ABOVE ***" \
+    	    || echo "=== all invariants clean ==="
+
+    # Production build (no debug overhead)
+    mod_obstruct: mod_obstruct.c
+    	gcc mod_obstruct.c -o mod_obstruct -O3 -march=znver2 \
+    	    -mtune=znver2 -std=c99 -Wall -fopenmp -lgmp
+
+
+CLEAN RESTART
+-------------
+After fix is in and 'make test' shows clean:
+
+    ./mod_obstruct 50 6 2>&1 | tee run_clean.log &
+    echo $! > mod_obstruct.pid
+
+Or with nohup:
+    nohup ./mod_obstruct 50 6 > run_clean.log 2>&1 &
+
+
+MATHEMATICAL NOTE
+-----------------
+2n²+2n+1 mod 10 can ONLY produce {1, 3, 5}.  (Not 7, not 9 — ever.)
+Filtering out 5 (divisible by 5 → composite) leaves just {1, 3}.
+
+mod 100 — the six valid last-two-digit patterns after filtering:
+  [even][1]:  01, 21, 41, 61, 81
+  13:         the only way to get last digit 3
+
+Emirp constraint — reversing those patterns gives valid first-two digits:
+  [1][even]:  10, 12, 14, 16, 18
+  31:         the reverse of 13
+
+This filter belongs in Phase 1 before any ending is admitted to the bitset.

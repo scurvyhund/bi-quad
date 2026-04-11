@@ -1,0 +1,14 @@
+
+  17-Digit Bi-Quadratic Emirp Candidate Enumeration
+====================================================
+
+  n range for 17-digit p: [70710678, 223606797]
+  Total n values: 152896120
+
+  n         p                    rev(p)               m         Status
+  --------  ------------         ------------         --------  -------------------------
+
+  Total structural matches (both consec-sq): 0
+  Converse pairs found: 0
+====================================================
+

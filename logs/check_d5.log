@@ -1,0 +1,20 @@
+
+  5-Digit Bi-Quadratic Emirp Candidate Enumeration
+====================================================
+
+  n range for 5-digit p: [71, 223]
+  Total n values: 153
+
+  n         p        rev(p)   m         Status
+  --------  ------------  ------------  --------  -------------------------
+  n=72      p=10513    q=31501    m=125     p prime, rev(p) composite
+  n=79      p=12641    q=14621    m=85      BOTH PRIME — CONVERSE PAIR!
+  n=84      p=14281    q=18241    m=95      p prime, rev(p) composite
+  n=85      p=14621    q=12641    m=79      BOTH PRIME — CONVERSE PAIR!
+  n=95      p=18241    q=14281    m=84      p composite, rev(p) prime
+  n=125     p=31501    q=10513    m=72      p composite, rev(p) prime
+
+  Total structural matches (both consec-sq): 6
+  Converse pairs found: 2
+====================================================
+

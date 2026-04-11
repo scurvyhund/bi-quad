@@ -1,0 +1,18 @@
+
+  11-Digit Bi-Quadratic Emirp Candidate Enumeration
+====================================================
+
+  n range for 11-digit p: [70711, 223606]
+  Total n values: 152896
+
+  n         p              rev(p)         m         Status
+  --------  ------------   ------------   --------  -------------------------
+  n=72736   p=10581196865    q=56869118501    m=168625  both composite
+  n=124651  p=31075992905    q=50929957013    m=159577  both composite
+  n=159577  p=50929957013    q=31075992905    m=124651  both composite
+  n=168625  p=56869118501    q=10581196865    m=72736   both composite
+
+  Total structural matches (both consec-sq): 4
+  Converse pairs found: 0
+====================================================
+

@@ -1,0 +1,314 @@
+
+  Modular Obstruction Search for Bi-Quadratic Emirps
+=====================================================
+  max_d = 50    max_k = 9
+=====================================================
+
+  k=3: valid_endings = 106 / 1000 (10.60%)  valid_firsts = 106
+  ---------------------------------------------------
+    d= 4  survivors =      0  *** OBSTRUCTION ***
+    d= 5  survivors =      6
+    d= 6  survivors =      0  *** OBSTRUCTION ***
+    d= 7  survivors =    599
+    d= 8  survivors =   1000
+    d= 9  survivors =   1000
+    d=10  survivors =   1000
+    d=11  survivors =   1000
+    d=12  survivors =   1000
+    d=13  survivors =   1000
+    d=14  survivors =   1000
+    d=15  survivors =   1000
+    d=16  survivors =   1000
+    d=17  survivors =   1000
+    d=18  survivors =   1000
+    d=19  survivors =   1000
+    d=20  survivors =   1000
+    d=21  survivors =   1000
+    d=22  survivors =   1000
+    d=23  survivors =   1000
+    d=24  survivors =   1000
+    d=25  survivors =   1000
+    d=26  survivors =   1000
+    d=27  survivors =   1000
+    d=28  survivors =   1000
+    d=29  survivors =   1000
+    d=30  survivors =   1000
+    d=31  survivors =   1000
+    d=32  survivors =   1000
+    d=33  survivors =   1000
+    d=34  survivors =   1000
+    d=35  survivors =   1000
+    d=36  survivors =   1000
+    d=37  survivors =   1000
+    d=38  survivors =   1000
+    d=39  survivors =   1000
+    d=40  survivors =   1000
+    d=41  survivors =   1000
+    d=42  survivors =   1000
+    d=43  survivors =   1000
+    d=44  survivors =   1000
+    d=45  survivors =   1000
+    d=46  survivors =   1000
+    d=47  survivors =   1000
+    d=48  survivors =   1000
+    d=49  survivors =   1000
+    d=50  survivors =   1000
+
+  k=3 summary: 2 obstructions found out of 47 digit counts tested
+
+  k=4: valid_endings = 1044 / 10000 (10.44%)  valid_firsts = 1044
+  ---------------------------------------------------
+    d= 5  survivors =      6
+    d= 6  survivors =      0  *** OBSTRUCTION ***
+    d= 7  survivors =      7
+    d= 8  survivors =      2
+    d= 9  survivors =   5930
+    d=10  survivors =  10000
+    d=11  survivors =  10000
+    d=12  survivors =  10000
+    d=13  survivors =  10000
+    d=14  survivors =  10000
+    d=15  survivors =  10000
+    d=16  survivors =  10000
+    d=17  survivors =  10000
+    d=18  survivors =  10000
+    d=19  survivors =  10000
+    d=20  survivors =  10000
+    d=21  survivors =  10000
+    d=22  survivors =  10000
+    d=23  survivors =  10000
+    d=24  survivors =  10000
+    d=25  survivors =  10000
+    d=26  survivors =  10000
+    d=27  survivors =  10000
+    d=28  survivors =  10000
+    d=29  survivors =  10000
+    d=30  survivors =  10000
+    d=31  survivors =  10000
+    d=32  survivors =  10000
+    d=33  survivors =  10000
+    d=34  survivors =  10000
+    d=35  survivors =  10000
+    d=36  survivors =  10000
+    d=37  survivors =  10000
+    d=38  survivors =  10000
+    d=39  survivors =  10000
+    d=40  survivors =  10000
+    d=41  survivors =  10000
+    d=42  survivors =  10000
+    d=43  survivors =  10000
+    d=44  survivors =  10000
+    d=45  survivors =  10000
+    d=46  survivors =  10000
+    d=47  survivors =  10000
+    d=48  survivors =  10000
+    d=49  survivors =  10000
+    d=50  survivors =  10000
+
+  k=4 summary: 1 obstructions found out of 46 digit counts tested
+
+  k=5: valid_endings = 10424 / 100000 (10.42%)  valid_firsts = 10424
+  ---------------------------------------------------
+    d= 6  survivors =      0  *** OBSTRUCTION ***
+    d= 7  survivors =      7
+    d= 8  survivors =      2
+    d= 9  survivors =      6
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =  59227
+    d=12  survivors = 100000
+    d=13  survivors = 100000
+    d=14  survivors = 100000
+    d=15  survivors = 100000
+    d=16  survivors = 100000
+    d=17  survivors = 100000
+    d=18  survivors = 100000
+    d=19  survivors = 100000
+    d=20  survivors = 100000
+    d=21  survivors = 100000
+    d=22  survivors = 100000
+    d=23  survivors = 100000
+    d=24  survivors = 100000
+    d=25  survivors = 100000
+    d=26  survivors = 100000
+    d=27  survivors = 100000
+    d=28  survivors = 100000
+    d=29  survivors = 100000
+    d=30  survivors = 100000
+    d=31  survivors = 100000
+    d=32  survivors = 100000
+    d=33  survivors = 100000
+    d=34  survivors = 100000
+    d=35  survivors = 100000
+    d=36  survivors = 100000
+    d=37  survivors = 100000
+    d=38  survivors = 100000
+    d=39  survivors = 100000
+    d=40  survivors = 100000
+    d=41  survivors = 100000
+    d=42  survivors = 100000
+    d=43  survivors = 100000
+    d=44  survivors = 100000
+    d=45  survivors = 100000
+    d=46  survivors = 100000
+    d=47  survivors = 100000
+    d=48  survivors = 100000
+    d=49  survivors = 100000
+    d=50  survivors = 100000
+
+  k=5 summary: 2 obstructions found out of 45 digit counts tested
+
+  k=6: valid_endings = 104176 / 1000000 (10.42%)  valid_firsts = 104176
+  ---------------------------------------------------
+    d= 7  survivors =      7
+    d= 8  survivors =      2
+    d= 9  survivors =      6
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      5
+    d=12  survivors =      2
+    d=13  survivors = 591606
+    d=14  survivors = 1000000
+    d=15  survivors = 1000000
+    d=16  survivors = 1000000
+    d=17  survivors = 1000000
+    d=18  survivors = 1000000
+    d=19  survivors = 1000000
+    d=20  survivors = 1000000
+    d=21  survivors = 1000000
+    d=22  survivors = 1000000
+    d=23  survivors = 1000000
+    d=24  survivors = 1000000
+    d=25  survivors = 1000000
+    d=26  survivors = 1000000
+    d=27  survivors = 1000000
+    d=28  survivors = 1000000
+    d=29  survivors = 1000000
+    d=30  survivors = 1000000
+    d=31  survivors = 1000000
+    d=32  survivors = 1000000
+    d=33  survivors = 1000000
+    d=34  survivors = 1000000
+    d=35  survivors = 1000000
+    d=36  survivors = 1000000
+    d=37  survivors = 1000000
+    d=38  survivors = 1000000
+    d=39  survivors = 1000000
+    d=40  survivors = 1000000
+    d=41  survivors = 1000000
+    d=42  survivors = 1000000
+    d=43  survivors = 1000000
+    d=44  survivors = 1000000
+    d=45  survivors = 1000000
+    d=46  survivors = 1000000
+    d=47  survivors = 1000000
+    d=48  survivors = 1000000
+    d=49  survivors = 1000000
+    d=50  survivors = 1000000
+
+  k=6 summary: 1 obstructions found out of 44 digit counts tested
+
+  k=7: valid_endings = 1041696 / 10000000 (10.42%)  valid_firsts = 1041696
+  ---------------------------------------------------
+    d= 8  survivors =      2
+    d= 9  survivors =      6
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      5
+    d=12  survivors =      2
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors = 5916383
+    d=16  survivors = 10000000
+    d=17  survivors = 10000000
+    d=18  survivors = 10000000
+    d=19  survivors = 10000000
+    d=20  survivors = 10000000
+    d=21  survivors = 10000000
+    d=22  survivors = 10000000
+    d=23  survivors = 10000000
+    d=24  survivors = 10000000
+    d=25  survivors = 10000000
+    d=26  survivors = 10000000
+    d=27  survivors = 10000000
+    d=28  survivors = 10000000
+    d=29  survivors = 10000000
+    d=30  survivors = 10000000
+    d=31  survivors = 10000000
+    d=32  survivors = 10000000
+    d=33  survivors = 10000000
+    d=34  survivors = 10000000
+    d=35  survivors = 10000000
+    d=36  survivors = 10000000
+    d=37  survivors = 10000000
+    d=38  survivors = 10000000
+    d=39  survivors = 10000000
+    d=40  survivors = 10000000
+    d=41  survivors = 10000000
+    d=42  survivors = 10000000
+    d=43  survivors = 10000000
+    d=44  survivors = 10000000
+    d=45  survivors = 10000000
+    d=46  survivors = 10000000
+    d=47  survivors = 10000000
+    d=48  survivors = 10000000
+    d=49  survivors = 10000000
+    d=50  survivors = 10000000
+
+  k=7 summary: 1 obstructions found out of 43 digit counts tested
+
+  k=8: valid_endings = 10416704 / 100000000 (10.42%)  valid_firsts = 10416704
+  ---------------------------------------------------
+    d= 9  survivors =      6
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      5
+    d=12  survivors =      2
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors =      6
+    d=16  survivors =      2
+    d=17  survivors = 59161418
+    d=18  survivors = 100000000
+    d=19  survivors = 100000000
+    d=20  survivors = 100000000
+    d=21  survivors = 100000000
+    d=22  survivors = 100000000
+    d=23  survivors = 100000000
+    d=24  survivors = 100000000
+    d=25  survivors = 100000000
+    d=26  survivors = 100000000
+    d=27  survivors = 100000000
+    d=28  survivors = 100000000
+    d=29  survivors = 100000000
+    d=30  survivors = 100000000
+    d=31  survivors = 100000000
+    d=32  survivors = 100000000
+    d=33  survivors = 100000000
+    d=34  survivors = 100000000
+    d=35  survivors = 100000000
+    d=36  survivors = 100000000
+    d=37  survivors = 100000000
+    d=38  survivors = 100000000
+    d=39  survivors = 100000000
+    d=40  survivors = 100000000
+    d=41  survivors = 100000000
+    d=42  survivors = 100000000
+    d=43  survivors = 100000000
+    d=44  survivors = 100000000
+    d=45  survivors = 100000000
+    d=46  survivors = 100000000
+    d=47  survivors = 100000000
+    d=48  survivors = 100000000
+    d=49  survivors = 100000000
+    d=50  survivors = 100000000
+
+  k=8 summary: 1 obstructions found out of 42 digit counts tested
+
+  k=9: valid_endings = 104166784/1000000000 (10.42%)  valid_firsts = 104166784
+  ---------------------------------------------------
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      5
+    d=12  survivors =      2
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors =      6
+    d=16  survivors =      2
+    d=17  survivors =      1
+    d=18  survivors =      0  *** OBSTRUCTION ***

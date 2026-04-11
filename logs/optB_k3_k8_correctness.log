@@ -1,0 +1,91 @@
+
+  Modular Obstruction Search for Bi-Quadratic Emirps
+=====================================================
+  max_d = 50    max_k = 8
+=====================================================
+
+  k=3: valid_endings = 56 / 1000 (5.60%)  valid_firsts = 56
+  ---------------------------------------------------
+    d= 4  survivors =      0  *** OBSTRUCTION ***
+    d= 5  survivors =      6
+    d= 6  survivors =      0  *** OBSTRUCTION ***
+    d= 7  survivors =    324
+    d= 8  survivors =    600  (saturated)
+    d= 9..50  (skipped — saturated)
+
+  k=3 summary: 2 obstructions found out of 47 digit counts tested
+
+  k=4: valid_endings = 544 / 10000 (5.44%)  valid_firsts = 544
+  ---------------------------------------------------
+    d= 5  survivors =      6
+    d= 6  survivors =      0  *** OBSTRUCTION ***
+    d= 7  survivors =      5
+    d= 8  survivors =      2
+    d= 9  survivors =   3221
+    d=10  survivors =   6000  (saturated)
+    d=11..50  (skipped — saturated)
+
+  k=4 summary: 1 obstructions found out of 46 digit counts tested
+
+  k=5: valid_endings = 5424 / 100000 (5.42%)  valid_firsts = 5424
+  ---------------------------------------------------
+    d= 6  survivors =      0  *** OBSTRUCTION ***
+    d= 7  survivors =      5
+    d= 8  survivors =      2
+    d= 9  survivors =      0  *** OBSTRUCTION ***
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =  32219
+    d=12  survivors =  60000  (saturated)
+    d=13..50  (skipped — saturated)
+
+  k=5 summary: 3 obstructions found out of 45 digit counts tested
+
+  k=6: valid_endings = 54176 / 1000000 (5.42%)  valid_firsts = 54176
+  ---------------------------------------------------
+    d= 7  survivors =      5
+    d= 8  survivors =      2
+    d= 9  survivors =      0  *** OBSTRUCTION ***
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      0  *** OBSTRUCTION ***
+    d=12  survivors =      0  *** OBSTRUCTION ***
+    d=13  survivors = 322052
+    d=14  survivors = 600000  (saturated)
+    d=15..50  (skipped — saturated)
+
+  k=6 summary: 4 obstructions found out of 44 digit counts tested
+
+  k=7: valid_endings = 541696 / 10000000 (5.42%)  valid_firsts = 541696
+  ---------------------------------------------------
+    d= 8  survivors =      2
+    d= 9  survivors =      0  *** OBSTRUCTION ***
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      0  *** OBSTRUCTION ***
+    d=12  survivors =      0  *** OBSTRUCTION ***
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors = 3220659
+    d=16  survivors = 6000000  (saturated)
+    d=17..50  (skipped — saturated)
+
+  k=7 summary: 4 obstructions found out of 43 digit counts tested
+
+  k=8: valid_endings = 5416704 / 100000000 (5.42%)  valid_firsts = 5416704
+  ---------------------------------------------------
+    d= 9  survivors =      0  *** OBSTRUCTION ***
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      0  *** OBSTRUCTION ***
+    d=12  survivors =      0  *** OBSTRUCTION ***
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors =      5
+    d=16  survivors =      0  *** OBSTRUCTION ***
+    d=17  survivors = 32205885
+    d=18  survivors = 60000000  (saturated)
+    d=19..50  (skipped — saturated)
+
+  k=8 summary: 5 obstructions found out of 42 digit counts tested
+
+=====================================================
+  Search complete.
+=====================================================
+
