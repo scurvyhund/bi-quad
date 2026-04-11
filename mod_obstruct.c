@@ -5,21 +5,31 @@
  * 2n² + 2n + 1 is structurally possible, based on modular constraints
  * on the first and last k digits.
  *
+ * Default gcc compiler cmd: 
+ *
+ * $> gcc prog.c -o prog -O3 -march=znver2 -mtune=znver2 -std=c99 -Wall
+ *    -fopenmp -lgmp 
+ * 
  * Build:  make
- * Usage:  ./mod_obstruct [max_d] [max_k]
- *         defaults: max_d=50, max_k=6
+ * Usage:  ./mod_obstruct [max_d] [max_k] [min_k] [min_d]
+ *
+ *         defaults: max_d=50, max_k=6, min_k=3, min_d=0
+ *         min_k/min_d allow resuming an interrupted run
  *
  * Algorithm:
- *   For p = 2n²+2n+1 and q = rev(p) = 2m²+2m+1:
- *   - last k digits of p  → determined by n mod 10^k
+ *  
+ * For p = 2n²+2n+1 and q = rev(p) = 2m²+2m+1:
+ *   
+ *   - last  k digits of p  → determined by n mod 10^k
  *   - first k digits of q = reverse(last k of p) → must be achievable
- *   - last k digits of q  = reverse(first k of p) → must be valid ending
+ *   - last  k digits of q  = reverse(first k of p) → must be valid ending
  *   - first k digits of p → determined by magnitude of n
  *
- *   Both the p-side and q-side constraints are checked.
+ * Both the p-side and q-side constraints are checked.
  *
  * Memory-efficient design (supports k up to ~13):
- *   - is_valid_ending stored as bitset (1 bit/entry vs 1 byte)
+ *
+ * - is_valid_ending stored as bitset (1 bit/entry vs 1 byte)
  *   - endings[] array eliminated — computed inline via __int128
  *   - Phase 2b reverse-residue lookup replaced by Hensel lifting
  *   - valid_firsts[] right-sized to actual count (not mod-sized)
@@ -36,18 +46,50 @@
 #define DEFAULT_MAX_D  50
 #define DEFAULT_MAX_K   6
 #define NUM_THREADS     8
+#define CKPT_FILE      "mod_obstruct.ckpt"
 
 /* Bitset macros — compact bool array using 1 bit per entry */
 #define BITSET_WORDS(n) (((n) + 63) / 64)
 #define BITSET_SET(bs, i) ((bs)[(i) >> 6] |= (1ULL << ((i) & 63)))
 #define BITSET_GET(bs, i) (((bs)[(i) >> 6] >> ((i) & 63)) & 1)
 
+/* Write checkpoint atomically: write to tmp file, then rename.
+ * Stores the next (k, d) to process so we can resume there. */
+static void write_checkpoint(int max_d, int max_k, int k, int d) {
+    
+    FILE *f = fopen(CKPT_FILE ".tmp", "w");
+    if (f) {
+        fprintf(f, "%d %d %d %d\n", max_d, max_k, k, d);
+        fclose(f);
+        rename(CKPT_FILE ".tmp", CKPT_FILE);
+    }
+}
+
+/* Read checkpoint and set min_k/min_d if it matches current run params.
+ * Returns true if checkpoint was loaded successfully. */
+static bool read_checkpoint(int max_d, int max_k, int *min_k, int *min_d) {
+    
+    FILE *f = fopen(CKPT_FILE, "r");
+    if (!f) return false;
+
+    int ck_max_d, ck_max_k, ck_k, ck_d;
+    if (fscanf(f, "%d %d %d %d", &ck_max_d, &ck_max_k, &ck_k, &ck_d) == 4
+        && ck_max_d == max_d && ck_max_k == max_k) {
+        fclose(f);
+        *min_k = ck_k;
+        *min_d = ck_d;
+        return true;
+    }
+    fclose(f);
+    return false;
+}
+
 /* Compute (2r² + 2r + 1) mod m.
  * Uses 64-bit arithmetic when mod ≤ 10^9 (k ≤ 9), since
  * 2r² fits in unsigned long long.  Falls back to __int128
  * for k ≥ 10 where r can exceed ~3×10^9. */
-static inline long ending_for_residue(long r, long m)
-{
+static inline long ending_for_residue(long r, long m) {
+    
     if (__builtin_expect(m <= 1000000000L, 1)) {
         unsigned long long rr = (unsigned long long)r;
         return (long)((2*rr*rr + 2*rr + 1) % (unsigned long long)m);
@@ -57,9 +99,10 @@ static inline long ending_for_residue(long r, long m)
 }
 
 /* Reverse a k-digit number (leading zeros preserved in digit sense). */
-static long reverse_k(long val, int k)
-{
+static long reverse_k(long val, int k) {
+    
     long result = 0;
+    
     for (int i = 0; i < k; i++) {
         result = result * 10 + (val % 10);
         val /= 10;
@@ -68,16 +111,17 @@ static long reverse_k(long val, int k)
 }
 
 /* Check if sorted array contains any value in [lo, hi] */
-static bool sorted_has_value_in_range(const long *arr, long len,
-                                      long lo, long hi)
-{
+static bool sorted_has_value_in_range(const long *arr, long len, long lo, 
+                                      long hi) {
     if (len == 0 || lo > hi)
         return false;
 
     /* Binary search for first element >= lo */
     long left = 0, right = len;
+
     while (left < right) {
         long mid = left + (right - left) / 2;
+   
         if (arr[mid] < lo)
             left = mid + 1;
         else
@@ -87,8 +131,8 @@ static bool sorted_has_value_in_range(const long *arr, long len,
 }
 
 /* Compute n_min, n_max for d-digit numbers of the form 2n²+2n+1. */
-static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max)
-{
+static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
+
     mpz_t target, sq;
     mpz_init(target);
     mpz_init(sq);
@@ -111,8 +155,10 @@ static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max)
     mpz_mul_ui(check, check, 2);
     mpz_addmul_ui(check, n_min, 2);
     mpz_add_ui(check, check, 1);
+    
     if (mpz_cmp(check, lo_bound) < 0)
         mpz_add_ui(n_min, n_min, 1);
+   
     mpz_clear(check);
     mpz_clear(lo_bound);
 
@@ -131,8 +177,8 @@ static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max)
 /* Compute first-k-digit prefix of p = 2n²+2n+1 for given n.
  * Returns floor(p / 10^(d-k)).
  */
-static long compute_first_k(mpz_t n, int d, int k, mpz_t tmp_p, mpz_t tmp_pow)
-{
+static long compute_first_k(mpz_t n, int d, int k, mpz_t tmp_p, mpz_t tmp_pow){
+    
     /* p = 2n² + 2n + 1 */
     mpz_mul(tmp_p, n, n);
     mpz_mul_ui(tmp_p, tmp_p, 2);
@@ -147,20 +193,20 @@ static long compute_first_k(mpz_t n, int d, int k, mpz_t tmp_p, mpz_t tmp_pow)
 }
 
 /* Find first n >= lo with n ≡ r (mod stride) */
-static void first_n_with_residue(mpz_t result, mpz_t lo,
-                                 long r, long stride)
-{
+static void first_n_with_residue(mpz_t result, mpz_t lo, long r, long stride) {
+    
     unsigned long lo_mod = mpz_fdiv_ui(lo, (unsigned long)stride);
     long gap = (((long)r - (long)lo_mod) % stride + stride) % stride;
+   
     mpz_add_ui(result, lo, (unsigned long)gap);
 }
 
 /* Find last n <= hi with n ≡ r (mod stride) */
-static void last_n_with_residue(mpz_t result, mpz_t hi,
-                                long r, long stride)
-{
+static void last_n_with_residue(mpz_t result, mpz_t hi, long r, long stride) {
+    
     unsigned long hi_mod = mpz_fdiv_ui(hi, (unsigned long)stride);
     long gap = (((long)hi_mod - (long)r) % stride + stride) % stride;
+   
     mpz_sub_ui(result, hi, (unsigned long)gap);
 }
 
@@ -168,21 +214,26 @@ static void last_n_with_residue(mpz_t result, mpz_t hi,
  * Returns number of solutions stored in sols[].
  * Max solutions bounded by ~4 * 2^(k-1).
  */
+
 #define MAX_HENSEL_SOLS 4096
-static int solve_residues(long target, int k, long *sols)
-{
+
+static int solve_residues(long target, int k, long *sols) {
+    
     long tmp[MAX_HENSEL_SOLS];
     int count = 0;
 
     /* Base: solutions mod 10 */
     long t10 = target % 10;
+
     for (long r = 0; r < 10; r++) {
+        
         if ((2*r*r + 2*r + 1) % 10 == t10)
             sols[count++] = r;
     }
 
     /* Hensel lift: mod 10^j → mod 10^(j+1) */
     long pow10j = 10;
+    
     for (int j = 1; j < k; j++) {
         long next_mod = pow10j * 10;
         long target_next = target % next_mod;
@@ -190,10 +241,12 @@ static int solve_residues(long target, int k, long *sols)
 
         for (int i = 0; i < count; i++) {
             long r = sols[i];
+   
             for (long c = 0; c < 10; c++) {
                 long r_new = r + c * pow10j;
                 long long rn = (long long)r_new;
                 long long fr = (2*rn*rn + 2*rn + 1) % (long long)next_mod;
+           
                 if (fr == target_next && new_count < MAX_HENSEL_SOLS)
                     tmp[new_count++] = r_new;
             }
@@ -209,19 +262,37 @@ static int solve_residues(long target, int k, long *sols)
     return count;
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
+    
     int max_d = (argc > 1) ? atoi(argv[1]) : DEFAULT_MAX_D;
     int max_k = (argc > 2) ? atoi(argv[2]) : DEFAULT_MAX_K;
+    int min_k = (argc > 3) ? atoi(argv[3]) : 3;
+    int min_d = (argc > 4) ? atoi(argv[4]) : 0;
+
+    /* Auto-resume from checkpoint if no explicit min_k/min_d given */
+    bool from_ckpt = false;
+    if (argc <= 3) {
+        from_ckpt = read_checkpoint(max_d, max_k, &min_k, &min_d);
+    }
 
     printf("\n");
     printf("  Modular Obstruction Search for Bi-Quadratic Emirps\n");
     printf("=====================================================\n");
-    printf("  max_d = %d    max_k = %d\n", max_d, max_k);
-    printf("=====================================================\n\n");
+    printf("  max_d = %d    max_k = %d", max_d, max_k);
 
-    for (int k = 3; k <= max_k; k++) {
+    if (min_k > 3 || min_d > 0) {
+        printf("    (resuming from k=%d, d=%d", min_k, min_d);
+        printf(from_ckpt ? " — from checkpoint)" : ")");
+    }
+
+    printf("\n");
+    printf("=====================================================\n\n");
+    fflush(stdout);
+
+
+    for (int k = min_k; k <= max_k; k++) {
         long mod = 1;
+   
         for (int i = 0; i < k; i++)
             mod *= 10;
 
@@ -231,8 +302,10 @@ int main(int argc, char *argv[])
          * Mark which last-k-digit values are achievable by 2n²+2n+1.
          * Uses bitset (mod/8 bytes) instead of bool array (mod bytes).
          * endings[] array eliminated — computed inline via __int128. */
+        
         size_t bs_words = BITSET_WORDS(mod);
         uint64_t *is_valid_ending = calloc(bs_words, sizeof(uint64_t));
+       
         if (!is_valid_ending) {
             fprintf(stderr, "Failed to allocate is_valid_ending "
                     "bitset (%zu MB)\n", bs_words * 8 / (1024*1024));
@@ -241,6 +314,15 @@ int main(int argc, char *argv[])
         long num_endings = 0;
 
         for (long n = 0; n < mod; n++) {
+
+            /* Skip n where 2n²+2n+1 ≡ 5 (mod 10) — ending would be
+             * divisible by 5, so p is composite. Determined entirely
+             * by n mod 10 ∈ {1,3,6,8}. Avoids the ending computation
+             * for ~40% of residues. */
+            long n10 = n % 10;
+            if (n10 == 1 || n10 == 3 || n10 == 6 || n10 == 8)
+                continue;
+
             long e = ending_for_residue(n, mod);
             if (!BITSET_GET(is_valid_ending, e)) {
                 BITSET_SET(is_valid_ending, e);
@@ -248,13 +330,52 @@ int main(int argc, char *argv[])
             }
         }
 
+        #ifdef DEBUG
+        
+        /* Phase 1 — dump first cycle of endings (mod 100 cycle = 50) */
+        {
+            long dump_limit = (mod < 50) ? mod : 50;
+            fprintf(stderr, "\n  [DEBUG] Phase 1 ending dump (n=0..%ld,\
+                    mod=%ld):\n", dump_limit - 1, mod);
+
+            fprintf(stderr, "  %4s  %10s  %7s  %4s  %s\n",
+                    "n", "2n²+2n+1", "mod", "last", "status");
+            fprintf(stderr, "  %s\n",
+                    "---------------------------------------------");
+            for (long n = 0; n < dump_limit; n++) {
+                long e = ending_for_residue(n, mod);
+                long last = e % 10;
+                fprintf(stderr, "  %4ld  %10ld  %7ld  %4ld  %s\n",
+                        n, 2*n*n + 2*n + 1, e, last,
+                        (last == 5) ? "REJECT (div5)" : "pass");
+            }
+            fprintf(stderr, "\n");
+        }
+
+        /* Phase 1 invariant check */
+        for (long n = 0; n < mod; n++) {
+            long e = ending_for_residue(n, mod);
+            if (!BITSET_GET(is_valid_ending, e))
+                continue;
+            if (e % 2 == 0)
+                fprintf(stderr, "\n*** BUG: EVEN ENDING e=%ld n=%ld mod=%ld"
+                        " (2n²+2n+1 must be odd)\n", e, n, mod);
+            if (e % 10 == 5)
+                fprintf(stderr, "\n*** BUG: ENDING DIVISIBLE BY 5 e=%ld n=%ld"
+                        " (composite — not prime-eligible)\n", e, n);
+        }
+        
+        #endif
+
         /* Phase 2: Build VALID_FIRSTS as a sorted array for fast
          * range queries. A first-k prefix f is valid if reverse_k(f)
          * is a valid ending (ensures last-k of q is achievable).
          *
          * Two-pass: count first, then right-size the allocation.
          * Uses a temporary bitset for dedup instead of bool array. */
+       
         uint64_t *is_valid_first_bs = calloc(bs_words, sizeof(uint64_t));
+        
         if (!is_valid_first_bs) {
             fprintf(stderr, "Failed to allocate is_valid_first "
                     "bitset (%zu MB)\n", bs_words * 8 / (1024*1024));
@@ -267,7 +388,9 @@ int main(int argc, char *argv[])
         for (long e = 0; e < mod; e++) {
             if (!BITSET_GET(is_valid_ending, e))
                 continue;
+       
             long f = reverse_k(e, k);
+           
             if (f >= prefix_min && !BITSET_GET(is_valid_first_bs, f)) {
                 BITSET_SET(is_valid_first_bs, f);
                 num_firsts++;
@@ -276,6 +399,7 @@ int main(int argc, char *argv[])
 
         /* Pass 2: allocate right-sized array and fill */
         long *valid_firsts = malloc(num_firsts * sizeof(long));
+        
         if (!valid_firsts) {
             fprintf(stderr, "Failed to allocate valid_firsts "
                     "(%ld entries, %zu MB)\n",
@@ -286,7 +410,9 @@ int main(int argc, char *argv[])
         }
 
         long fill_idx = 0;
+       
         for (long f = prefix_min; f < mod; f++) {
+       
             if (BITSET_GET(is_valid_first_bs, f))
                 valid_firsts[fill_idx++] = f;
         }
@@ -294,11 +420,29 @@ int main(int argc, char *argv[])
 
         /* valid_firsts is already sorted (filled in ascending order) */
 
+        #ifdef DEBUG
+        
+        /* Phase 2 invariant check */
+        for (long fi = 0; fi < num_firsts; fi++) {
+            long f = valid_firsts[fi];
+            long rev = reverse_k(f, k);
+            if (rev % 10 == 5 || rev % 2 == 0)
+                fprintf(stderr, "\n*** BUG: DIRTY valid_first f=%ld"
+                        " reverse=%ld last_digit=%ld\n",
+                        f, rev, rev % 10);
+            if (f < prefix_min)
+                fprintf(stderr, "\n*** BUG: valid_first f=%ld below"
+                        " prefix_min=%ld\n", f, prefix_min);
+        }
+        
+        #endif
+
         printf("  k=%d: valid_endings = %ld / %ld (%.2f%%)  "
                "valid_firsts = %ld\n",
                k, num_endings, mod,
                100.0 * num_endings / mod, num_firsts);
         printf("  ---------------------------------------------------\n");
+        fflush(stdout);
 
         /* Phase 3: For each digit count d, check feasibility.
          *
@@ -308,11 +452,12 @@ int main(int argc, char *argv[])
          *   3. For each matching first-k prefix f:
          *      - q's last-k = reverse_k(f) → find m residues via Hensel
          *      - q's first-k = reverse_k(ending_of_p)
-         *      - Check if any such m achieves that first-k prefix (q-side pass)
+         *      - Chk if any such m achieves that first-k prefix (q-side pass)
          *
          * The residue loop is parallelized with OpenMP. Each thread
          * gets its own GMP variables to avoid sharing.
          */
+       
         mpz_t n_min, n_max;
         mpz_init(n_min);
         mpz_init(n_max);
@@ -320,7 +465,17 @@ int main(int argc, char *argv[])
         omp_set_num_threads(NUM_THREADS);
         int obstruction_count = 0;
 
-        for (int d = k + 1; d <= max_d; d++) {
+        /* Max possible survivors under Option B: we skip residues with
+         * r mod 10 ∈ {1,3,6,8} (40%) because their p_ending is divisible
+         * by 5. Saturation ceiling is the remaining 60% of mod. */
+        long max_survivors = (mod / 10) * 6;
+
+        int d_start = k + 1;
+        
+        if (k == min_k && min_d > d_start)
+            d_start = min_d;
+
+        for (int d = d_start; d <= max_d; d++) {
 
             compute_n_bounds(d, n_min, n_max);
 
@@ -340,11 +495,21 @@ int main(int argc, char *argv[])
                 #pragma omp for schedule(dynamic, 1024)
                 for (long r = 0; r < mod; r++) {
 
+                    /* Skip residues where p_ending would be divisible
+                     * by 5 (2r²+2r+1 ≡ 5 mod 10 iff r mod 10 ∈ {1,3,6,8}).
+                     * Mirrors the Phase 1 filter and eliminates ~40%
+                     * of residues before any GMP work. */
+                    long r10 = r % 10;
+                    if (r10 == 1 || r10 == 3 || r10 == 6 || r10 == 8)
+                        continue;
+
                     /* First n ≡ r (mod 10^k) in [n_min, n_max] —
                      * check this BEFORE computing the ending to
                      * skip residues with no n values cheaply
                      * (at k=10 d=11, eliminates 99.999% of r). */
+
                     first_n_with_residue(t_first, n_min, r, mod);
+       
                     if (mpz_cmp(t_first, n_max) > 0)
                         continue;
 
@@ -364,7 +529,9 @@ int main(int argc, char *argv[])
 
                     /* q's first-k digits = reverse_k(p_ending) — fixed for
                      * this residue, so compute once */
+                   
                     long q_first = reverse_k(p_ending, k);
+                   
                     if (q_first < prefix_min)
                         continue;
 
@@ -372,10 +539,12 @@ int main(int argc, char *argv[])
                      * in [fk_min, fk_max]. */
                     bool q_ok = false;
 
-                    /* Find valid firsts in [fk_min, fk_max] via binary search */
+                    /* Find valid firsts in [fk_min,fk_max] via binary srch */
                     long left = 0, right = num_firsts;
+                   
                     while (left < right) {
                         long mid = left + (right - left) / 2;
+                   
                         if (valid_firsts[mid] < fk_min)
                             left = mid + 1;
                         else
@@ -393,6 +562,13 @@ int main(int argc, char *argv[])
                         if (!BITSET_GET(is_valid_ending, q_ending))
                             continue;
 
+        #ifdef DEBUG
+                        if (q_ending % 10 == 5 || q_ending % 2 == 0)
+                            fprintf(stderr, "\n*** BUG: DIRTY q_ending=%ld"
+                                    " passed bitset check — filter broken\n",
+                                    q_ending);
+        #endif
+
                         /* Solve for m residues on the fly via Hensel */
                         long m_sols[MAX_HENSEL_SOLS];
                         int qe_count = solve_residues(q_ending, k, m_sols);
@@ -401,6 +577,7 @@ int main(int argc, char *argv[])
                             long m_r = m_sols[mi];
 
                             first_n_with_residue(t_mfirst, n_min, m_r, mod);
+                       
                             if (mpz_cmp(t_mfirst, n_max) <= 0) {
                                 last_n_with_residue(t_mlast, n_max, m_r, mod);
 
@@ -435,27 +612,37 @@ int main(int argc, char *argv[])
             }
 
             const char *tag = "";
+            
             if (survivors == 0) {
                 tag = "  *** OBSTRUCTION ***";
                 obstruction_count++;
-            } else if (survivors == mod) {
+            } else if ((long)survivors == max_survivors) {
                 tag = "  (saturated)";
             }
 
             printf("    d=%2d  survivors = %6d%s\n", d, survivors, tag);
             fflush(stdout);
 
-            /* If fully saturated, all larger d will also saturate — skip */
-            if (survivors == mod) {
+            /* If fully saturated, all larger d will also saturate — skip.
+             * "Full" = every residue class that Option B allows (60% of mod).
+             * Monotonicity holds because n-range grows with d. */
+            if ((long)survivors == max_survivors) {
                 printf("    d=%2d..%2d  (skipped — saturated)\n",
                        d + 1, max_d);
+                write_checkpoint(max_d, max_k, k + 1, 0);
                 break;
             }
+
+            /* Checkpoint: next d-value to process */
+            write_checkpoint(max_d, max_k, k, d + 1);
         }
 
         printf("\n  k=%d summary: %d obstructions found out of %d "
                "digit counts tested\n\n",
                k, obstruction_count, max_d - k);
+
+        /* Checkpoint: advance to next k */
+        write_checkpoint(max_d, max_k, k + 1, 0);
 
         free(valid_firsts);
         free(is_valid_ending);
@@ -468,5 +655,6 @@ int main(int argc, char *argv[])
     printf("  Search complete.\n");
     printf("=====================================================\n\n");
 
+    remove(CKPT_FILE);
     return 0;
 }
