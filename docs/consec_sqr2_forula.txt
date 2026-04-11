@@ -17,7 +17,7 @@ Take half the coefficient of (n) half of 1 is 1/2, then square it: (1/2)^2 =
 
 Rewrite the expression by adding and subtracting (1/4) inside:
 
-n^2 + n = n^2 + n + 1/4 - 1/4 ==>  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FIXME FIXME FIXME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+n^2 + n = n^2 + n + 1/4 ==> (n+1/2)^2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! FIXME FIXME FIXME !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 Substitute this back in:
 
@@ -56,10 +56,20 @@ roots):
 
 n+1/2 = sqrt((2p-1)/4) ===> sqrt(2p-1)/2
 
-Thus:
+Then:
 
 n+1/2 = sqrt(2p-1)/2
 
 Subtract 1/2 from both sides:
 
-n = sqrt(2p-1)/2 - 1/2 ===> n = sqrt(2p-1)/2 - 1/2 or  -1+sqrt(2p-1)/2 
+n = (sqrt(2p-1)/2) - 1/2
+
+example of p = 12641, a type of prime the bi-quad project mod_obstruct_optB program searches for,
+
+so n = (sqrt(2p-1)/2) - 1/2 ==> (sqrt(25282 - 1)/2) - 1/2 ==> (sqrt(25281)/2) - 1/2 ==> (159/2) - 1/2 ==> 79.5 - 1/2
+so n = 79.5 - .5 ==> 79 and n+1 ==> 80
+
+so 12641 can be expressed as: (79^2) + (80^2) ==> 6241 + 6400 ==> p, 12641, so 12641 is a fermat 4n+1 prime that can be 
+expressed as the sum of two consecutive positive whole numbers squared and 14621 is also a 4n+1 prime that makes it an 
+emirp (12641 <===> 14621) that is also the sum of two consecutive whole numbers squared: (85^2) + (86^2).
+
