@@ -1,0 +1,145 @@
+# bi-quad — Bi-Quadratic Emirps & Prime Palindromes on `2n²+2n+1`
+
+A long-running search (part of the **BigFermat** project) on the curve
+
+> **p(n) = 2n² + 2n + 1 = n² + (n+1)²**  — the sum of two *consecutive* squares —
+
+for two kinds of rare prime: **bi-quadratic emirps** and **prime palindromes**.
+Every value on the curve is ≡ 1 (mod 4), so by Fermat's two-square theorem it's
+exactly the class of primes expressible as a sum of two squares — hence the name.
+
+![The curve and its findings: prime palindromes cluster at small d; the emirp obstruction landscape](docs/biquad_curve_landscape.png)
+
+---
+
+## The objects of the hunt
+
+- **Bi-quadratic emirp** — a prime `p = 2n²+2n+1` whose digit-reversal
+  `q = rev(p)` is **also** prime **and also** of the form `2m²+2m+1`, with `q ≠ p`.
+  (Both ends prime, both on the curve, not a palindrome.) *Existence unknown.*
+- **Prime palindrome on the curve** — a prime `p = 2n²+2n+1` that reads the same
+  forwards and backwards. Four are known: **5, 181, 313, 3187813**.
+
+These two searches turn out to be **the same sieve**: a palindrome is just the
+`m = n` case of the emirp relation, so any obstruction kills both.
+
+---
+
+## Results
+
+### Proven: no bi-quadratic emirp has ≤ 22 digits
+
+Gap-free, and **cross-validated four independent ways** (modular sieve at k=7, 8,
+9 — the "convergence diagonal" — plus an independent direct brute force):
+
+```
+d ≤ 12 : OBSTRUCTION (no candidates)
+d = 13 : 4 candidates,  all composite   → no emirp   ┐
+d = 14 : 6 candidates,  all composite   → no emirp   │ exhaustive brute force
+d = 15 : 5 candidates,  all composite   → no emirp   │ (hunt.c) — every n tested
+d = 16 : OBSTRUCTION                                 │
+d = 17 : 1 candidate,   composite       → no emirp   ┘
+d = 18..21 : OBSTRUCTION   (modular sieve, k=10)
+d = 22 : OBSTRUCTION       (exact brute force — 0 curve-reversal pairs)
+```
+
+Every prime-eligible candidate has its reversal exactly on the curve, yet `p`
+and/or `q` is composite. If a bi-quadratic emirp exists at all, it has **≥ 23
+digits**. (Search is being pushed there; see *Status*.)
+
+### Prime palindromes: a 27-year conjecture
+
+The **only** prime palindromes on the curve through 21 digits — confirmed
+exhaustively — are **5, 181, 313, 3187813**, all at ≤ 7 digits. The standing
+conjecture (Jim, since ~1997):
+
+> **3187813 is the largest prime palindrome on the curve.**
+
+### Structural limits (what *can't* work)
+
+Two roads were rigorously **ruled out** by measurement (see
+[`docs/structural_attacks_2026-06-04.md`](docs/structural_attacks_2026-06-04.md)):
+
+- **No faster search.** A meet-in-the-middle attack gives no √-speedup — the
+  digit-reversal of a quadratic entangles the middle digits irreducibly. Search
+  is **~10^(d/2)-bound** (brute force reaches ~d=25).
+- **No congruence proof.** A sweep of 50 base-aligned / 2-power / 5-power moduli
+  found **zero** obstructions: the real obstructions are *non-congruential*
+  (sporadic). A non-existence theorem, if any, needs new mathematics.
+
+### Heuristic
+
+A coin-flip density argument predicts **bi-quadratic emirps are finite** (expected
+≈ `C/d²` per length, sum converges → likely none), while **prime palindromes may
+be infinite** (≈ `C′/d`, sum diverges). The single extra primality condition for
+emirps is what tips the balance.
+
+---
+
+## Tools
+
+All C99 + OpenMP; the GMP ones use arbitrary precision for large `p`.
+
+| file | what it does |
+|---|---|
+| `mod_obstruct.c` | **Modular obstruction sieve** — proves whole digit-lengths impossible via first-k/last-k digit feasibility mod 10^k (exact for d ≤ 2k). |
+| `hunt.c` | **Exhaustive emirp brute force** (GMP) — enumerates every `n`, tests `rev(p)` on-curve + both prime. The trustworthy tool for d ≥ 21. |
+| `palhunt.c` | **Prime-palindrome hunter** (64-bit, ≤ 19 digits). |
+| `palhunt_gmp.c` | Prime-palindrome hunter **past the 64-bit wall** (uint64 `n`, `__int128` `p`, GMP-certified; reaches ~d=27). |
+| `generate_graph.py` | Renders the findings figure (pure Pillow — no matplotlib). |
+
+Archived in git history (commit `7f33475`): `mitm_probe.c`, `mitm_probeB.c`,
+`congru_probe.c` — the probes behind the ruled-out structural attacks.
+
+---
+
+## Build & run
+
+Requires `gcc`, `libgmp`, OpenMP. The Makefile targets AMD Zen2 (`-march=znver2`);
+use `-march=native` elsewhere.
+
+```sh
+make                      # or build individually:
+gcc hunt.c        -o hunt        -O3 -march=native -std=c99 -Wall -fopenmp -lgmp
+gcc palhunt_gmp.c -o palhunt_gmp -O3 -march=native -std=c99 -Wall -fopenmp -lgmp
+gcc mod_obstruct.c -o mod_obstruct -O3 -march=native -std=c99 -Wall -fopenmp -lgmp
+
+# emirp brute force, digit-lengths 13..17
+./hunt 13 17
+
+# modular sieve: max_d max_k min_k min_d   (e.g. k=10, d=17..21)
+./mod_obstruct 21 10 10 17
+
+# prime palindromes on the curve, digit-lengths 21..27
+./palhunt_gmp 21 27
+
+# regenerate the figure
+python3 generate_graph.py
+```
+
+`mod_obstruct` checkpoints to `mod_obstruct.ckpt` and resumes with
+`./mod_obstruct <max_d> <max_k>`.
+
+---
+
+## Documentation
+
+- [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) — **start here**: goal,
+  glossary, the algorithms (pseudocode), bug-history, and the live landscape.
+- [`docs/structural_attacks_2026-06-04.md`](docs/structural_attacks_2026-06-04.md)
+  — the MITM + congruence foray and why neither cracks it.
+- `docs/session_2026-06-04_*.md` — session records (the ≤22 proof, the cliff fix,
+  the palindrome unification).
+- `docs/modular_obstruction_design.md` — the sieve's original design notes.
+
+---
+
+## Why "BigFermat"
+
+The hunt began after Simon Singh's *Fermat's Enigma* (1997) — a book about
+Fermat's *Last* Theorem that sent the search into Fermat's *other* famous result,
+the **two-square theorem**: a prime is a sum of two squares iff it's ≡ 1 (mod 4).
+The curve `2n²+2n+1 = n² + (n+1)²` is the tightest case — a sum of two
+*consecutive* squares. The first champion, `3187813`, was found on a 386 by
+bending the x87 FPU's 80-bit registers into a 64-bit integer engine. The project
+has been chasing that curve ever since.
