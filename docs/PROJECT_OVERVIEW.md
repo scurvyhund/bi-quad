@@ -248,6 +248,16 @@ Independent brute-force cross-checks at small `k` are the ground truth.
 
 ## 5. Current understanding (the converged landscape so far)
 
+![The curve p=2n²+2n+1: prime palindromes (gold) cluster at d≤7 while the curve
+runs on barren; and the obstruction landscape by digit-length](biquad_curve_landscape.png)
+
+*Figure — **top:** the curve on log–log axes; the only four prime palindromes on
+it (5, 181, 313, 3187813) all sit at d ≤ 7, with the vast curve above confirmed
+empty. **bottom:** the emirp obstruction landscape — teal = surviving candidates
+(all composite so far), red ✗ = proven obstruction, the green band = the proven
+"no emirp ≤ 21 digits" zone, orange = the d=22 candidates under test. Regenerate
+with `generate_graph.py` as the wall climbs.*
+
 ```
 d:    9 10 11 12 | 13 14 15 | 16 | 17 | 18 19 20 21
 cnt:  0  0  0  0 |  4  6  5 |  0 |  1 |  0  0  0  0
