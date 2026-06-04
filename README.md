@@ -5,8 +5,9 @@ A long-running search (part of the **BigFermat** project) on the curve
 > **p(n) = 2n² + 2n + 1 = n² + (n+1)²**  — the sum of two *consecutive* squares —
 
 for two kinds of rare prime: **bi-quadratic emirps** and **prime palindromes**.
-Every value on the curve is ≡ 1 (mod 4), so by Fermat's two-square theorem it's
-exactly the class of primes expressible as a sum of two squares — hence the name.
+Every value on the curve is a sum of two **consecutive** squares, `n² + (n+1)²` —
+the tightest special case of the sum-of-two-squares primes in Fermat's two-square
+theorem (the primes ≡ 1 mod 4). Hence the name.
 
 ![The curve and its findings: prime palindromes cluster at small d; the emirp obstruction landscape](docs/biquad_curve_landscape.png)
 
