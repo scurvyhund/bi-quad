@@ -1,5 +1,32 @@
 # Modular Obstruction Experiment — Design & Results
 
+> ## ⚠️ CORRECTION NOTICE (2026-06-03)
+>
+> A **correctness bug** was found and fixed (commit `22a7121`): the Phase 3
+> per-residue check approximated the achievable first-k prefixes as a contiguous
+> interval, which is valid only when `range = n_max - n_min < mod = 10^k`. Past
+> the "cliff" where `range >= mod` (roughly **d ≥ 2k+1**), residues have 2+
+> n-values and the interval admits prefixes no real n produces — **massively
+> over-counting survivors** and then hitting a **fake saturation** that silently
+> stopped the search.
+>
+> **What this means for the results below:**
+> - **Cells with d ≤ 2k are VALID** (range<mod → interval was exact).
+> - **In every k-column, the last two filled cells — the large "~59%" count and
+>   the "sat" cell — are ARTIFACTS.** They are over-counts and a fake saturation,
+>   not real. *Proven:* the fixed code + an independent brute force give k=6 d=13
+>   = **8** (this doc says 591606) and d=14 = **30** (this doc says "sat").
+> - **The headline conclusion "obstructions only exist for d up to ~2k" is WRONG.**
+>   With correct counting, survivors past the cliff are tiny and grow ~10×/digit
+>   (k=6: d13=8, d14=30, d15=269, d16=2494, d17=25292…). There is no 2k+2
+>   saturation; the true landscape past the cliff is unknown and must be
+>   recomputed. The "pre-saturation ~59.16%" figure is the over-count signature,
+>   not a feature.
+>
+> The k=3..9 obstructions and survivor counts at **d ≤ 2k remain valid** (incl.
+> the d=10 and d=18/k=9 obstructions). See the project memory `d21_range_mod_cliff`
+> for the full analysis and validation.
+
 ## Goal
 
 For each digit count d, determine whether it is structurally possible for a
@@ -117,7 +144,7 @@ buffer (32KB). No heap allocation needed.
 The original implementation used bool arrays and full-sized lookup tables,
 consuming ~180GB at k=10. The current design:
 
-| Structure | Original (k=10) | Current (k=10) | Savings |
+| Structure | Original (k=10) | Current (k=10) |Savings |
 |-----------|-----------------|-----------------|---------|
 | `is_valid_ending` | bool array: 10GB | bitset: **1.25GB** | 8× |
 | `endings[]` | long array: 80GB | **eliminated** (inline `__int128`) | ∞ |
@@ -137,7 +164,11 @@ gcc -O3 -march=znver2 -mtune=znver2 -std=c99 -Wall -Wextra -fopenmp \
 
 ## Results (k=3 through k=9)
 
-Saturation consistently occurs at d = 2k + 2. The fraction of valid endings
+> ⚠️ **The "saturation at d = 2k+2" below is an ARTIFACT** (see correction
+> notice at top). In each column, the large count and the "sat" cell (both at
+> d ≥ 2k+1) are bogus. Cells at d ≤ 2k are valid.
+
+~~Saturation consistently occurs at d = 2k + 2.~~ The fraction of valid endings
 stabilizes at ~10.42% for k ≥ 5.
 
 ### Obstruction Map
@@ -163,6 +194,11 @@ stabilizes at ~10.42% for k ≥ 5.
 | 20 | | | | | | | sat |
 
 **OBS** = obstruction (0 survivors), **sat** = saturated (all residues survive).
+
+> ⚠️ **Artifact rows:** every "sat" cell, and the large count immediately above
+> it in each column (i.e. all cells at d ≥ 2k+1), are products of the interval
+> bug — over-counts + fake saturation, NOT real. E.g. d=13/k=6 shows 591606 but
+> the true value is **8**; d=14/k=6 "sat" is truly **30**. Valid cells: d ≤ 2k.
 
 ### Key Observations
 
@@ -204,9 +240,16 @@ combining) could extend the practical reach.
 
 ## Limitations
 
-- **Saturation at d = 2k + 2:** For d values beyond ~2k, the first-k-digit
+- ~~**Saturation at d = 2k + 2:** For d values beyond ~2k, the first-k-digit
   range becomes wide enough that valid firsts are always achievable. This means
-  each k value can only produce obstructions for d up to roughly 2k.
+  each k value can only produce obstructions for d up to roughly 2k.~~
+  **❌ RETRACTED (2026-06-03):** this was an ARTIFACT of the interval bug, not a
+  real phenomenon. The "saturation" was a fake count produced by admitting
+  prefixes no real n generates. With correct enumeration, survivors past d=2k
+  are small and grow slowly — there is NO 2k+2 saturation, and obstructions
+  beyond ~2k are NOT ruled out. The reachable-d ceiling for the proof strategy
+  is therefore an OPEN question again. (This also means the proof-coverage claim
+  below — "obstruction for d=6..50" — is not supported by current data.)
 
 - **Pre-saturation performance:** The d value just before saturation has ~59%
   survivors, each requiring Hensel lifting calls. This is the computational
@@ -225,4 +268,8 @@ combining) could extend the practical reach.
 2. **d=18 obstruction should persist** (appeared at k=9)
 3. **Possible new obstructions** at d values that previously had small survivor
    counts (d=17 had just 1 survivor at k=9 — could drop to 0 at k=10)
-4. **Saturation expected at d=22** (following the d = 2k + 2 pattern)
+4. ~~**Saturation expected at d=22** (following the d = 2k + 2 pattern)~~
+   **❌ The d=2k+2 pattern was an artifact — do NOT expect saturation at d=22.**
+   With the fixed code, survivors past the d=21 cliff (range≥mod) will be small
+   and nonzero, growing slowly. The true k=10 landscape for d≥21 is unknown and
+   must be measured with the corrected binary (commit 22a7121).
