@@ -1,0 +1,40 @@
+# --- Compiled binaries (built in place from the .c sources; regenerate with make/gcc) ---
+mod_obstruct
+hunt
+palhunt
+palhunt_gmp
+mitm_probe
+mitm_probeB
+congru_probe
+check_d5
+check_d7
+check_d9
+check_d21
+check_survivors
+test_omp
+test_mod_threads
+mod_dbg
+mod-test
+mod_obstruct_test
+mod_obstruct_bkup
+a.out
+
+# --- Object / build artifacts ---
+*.o
+*.obj
+
+# --- Runtime / checkpoint state ---
+*.ckpt
+
+# --- Logs (transient run output; keep a specific one with `git add -f logs/<name>`) ---
+logs/
+
+# --- Editor / code-navigation tooling ---
+tags
+cscope.out
+.vimrc
+*.swp
+*~
+
+# --- Claude Code local state ---
+.claude/
