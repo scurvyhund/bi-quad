@@ -1,4 +1,4 @@
-# Milestone — 2026-06-04: No Bi-Quadratic Emirp Has ≤ 19 Digits
+# Milestone — 2026-06-04: No Bi-Quadratic Emirp Has ≤ 21 Digits
 
 > A clean, exhaustively-verified result, reached the morning after the
 > 2026-06-03 cliff/correctness fix. See `PROJECT_OVERVIEW.md` for full method &
@@ -8,12 +8,12 @@
 
 ## The result
 
-**No bi-quadratic emirp exists with 19 or fewer digits.**
+**No bi-quadratic emirp exists with 21 or fewer digits.**
 
 A *bi-quadratic emirp* is a prime `p = 2n²+2n+1` whose digit-reversal
 `q = rev(p)` is **also** prime **and also** of the form `2m²+2m+1` (and `q ≠ p`).
 
-The ≤19-digit range is now closed, gap-free:
+The ≤21-digit range is now closed, gap-free:
 
 ```
 d ≤ 12 : no candidates       (obstruction)
@@ -22,8 +22,10 @@ d = 14 : 6 candidates,  all composite   → no emirp   │ exhaustive brute forc
 d = 15 : 5 candidates,  all composite   → no emirp   │ (hunt.c) — every n tested
 d = 16 : 0 candidates        (obstruction)           │
 d = 17 : 1 candidate,   composite       → no emirp   ┘
-d = 18 : no candidates       (obstruction)   ┐ modular sieve, proven
-d = 19 : no candidates       (obstruction)   ┘
+d = 18 : no candidates       (obstruction)   ┐
+d = 19 : no candidates       (obstruction)   │ modular sieve (k=10), proven —
+d = 20 : no candidates       (obstruction)   │ four consecutive obstructions
+d = 21 : no candidates       (obstruction)   ┘
 ```
 
 Every prime-eligible candidate has `q` sitting exactly on the curve `2m²+2m+1`,
@@ -48,12 +50,12 @@ prime-eligible candidates.
 
 The structure is *satisfiable* (candidates with both ends on the curve and
 prime-eligible do exist) but primality never lands in this range. Meanwhile
-obstructions **dominate** right at the upper edge (d=16, 18, 19 all obstructed,
-d=17 down to a single straggler).
+obstructions **dominate** right at the upper edge (d=16, 18, 19, 20, 21 all
+obstructed — four consecutive — d=17 down to a single straggler).
 
 So the project's question sharpens:
 
-> **If bi-quadratic emirps exist at all, they are d ≥ 20** — the regime where
+> **If bi-quadratic emirps exist at all, they are d ≥ 22** — the regime where
 > brute force is infeasible and the obstruction sieve is the only tool. And the
 > live possibility is now **non-existence**: do obstructions become *total* for
 > all large `d`?
@@ -82,5 +84,8 @@ This is the exact opposite of the old, retracted "saturation at d=2k+2" picture
 
 ## Next
 
-Extend the converged diagonal to **d=20, 21 at k=10** (first look into the d≥20
-regime; confirm d=17's straggler is 1 vs 0). Tests whether obstructions stay total.
+k=10 diagonal **done**: d=17=1 (confirmed), d=18,19,20,21 all OBSTRUCTION →
+result extended to **≤21 digits**. Options from here:
+- Push **d=22, 23 at k=10** (exact code handles past-cliff; a 0 is still a valid
+  proof — just slower, ~range/mod work per residue). Extends the proven wall.
+- Or write up the **non-existence trend** (obstructions now dominate d≥16).
