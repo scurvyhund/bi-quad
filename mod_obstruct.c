@@ -210,16 +210,6 @@ static void first_n_with_residue(mpz_t result, mpz_t lo,
     mpz_add_ui(result, lo, (unsigned long)gap);
 }
 
-// Find last n <= hi with n ≡ r (mod stride) 
-static void last_n_with_residue(mpz_t result, mpz_t hi,
-                                long r, long stride) 
-{
-    unsigned long hi_mod = mpz_fdiv_ui(hi, (unsigned long)stride);
-    long gap = (((long)hi_mod - (long)r) % stride + stride) % stride;
-   
-    mpz_sub_ui(result, hi, (unsigned long)gap);
-}
-
 /* 
  * Solve 2m² + 2m + 1 ≡ target (mod 10^k) via Hensel lifting.
  * Returns number of solutions stored in sols[].
@@ -444,28 +434,85 @@ int main(int argc, char *argv[]) {
 
             long survivors = 0;   /* 64-bit: counts reach 10^k, past INT_MAX at k>=10 */
 
+            /* Shared progress counters (atomic). g_scanned = TRUE aggregate
+             * residues examined across ALL threads — robust to load imbalance,
+             * unlike the old per-thread r%100M checkpoint that went silent
+             * whenever one thread fell behind. g_heavy = residues that reach
+             * the expensive Hensel/q-side work, the real cost driver and the
+             * phase we were previously completely blind to. */
+            long g_scanned = 0;
+            long g_heavy   = 0;
+            /* Time-based heartbeat state (shared): guarantees a progress line
+             * every ~20s of WALL time regardless of per-residue cost. The old
+             * count-based thresholds were useless at d=21, where a single heavy
+             * residue costs ~100ms and a thread needs hours to reach a 2M-iter
+             * flush — so both counters sat at 0 for 20+ min while all 8 cores
+             * ground away. cur_r in the output shows position in [0,mod). */
+            double hb_t0         = omp_get_wtime();
+            double hb_last       = hb_t0;
+            long   hb_last_heavy = 0;
+
             #pragma omp parallel reduction(+:survivors)
             {
                 // Per-thread GMP variables 
-                mpz_t t_first, t_last, t_p, t_pow, t_mfirst, t_mlast;
+                mpz_t t_first, t_p, t_pow, t_mfirst, t_n, t_m;
                 mpz_init(t_first);
-                mpz_init(t_last);
                 mpz_init(t_p);
                 mpz_init(t_pow);
                 mpz_init(t_mfirst);
-                mpz_init(t_mlast);
+                mpz_init(t_n);
+                mpz_init(t_m);
 
-                #pragma omp for schedule(dynamic, 1024)
+                long loc_scanned = 0;   /* per-thread tally, flushed to g_scanned in batches */
+
+                /* dynamic scheduling: the per-residue cost is highly skewed
+                 * (most continue cheaply, a few do expensive Hensel/GMP work),
+                 * so fixed static blocks load-imbalance badly. A 100K chunk
+                 * keeps scheduling overhead negligible (~100K chunks total)
+                 * while letting idle threads steal the costly tail. */
+                #pragma omp for schedule(dynamic, 100000)
                 for (long r = 0; r < mod; r++) {
 
-                    /* 
+                    /* Aggregate progress: flush a thread-local tally into the
+                     * shared counter every 2M iterations (keeps atomics rare),
+                     * then emit one line per 100M residues of TRUE total
+                     * progress — accurate regardless of load imbalance. */
+                    if (++loc_scanned >= 200000) {
+                        #pragma omp atomic
+                        g_scanned += loc_scanned;
+                        loc_scanned = 0;
+                        /* time-based heartbeat (covers cheap regions, where
+                         * this flush path fires often) */
+                        if (omp_get_wtime() - hb_last >= 20.0) {
+                            #pragma omp critical (hb)
+                            if (omp_get_wtime() - hb_last >= 20.0) {
+                                double n2 = omp_get_wtime();
+                                long sc, hv;
+                                #pragma omp atomic read
+                                sc = g_scanned;
+                                #pragma omp atomic read
+                                hv = g_heavy;
+                                double rate = (hv - hb_last_heavy) / (n2 - hb_last);
+                                fprintf(stderr,
+                                    "  d=%2d HB t=%6.0fs  heavy=%ld (%.0f/s)  "
+                                    "scanned~%ldM  cur_r=%ld (%.2f%%)\n",
+                                    d, n2 - hb_t0, hv, rate, sc / 1000000,
+                                    r, 100.0 * (double)r / (double)mod);
+                                fflush(stderr);
+                                hb_last = n2;
+                                hb_last_heavy = hv;
+                            }
+                        }
+                    }
+
+                    /*
                      * First n ≡ r (mod 10^k) in [n_min, n_max] —
                      * check this BEFORE computing the ending to
                      * skip residues with no n values cheaply
-                     * (at k=10 d=11, eliminates 99.999% of r). 
+                     * (at k=10 d=11, eliminates 99.999% of r).
                      *
                      */
-       
+
                     first_n_with_residue(t_first, n_min, r, mod);
        
                     if (mpz_cmp(t_first, n_max) > 0)
@@ -481,99 +528,106 @@ int main(int argc, char *argv[]) {
                     if (!BITSET_GET(is_valid_ending, p_ending))
                         continue;
 
-                    // Last n ≡ r (mod 10^k) in [n_min, n_max]
-                    last_n_with_residue(t_last, n_max, r, mod);
-
-                    // Compute range of first-k prefixes achievable by p
-                    long fk_min = compute_first_k(t_first, d, k, t_p, t_pow);
-                    long fk_max = compute_first_k(t_last, d, k, t_p, t_pow);
-
-                    // Check p-side: any valid first in [fk_min, fk_max]? 
-                    if (!sorted_has_value_in_range(valid_firsts, num_firsts,
-                                                   fk_min, fk_max))
-                        continue;
-
-                    /* 
-                     * q's first-k digits = reverse_k(p_ending) — fixed for
-                     * this residue, so compute once
-                     *
-                     */
-                   
+                    /* q's first-k digits = reverse_k(p_ending) — fixed for
+                     * this residue (depends only on r), so compute once. */
                     long q_first = reverse_k(p_ending, k);
-                   
+
                     if (q_first < prefix_min)
                         continue;
 
-                    /* 
-                     * P-side passed. Now check q-side for each valid first
-                     * in [fk_min, fk_max].
+                    /*
+                     * EXACT per-residue check (replaces the old interval
+                     * [fk_min,fk_max] over-approximation). Enumerate every
+                     * actual n-value for this residue — t_first, +mod, +2*mod,
+                     * ... <= n_max — and test its EXACT p first-k prefix.
                      *
+                     * The interval was correct only when a residue had a
+                     * single n-value (range < mod, i.e. d<=20 at k=10). At
+                     * d>=21 a residue has 2+ n-values whose p-prefixes are far
+                     * apart, so the interval admitted prefixes no real n
+                     * produces (wrong counts) AND forced a giant valid_firsts
+                     * sweep (intractable). Enumerating the few real n-values is
+                     * exact and cheap, and collapses to the identical single
+                     * point check for d<=20 — so d<=20 results are unchanged.
                      */
-                    bool q_ok = false;
+                    bool surv = false;
 
-                    // Find valid firsts in [fk_min,fk_max] via binary srch 
-                    long left = 0, right = num_firsts;
-                   
-                    while (left < right) {
-                        long mid = left + (right - left) / 2;
-                   
-                        if (valid_firsts[mid] < fk_min)
-                            left = mid + 1;
-                        else
-                            right = mid;
-                    }
+                    for (mpz_set(t_n, t_first);
+                         mpz_cmp(t_n, n_max) <= 0;
+                         mpz_add_ui(t_n, t_n, (unsigned long)mod)) {
 
-                    for (long fi = left;
-                         fi < num_firsts && valid_firsts[fi] <= fk_max;
-                         fi++) {
-                        long f = valid_firsts[fi];
+                        /* exact first-k prefix of p = 2n^2+2n+1 for this n */
+                        long f = compute_first_k(t_n, d, k, t_p, t_pow);
 
-                        // q's last-k digits = reverse_k(f) 
+                        /* p-side: this prefix must be a valid_first (so q's
+                         * last-k is achievable). Exact membership = [f,f]. */
+                        if (!sorted_has_value_in_range(valid_firsts, num_firsts,
+                                                       f, f))
+                            continue;
+
+                        /* q's last-k digits = reverse_k(f) */
                         long q_ending = reverse_k(f, k);
-
                         if (!BITSET_GET(is_valid_ending, q_ending))
                             continue;
 
-                        // Solve for m residues on the fly via Hensel 
+                        /* q-side Hensel work — count it + time-based heartbeat */
+                        {
+                            #pragma omp atomic
+                            g_heavy++;
+                            if (omp_get_wtime() - hb_last >= 20.0) {
+                                #pragma omp critical (hb)
+                                if (omp_get_wtime() - hb_last >= 20.0) {
+                                    double n2 = omp_get_wtime();
+                                    long sc, hv;
+                                    #pragma omp atomic read
+                                    sc = g_scanned;
+                                    #pragma omp atomic read
+                                    hv = g_heavy;
+                                    double rate = (hv - hb_last_heavy) / (n2 - hb_last);
+                                    fprintf(stderr,
+                                        "  d=%2d HB t=%6.0fs  heavy=%ld (%.0f/s)  "
+                                        "scanned~%ldM  cur_r=%ld (%.2f%%)\n",
+                                        d, n2 - hb_t0, hv, rate, sc / 1000000,
+                                        r, 100.0 * (double)r / (double)mod);
+                                    fflush(stderr);
+                                    hb_last = n2;
+                                    hb_last_heavy = hv;
+                                }
+                            }
+                        }
+
+                        /* Solve for m-residues achieving q_ending, then test
+                         * whether any ACTUAL m-value yields q first-k == q_first. */
                         long m_sols[MAX_HENSEL_SOLS];
                         int qe_count = solve_residues(q_ending, k, m_sols);
 
-                        for (int mi = 0; mi < qe_count; mi++) {
+                        for (int mi = 0; mi < qe_count && !surv; mi++) {
                             long m_r = m_sols[mi];
 
                             first_n_with_residue(t_mfirst, n_min, m_r, mod);
-                       
-                            if (mpz_cmp(t_mfirst, n_max) <= 0) {
-                                last_n_with_residue(t_mlast, n_max, m_r, mod);
 
-                                long mk_min = compute_first_k(t_mfirst, d, k,
-                                                              t_p, t_pow);
-                                long mk_max = compute_first_k(t_mlast, d, k,
-                                                              t_p, t_pow);
-
-                                if (q_first >= mk_min && q_first <= mk_max) {
-                                    q_ok = true;
-                                }
+                            for (mpz_set(t_m, t_mfirst);
+                                 mpz_cmp(t_m, n_max) <= 0;
+                                 mpz_add_ui(t_m, t_m, (unsigned long)mod)) {
+                                long mk = compute_first_k(t_m, d, k, t_p, t_pow);
+                                if (mk == q_first) { surv = true; break; }
                             }
-
-                            if (q_ok)
-                                break;
                         }
 
-                        if (q_ok)
+                        if (surv)
                             break;
                     }
 
-                    if (q_ok)
+                    if (surv)
                         survivors++;
                 }
 
                 mpz_clear(t_first);
-                mpz_clear(t_last);
                 mpz_clear(t_p);
                 mpz_clear(t_pow);
                 mpz_clear(t_mfirst);
-                mpz_clear(t_mlast);
+                mpz_clear(t_n);
+                mpz_clear(t_m);
             }
 
             const char *tag = "";
