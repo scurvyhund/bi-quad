@@ -1,5 +1,10 @@
 # Session Handoff — 2026-05-26
 
+> ⚠️ **Superseded by 2026-06-03 correction:** any "saturation at d=2k+2" or
+> obstruction-ceiling claim here is an ARTIFACT of an interval bug (fixed in
+> commit 22a7121). See `docs/modular_obstruction_design.md` correction notice
+> and project memory `d21_range_mod_cliff`. Results at d ≤ 2k remain valid.
+
 Wrap-up of the nitroII debugging session. Pick up tonight on nitroIII.
 
 ## Machines
