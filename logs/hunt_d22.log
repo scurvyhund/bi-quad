@@ -1,0 +1,9 @@
+
+  Bi-Quadratic Emirp HUNT (direct brute force)
+  ============================================
+  d = 22 .. 22
+
+  d=22  range=48349998344  survivors(raw)=0  prime-eligible=0  EMIRPS=0   [2944.2s]
+
+  Hunt complete.
+

@@ -255,26 +255,26 @@ runs on barren; and the obstruction landscape by digit-length](biquad_curve_land
 it (5, 181, 313, 3187813) all sit at d ≤ 7, with the vast curve above confirmed
 empty. **bottom:** the emirp obstruction landscape — teal = surviving candidates
 (all composite so far), red ✗ = proven obstruction, the green band = the proven
-"no emirp ≤ 21 digits" zone, orange = the d=22 candidates under test. Regenerate
-with `generate_graph.py` as the wall climbs.*
+"no emirp ≤ 22 digits" zone. Regenerate with `generate_graph.py` as the wall climbs.*
 
 ```
-d:    9 10 11 12 | 13 14 15 | 16 | 17 | 18 19 20 21
-cnt:  0  0  0  0 |  4  6  5 |  0 |  1 |  0  0  0  0
-     └ OBSTRUCT ┘ └survivors┘ OBS  str  └── OBSTRUCTED ──┘
+d:    9 10 11 12 | 13 14 15 | 16 | 17 | 18 19 20 21 22
+cnt:  0  0  0  0 |  4  6  5 |  0 |  1 |  0  0  0  0  0
+     └ OBSTRUCT ┘ └survivors┘ OBS  str  └─── OBSTRUCTED ───┘
 
   d ≤ 12       : OBSTRUCTION (confirmed every k)
   d=13:4 14:6 15:5  converged counts (stable k7,k8,k9); ALL composite (hunt.c)
   d=16         : OBSTRUCTION (k8,k9 + exact brute force)
   d=17         : 1  (stable k9 AND k10; the lone candidate is composite — hunt.c)
-  d=18,19,20,21: OBSTRUCTION (k10 — proven impossible; 4 consecutive)
+  d=18,19,20,21: OBSTRUCTION (k10 sieve — proven impossible)
+  d=22         : OBSTRUCTION (exhaustive brute force, hunt.c — 0 curve-reversal pairs)
 ```
 
 The obstruction set is **not** a simple low-`d` band that ends. Survivors occupy a
 **narrow window at d=13–15**; obstructions then **resume and dominate** — d=16,
-then **four consecutive** at d=18,19,20,21, with only d=17's single composite
+then **five consecutive** at d=18,19,20,21,22, with only d=17's single composite
 straggler breaking the wall. Proven-impossible so far:
-**{9,10,11,12, 16, 18, 19, 20, 21}**. The trend toward **non-existence of large
+**{9,10,11,12, 16, 18, 19, 20, 21, 22}**. The trend toward **non-existence of large
 bi-quadratic emirps** is now strong — the opposite of the old, retracted
 "saturation" picture.
 
@@ -291,10 +291,11 @@ curve-hits there are divisible by 5 → composite → ineligible).
 **Result: EMIRPS = 0 for all of d=13–17.** Every prime-eligible candidate has `q`
 exactly on the curve yet `p` and/or `q` composite (Miller–Rabin, 40 rounds).
 
-**→ Combined with the d=18,19,20,21 sieve obstructions: there are NO bi-quadratic
-emirps with ≤ 21 digits.** Exhaustively verified (brute force d≤17, sieve d=18–21).
-If any exist, they are **d ≥ 22** — the regime where brute force is infeasible and
-the obstruction sieve is the only tool.
+**→ Combined with the sieve obstructions (d=18–21) and exact brute force (d=22):
+there are NO bi-quadratic emirps with ≤ 22 digits.** Exhaustively verified (brute
+force d≤17 and d=22, sieve d=18–21). If any exist, they are **d ≥ 23** — brute
+force is being pushed there now (feasible to ~d=25); beyond that, only the sieve
+(or new mathematics) reaches.
 
 **Cost note:** exact enumeration costs ~`range/mod` work per residue, so pushing
 far past a `k`'s cliff gets expensive (~10× per digit). The tractable, meaningful

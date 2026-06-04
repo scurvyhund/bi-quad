@@ -6,9 +6,9 @@ from PIL import Image, ImageDraw, ImageFont
 # ---------- data ----------
 prime_pals = [(1, 5, 1), (9, 181, 3), (12, 313, 3), (1262, 3187813, 7)]  # (n, p, d)
 landscape = [(7,5),(8,2),(9,0),(10,0),(11,0),(12,0),(13,4),(14,6),(15,5),
-             (16,0),(17,1),(18,0),(19,0),(20,0),(21,0),(22,4)]
-OBSTR = {9,10,11,12,16,18,19,20,21}
-NEW = 22  # d=22 just found, still being checked for an actual emirp
+             (16,0),(17,1),(18,0),(19,0),(20,0),(21,0),(22,0)]
+OBSTR = {9,10,11,12,16,18,19,20,21,22}
+NEW = -1  # d=22 since PROVEN obstructed by exhaustive brute force (raw=0, EMIRPS=0)
 
 # ---------- canvas ----------
 W, H = 1500, 1560
@@ -109,10 +109,10 @@ def BX(dd):
 def BY(c): return B_b - c/ymax*(B_b-B_t)
 step=(bx_r-bx_l)/(dmax-dmin+1)
 
-# proven band  d=7..21
-d.rectangle([BX(7)-step/2, B_t, BX(21)+step/2, B_b], fill=BAND)
-text((BX(7)+BX(21))/2, B_t+12,
-     "PROVEN: no bi-quadratic emirp with ≤ 21 digits", FB(20), (40,120,90), "ma")
+# proven band  d=7..22
+d.rectangle([BX(7)-step/2, B_t, BX(22)+step/2, B_b], fill=BAND)
+text((BX(7)+BX(22))/2, B_t+12,
+     "PROVEN: no bi-quadratic emirp with ≤ 22 digits", FB(20), (40,120,90), "ma")
 
 # y grid
 for c in range(0,7):
@@ -142,8 +142,7 @@ star(BX(7), BY(5)-52, 12, GOLD)
 cox = (BX(17)+BX(21))/2
 text(cox, B_t+72, "all survivors so far are composite", F(18), TEAL, "ma")
 text(cox, B_t+96, "→ zero actual emirps found", F(18), TEAL, "ma")
-# d=22 marker: single "NEW" tag above its count, clear gap
-text(BX(22), BY(4)-34, "NEW", FB(18), ORANGE, "mb")
+# (d=22 is now a proven obstruction — drawn as a red ✗, no special marker)
 
 # legend
 ly=B_b+80; lx=bx_l
@@ -154,7 +153,6 @@ def chip(x,y,col,kind):
     else: d.rectangle([x,y-8,x+16,y+8],fill=col)
 items=[(TEAL,"box","survivors (candidates, all composite)"),
        (RED,"x","obstruction — proven impossible"),
-       (ORANGE,"box","d=22 new (under test)"),
        (GOLD,"star","prime palindrome present")]
 for col,k,lab in items:
     chip(lx,ly,col,k); text(lx+28,ly,lab,F(17),INK,"lm"); lx+=330 if len(lab)<34 else 360
