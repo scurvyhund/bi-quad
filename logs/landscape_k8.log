@@ -1,0 +1,42 @@
+
+  Modular Obstruction Search for Bi-Quadratic Emirps
+=====================================================
+  max_d = 19    max_k = 8    (resuming from k=8, d=9)
+=====================================================
+
+  k=8: valid_endings = 5416704 / 100000000 (5.42%)  valid_firsts = 5416704
+  ---------------------------------------------------
+    d= 9  survivors =      0  *** OBSTRUCTION ***
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      0  *** OBSTRUCTION ***
+    d=12  survivors =      0  *** OBSTRUCTION ***
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors =      5
+    d=16  survivors =      0  *** OBSTRUCTION ***
+    d=17  survivors =      3
+  d=18 HB t=    20s  heavy=14838175 (741908/s)  scanned~49M  cur_r=50491512 (50.49%)
+  d=18 HB t=    40s  heavy=28619020 (689042/s)  scanned~93M  cur_r=94371444 (94.37%)
+    d=18  survivors =     34
+  d=19 HB t=    20s  heavy=8151352 (407567/s)  scanned~6M  cur_r=7411444 (7.41%)
+  d=19 HB t=    40s  heavy=16225075 (403686/s)  scanned~12M  cur_r=14061992 (14.06%)
+  d=19 HB t=    60s  heavy=24322488 (404871/s)  scanned~20M  cur_r=21116802 (21.12%)
+  d=19 HB t=    80s  heavy=32031021 (385427/s)  scanned~31M  cur_r=32073442 (32.07%)
+  d=19 HB t=   100s  heavy=39958045 (396351/s)  scanned~40M  cur_r=41158134 (41.16%)
+  d=19 HB t=   120s  heavy=44592072 (231701/s)  scanned~46M  cur_r=47005229 (47.01%)
+  d=19 HB t=   140s  heavy=47992511 (170022/s)  scanned~48M  cur_r=49183227 (49.18%)
+  d=19 HB t=   160s  heavy=53817501 (291249/s)  scanned~53M  cur_r=54331662 (54.33%)
+  d=19 HB t=   180s  heavy=58166975 (217474/s)  scanned~56M  cur_r=56646847 (56.65%)
+  d=19 HB t=   200s  heavy=62052584 (194280/s)  scanned~58M  cur_r=58689409 (58.69%)
+  d=19 HB t=   220s  heavy=67998038 (297273/s)  scanned~63M  cur_r=63841589 (63.84%)
+  d=19 HB t=   240s  heavy=75569241 (378560/s)  scanned~73M  cur_r=73896730 (73.90%)
+  d=19 HB t=   260s  heavy=83266760 (384876/s)  scanned~86M  cur_r=87134035 (87.13%)
+  d=19 HB t=   280s  heavy=91121459 (392735/s)  scanned~96M  cur_r=97346505 (97.35%)
+    d=19  survivors =    258
+
+  k=8 summary: 5 obstructions found out of 11 digit counts tested
+
+=====================================================
+  Search complete.
+=====================================================
+

@@ -1,0 +1,36 @@
+
+  Modular Obstruction Search for Bi-Quadratic Emirps
+=====================================================
+  max_d = 18    max_k = 7    (resuming from k=7, d=9)
+=====================================================
+
+  k=7: valid_endings = 541696 / 10000000 (5.42%)  valid_firsts = 541696
+  ---------------------------------------------------
+    d= 9  survivors =      0  *** OBSTRUCTION ***
+    d=10  survivors =      0  *** OBSTRUCTION ***
+    d=11  survivors =      0  *** OBSTRUCTION ***
+    d=12  survivors =      0  *** OBSTRUCTION ***
+    d=13  survivors =      4
+    d=14  survivors =      6
+    d=15  survivors =      5
+    d=16  survivors =     15
+  d=17 HB t=    20s  heavy=5567674 (278384/s)  scanned~4M  cur_r=5905492 (59.05%)
+    d=17  survivors =    240
+  d=18 HB t=    20s  heavy=3447030 (172351/s)  scanned~0M  cur_r=1141960 (11.42%)
+  d=18 HB t=    40s  heavy=6938902 (174594/s)  scanned~1M  cur_r=2907560 (29.08%)
+  d=18 HB t=    60s  heavy=10270196 (166565/s)  scanned~3M  cur_r=3927390 (39.27%)
+  d=18 HB t=    80s  heavy=12617666 (117373/s)  scanned~3M  cur_r=3793572 (37.94%)
+  d=18 HB t=   100s  heavy=14955707 (116902/s)  scanned~4M  cur_r=5073615 (50.74%)
+  d=18 HB t=   120s  heavy=17817829 (143106/s)  scanned~5M  cur_r=5783797 (57.84%)
+  d=18 HB t=   140s  heavy=20637581 (140988/s)  scanned~6M  cur_r=7015094 (70.15%)
+  d=18 HB t=   160s  heavy=22896821 (112962/s)  scanned~6M  cur_r=7090534 (70.91%)
+  d=18 HB t=   180s  heavy=25267752 (118546/s)  scanned~7M  cur_r=8152252 (81.52%)
+  d=18 HB t=   200s  heavy=28010259 (137125/s)  scanned~8M  cur_r=9449575 (94.50%)
+    d=18  survivors =   2499
+
+  k=7 summary: 4 obstructions found out of 11 digit counts tested
+
+=====================================================
+  Search complete.
+=====================================================
+

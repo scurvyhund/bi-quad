@@ -1,0 +1,28 @@
+### (a) k=6 d=18 finished 07:44:56 — launching k=9 diagonal d=15..19
+
+  Modular Obstruction Search for Bi-Quadratic Emirps
+=====================================================
+  max_d = 19    max_k = 9    (resuming from k=9, d=15)
+=====================================================
+
+  k=9: valid_endings = 54166784 / 1000000000 (5.42%)  valid_firsts = 54166784
+  ---------------------------------------------------
+    d=15  survivors =      5
+    d=16  survivors =      0  *** OBSTRUCTION ***
+    d=17  survivors =      1
+  d=18 HB t=    20s  heavy=26002057 (1300102/s)  scanned~303M  cur_r=304748962 (30.47%)
+    d=18  survivors =      0  *** OBSTRUCTION ***
+  d=19 HB t=    20s  heavy=3794431 (189721/s)  scanned~256M  cur_r=256686690 (25.67%)
+  d=19 HB t=    40s  heavy=11537767 (387167/s)  scanned~717M  cur_r=717765990 (71.78%)
+  d=19 HB t=    60s  heavy=34169946 (1131609/s)  scanned~787M  cur_r=788269622 (78.83%)
+  d=19 HB t=    80s  heavy=56794234 (1131214/s)  scanned~856M  cur_r=856727465 (85.67%)
+  d=19 HB t=   100s  heavy=78812397 (1100452/s)  scanned~933M  cur_r=934099999 (93.41%)
+    d=19  survivors =      0  *** OBSTRUCTION ***
+
+  k=9 summary: 3 obstructions found out of 10 digit counts tested
+
+=====================================================
+  Search complete.
+=====================================================
+
+### k=9 diagonal DONE 07:48:05
