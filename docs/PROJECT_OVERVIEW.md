@@ -312,7 +312,11 @@ post-cliff tail.
    is exhaustively clear (see §5 hunt). The search moves to **d ≥ 20**.
 3. **The central question:** do obstructions become *total* for all large `d`
    (→ non-existence of bi-quadratic emirps), or do prime-eligible candidates
-   persist? Next step: extend the converged diagonal to d=20,21,… at k=10+.
+   persist? **Status:** search is `~10^(d/2)`-bound (brute force `hunt.c` reaches
+   ~d=25), and a faster search (MITM) *and* a congruence non-existence proof have
+   both been rigorously **ruled out** — see `structural_attacks_2026-06-04.md`.
+   A density heuristic predicts emirps are *finite* (≈`C/d²`, sum converges);
+   a theorem, if any, needs new mathematics.
 4. The Phase-3 "composite-`p`" caveat from the Option-B work — does the sieve's
    survivor count ever miss a candidate the brute force would catch? So far they
    agree exactly (d=13–17); worth keeping as a guard as `d` grows.
