@@ -1,0 +1,100 @@
+==============================================================================
+ BigFermat / bi-quad  —  command runbook            (UTF-8, <=80 cols/line)
+==============================================================================
+ Machines:
+   nitroIII = AMD Zen2, Fedora 42, 8c  -> emirp hunt (hunt.c).   deps: dnf
+   nitroII  = Intel, BunsenLabs/Debian -> palindrome hunt.       deps: apt
+ Remotes (after 2026-06-05 tidy, BOTH master_dev = the active line):
+   origin   = git@gitlab.com:scurvyhund/bi-quad.git
+   codeberg = git@codeberg.org:scurvyhund/bi-quad.git
+ Tools: hunt.c (emirps, GMP) | palhunt_gmp.c (prime palindromes, GMP)
+        mod_obstruct.c (modular sieve) | check_survivors.c (small-d, d<=18)
+------------------------------------------------------------------------------
+
+--- 1. CLONE / SYNC THE REPO ------------------------------------------------
+# fresh clone (either remote; master_dev is the active line)
+git clone git@gitlab.com:scurvyhund/bi-quad.git
+git clone git@codeberg.org:scurvyhund/bi-quad.git
+# update an existing clone to the active line  (DISCARDS local edits)
+git fetch origin && git checkout master_dev \
+  && git reset --hard origin/master_dev
+# update but KEEP local edits
+git stash && git pull && git stash pop
+# revert one botched file to the committed version
+git checkout -- <file>
+
+--- 2. INSTALL DEPS ---------------------------------------------------------
+# nitroII  (Debian / BunsenLabs)
+sudo apt install -y build-essential libgmp-dev git lm-sensors
+# nitroIII (Fedora)
+sudo dnf install -y gcc gmp-devel make git lm_sensors
+
+--- 3. BUILD ----------------------------------------------------------------
+# GOTCHA: -o names the BINARY, the .c source comes LAST.
+#   right: gcc ... -o palhunt_gmp palhunt_gmp.c -lgmp
+#   wrong: gcc ... -o palhunt_gmp.c -lgmp      (clobbers source, no main)
+# palindrome hunter  (-march=native auto-tailors to the local CPU)
+gcc -O3 -march=native -mtune=native -std=c99 -fopenmp \
+  -o palhunt_gmp palhunt_gmp.c -lgmp
+# emirp hunter
+gcc -O3 -march=native -std=c99 -fopenmp -o hunt hunt.c -lgmp
+#   (nitroIII production CPU flag instead of native: -march=znver2)
+# modular sieve (uses the Makefile's znver2 CFLAGS)
+make
+
+--- 4. SANITY CHECK (always run before a long job) --------------------------
+# palindrome build is good if this prints 181, 313 (d=3) and 3187813 (d=7)
+./palhunt_gmp 1 7
+# emirp build quick check (d=5 must report the emirp 12641<->14621)
+./hunt 5 7
+
+--- 5. LAUNCH A LONG RUN (survives logout via nohup) ------------------------
+mkdir -p logs
+# emirp hunt, one digit-length d
+nohup ./hunt 26 26 > logs/hunt_d26.log 2>&1 &
+echo "PID $!"
+# palindrome hunt, a digit range. NOTE: even d = 0 (palindrome /11), so
+# only ODD d are genuine tests -> run them one at a time, e.g. d=27:
+nohup ./palhunt_gmp 27 27 > logs/palhunt_d27.log 2>&1 &
+echo "PID $!"
+
+--- 6. WATCH / CHECK A RUNNING JOB ------------------------------------------
+ps -o pid,etime,pcpu -p <PID>        # one process by PID
+ps -o pid,etime,pcpu,args -C hunt    # all 'hunt' processes
+pgrep -af palhunt_gmp                # find palhunt by name + args
+cat   logs/hunt_d26.log              # full log
+tail -3 logs/palhunt_d27.log         # last few lines
+uptime                               # load average
+free -h                              # RAM / swap (swap use => thrash!)
+sensors 2>/dev/null | grep -iE 'Tdie|Tctl|Core 0'   # CPU temp
+
+--- 7. THROTTLE / STOP A JOB ------------------------------------------------
+nice -n 19 ./hunt 19 21              # start at lowest priority
+taskset -c 0-6 ./palhunt_gmp 27 27  # pin to 7 of 8 cores (runs cooler)
+renice 19 -p <PID>                   # lower priority of a running job
+pkill -f palhunt_gmp                 # stop palhunt by name
+kill <PID>                           # stop one process by PID
+
+--- 8. COMMIT & PUSH TO BOTH MIRRORS ----------------------------------------
+git status
+git add <files>
+git commit -m "message"
+git push origin   master_dev
+git push codeberg master_dev
+git log --oneline -5
+
+--- 9. nitroII DISPLAY: STOP THE SCREEN BLANKING (BunsenLabs / X11) ---------
+xset s 1800 1800 && xset dpms 1800 1800 1800   # 30-min idle timeout
+xset s off -dpms                               # never blank (no OSD popups)
+xset s on +dpms                                # restore default
+xset q | grep -iA2 -e 'Screen Saver' -e DPMS   # check current settings
+echo 'xset s off -dpms' >> ~/.config/openbox/autostart   # make it persist
+
+------------------------------------------------------------------------------
+ Notes:
+ - Cumulative candidates through digit-length d  ~=  n_max(d) ~= sqrt(10^d / 2).
+ - 'survivors(raw)' includes palindromes; 'EMIRPS'/'CON-VERSE' = the real
+   bi-quadratic emirp count. hunt.c is the trustworthy ground truth.
+ - A long run that makes the box unusable = MEMORY thrash (swap), not CPU.
+   Watch 'free -h'; hunt.c uses ~3 MB, mod_obstruct can be large at high k.
+==============================================================================
