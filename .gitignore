@@ -36,5 +36,13 @@ cscope.out
 *.swp
 *~
 
+# --- Scratch / session / backup sources & data (local only) ---
+claude_*_session*.txt
+*_session_ref.txt
+mod_obstruct_bkup.c
+test_omp.c
+test_mod_threads.c
+endsN5.txt
+
 # --- Claude Code local state ---
 .claude/

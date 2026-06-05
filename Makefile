@@ -5,6 +5,7 @@
 # Clean:  make clean
 
 CC       = gcc
+DBG	 = -gdwarf-5
 CFLAGS   = -O3 -march=znver2 -mtune=znver2 -std=c99 -Wall -Wextra -fopenmp
 LDLIBS   = -lgmp
 
@@ -17,8 +18,10 @@ all: $(TARGET)
 $(TARGET): mod_obstruct.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
 
+mod_debug: mod_obstruct.c
+	$(CC) $(DBG) $(CFLAGS) -o $@ $< $(LDLIBS)
 test: $(TARGET)
 	./$(TARGET) 30 5
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET)	
