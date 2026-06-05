@@ -57,9 +57,10 @@ so far, the **only** — bi-quadratic emirp. The next one, if any, has **≥ 25 
 
 ### Prime palindromes: a 27-year conjecture
 
-The **only** prime palindromes on the curve through 21 digits — confirmed
-exhaustively — are **5, 181, 313, 3187813**, all at ≤ 7 digits. The standing
-conjecture (Jim, since ~1997):
+The **only** prime palindromes on the curve through **25 digits** — confirmed
+exhaustively — are **5, 181, 313, 3187813**, all at ≤ 7 digits. (d ≤ 21 via the
+modular sieve; **d = 8…25 independently re-confirmed by a direct GMP-certified hunt**
+— `palhunt_gmp`, every n, all `found = 0`.) The standing conjecture (Jim, since ~1997):
 
 > **3187813 is the largest prime palindrome on the curve.**
 

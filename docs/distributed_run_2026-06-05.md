@@ -18,8 +18,10 @@ Two machines advancing the two frontiers in parallel, no core contention.
 - **Emirps:** `12641 ⟷ 14621` (d=5) is the ONLY bi-quadratic emirp through 24 digits
   (brute-verified, every n). d=25 pending → will extend to 25.
 - **Palindromes:** conjecture (Jim, ~1997) — `3187813` is the largest prime palindrome
-  on the curve. Confirmed through d=21 (sieve); nitroII run extends/independently
-  re-confirms d=8→27. A `*** PRIME PALINDROME ***` at d>7 would refute it.
+  on the curve. **nitroII (`palhunt_gmp`) has now GMP-certified d=8…25 with `found=0`**
+  — independently re-confirming d≤21 (previously sieve-only) and *extending* the
+  confirmation to **25 digits**; d=26 running (then d=27). So `3187813` remains the
+  largest through 25 digits. A `*** PRIME PALINDROME ***` at d>7 would refute it.
 
 ## Pending
 - cvpipe optimization (consec_sqr before Miller–Rabin) — to do together; in
