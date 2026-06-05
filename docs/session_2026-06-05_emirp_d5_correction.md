@@ -29,24 +29,26 @@ primality-tested in the writeup.
 `EMIRPS = 0` for every d = 6..24, confirmed by exhaustive `hunt.c` (every n
 tested, GMP-exact). The next emirp, if any, has ≥ 25 digits (d=25 search running).
 
-Authoritative landscape (`hunt.c`, raw = n with p & rev(p) both on curve;
-elig = prime-eligible after small-prime filter):
+Authoritative landscape (`hunt.c`, every n). A curve-reversal survivor is either an
+**emirp candidate** (non-palindrome) or a **palindrome** (`p=rev(p)`); raw = both:
 
 ```
 d :  5   6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
-raw:  6   0  7  2  6  0  5  2  4  6  6  2  1  0  3  0  7  0  3  2
-elig: 6*  0  5  2  0  0  0  0  4  6  5  0  1  0  0  0  6  0  2  0
+cand: 6*  0  2  2  6  0  4  2  2  6  2  2  0  0  0  0  2  0  2  2   emirp candidates
+pal:  0   0  5  0  0  0  1  0  2  0  4  0  1  0  3  0  5  0  1  0   palindromes
+raw:  6   0  7  2  6  0  5  2  4  6  6  2  1  0  3  0  7  0  3  2   total
                                                        (* = the EMIRP, d=5)
 ```
-True obstructions (zero curve-reversal pairs at all): **d = 6, 10, 18, 20, 22**.
-All other survivors are composite — except the d=5 pair.
+True obstructions (zero survivors of any kind): **d = 6, 10, 18, 20, 22**. Every
+survivor through d=24 is composite EXCEPT two: the d=5 emirp and the d=7 palindrome
+`3187813`.
 
-## Two tool issues uncovered (verify with the brute-force pair!)
+## Tool notes (verify with the brute-force pair!)
 
-1. **`check_survivors.c` UNDERCOUNTS — unreliable.** It reported d=13 → 2
-   structural matches; `hunt.c` (canonical) finds 4. It disagrees at d=7,11,13,15,16
-   too. Do NOT trust its counts. Use `hunt.c` (and `docs/brute_validate.py`) as
-   ground truth. A warning was added to its header.
+1. **`check_survivors.c` is CORRECT — earlier "undercounts" call was my error.** It
+   counts NON-PALINDROME emirp candidates (it skips palindromes); `hunt.c`'s "raw"
+   count also includes palindromes, which is why they differed (e.g. d=13: 2 vs 4 =
+   2 palindromes). Both right. Only real limit: 64-bit overflow at d≥19 → use `hunt.c`.
 2. **The modular sieve over-claimed d=21 as an obstruction** (the `range<mod`
    cliff artifact). `hunt.c` shows d=21 has 7 raw / 6 prime-eligible candidates
    (all composite, no emirp). The earlier "d=18–21 sieve obstruction" was only

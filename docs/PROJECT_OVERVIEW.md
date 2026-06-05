@@ -8,9 +8,12 @@
 > digits" headline was wrong (a prose misread of the small-d sieve output). The
 > corrected result: **`12641 ⟷ 14621` is the ONLY bi-quadratic emirp through 24
 > digits** (brute-verified, every n). See `session_2026-06-05_emirp_d5_correction.md`.
-> Note: the "survivor" counts in this doc are **prime-eligible** (its glossary
-> sense); the README figure plots **raw** curve-reversal pairs, so its bars differ.
-> Also: `check_survivors.c` was found to **undercount — use `hunt.c`**.
+> Note on metrics: a curve-reversal "survivor" splits into **emirp candidates**
+> (non-palindrome) + **palindromes** (`p=rev(p)`). The README figure and the table
+> below show the raw total, split by colour. `check_survivors.c` correctly counts
+> the emirp-candidate (non-palindrome) part; `hunt.c`'s raw count is the total —
+> both are right (check_survivors overflows 64-bit at d≥19 → use hunt.c there). Of
+> ALL these survivors through d=24, only two are prime: the d=5 emirp and 3187813.
 
 ---
 
@@ -262,46 +265,44 @@ runs on barren; and the obstruction landscape by digit-length](biquad_curve_land
 
 *Figure — **top:** the curve on log–log axes; the four prime palindromes
 (5, 181, 313, 3187813, all d ≤ 7) and the lone bi-quadratic emirp `12641 ⟷ 14621`
-(d=5). **bottom:** the survivor landscape — purple = the d=5 emirp, teal = raw
-curve-reversal survivors (all composite), red ✗ = obstruction (no curve-reversal
-pair at all). Bars are **raw** counts; the table below is **prime-eligible**
-(post composite-5 filter), so the two differ. Regenerate with `generate_graph.py`.*
+(d=5). **bottom:** the survivor landscape (raw curve-reversal pairs, stacked) —
+purple = the d=5 emirp, teal = emirp candidates (composite), gold = palindromes
+(only 3187813 is prime), red ✗ = obstruction (no survivor at all). Regenerate with
+`generate_graph.py`.*
 
 ```
 d:     5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
-elig:  6* 0  5  2  0  0  0  0  4  6  5  0  1  0  0  0  6  0  2  0    (prime-eligible)
-                                                       (* d=5 = the EMIRP)
+cand:  6* 0  2  2  6  0  4  2  2  6  2  2  0  0  0  0  2  0  2  2   emirp candidates (non-pal)
+pal:   0  0  5  0  0  0  1  0  2  0  4  0  1  0  3  0  5  0  1  0   palindromes (gold)
+raw:   6  0  7  2  6  0  5  2  4  6  6  2  1  0  3  0  7  0  3  2   total (hunt.c)
+                                                       (* d=5 cand holds the EMIRP)
 
-  d = 5            : EMIRP — 12641 ⟷ 14621 (the ONLY bi-quadratic emirp)
-  d = 6,9,10,11,12 : OBSTRUCTION (0 prime-eligible candidates)
-  d = 7,8          : candidates, all composite (hunt.c)
-  d=13:4 14:6 15:5 : converged counts (stable k7,k8,k9); ALL composite (hunt.c)
-  d=16             : OBSTRUCTION (k8,k9 + exact brute force; 2 raw, both div-5)
-  d=17             : 1  (the lone candidate is composite — hunt.c)
-  d=18,19,20       : OBSTRUCTION (0 prime-eligible; sieve + brute force)
-  d=21             : 6  (brute force; ALL composite. NB: the sieve's old "d=21
-                        obstruction" was a range<mod cliff artifact — see §4)
-  d=22             : OBSTRUCTION (exhaustive brute force — 0 curve-reversal pairs)
-  d=23             : 2  (both composite); d=24 : OBSTRUCTION (0 prime-eligible)
+  d = 5                : EMIRP — 12641 ⟷ 14621 (the ONLY bi-quadratic emirp)
+  d = 6,10,18,20,22    : OBSTRUCTION — no curve-reversal survivor at all
+  d = 17, 19           : only palindromic survivors (composite) → no emirp candidate
+  all other d          : emirp candidates exist, ALL composite (hunt.c)
+  NB: d=7's 5 palindromes include 3187813 (PRIME). The sieve's old "d=21
+      obstruction" was a range<mod cliff artifact (§4); hunt shows d=21 has 2
+      composite emirp candidates + 5 palindromes.
 ```
 
 The landscape is **not** a simple low-`d` band that ends. After the lone emirp at
-d=5, prime-eligible survivors recur in scattered windows (d=7,8,13,14,15,17,21,23)
-— **all composite** — separated by obstructions. Prime-eligible obstructions so far:
-**{6, 9, 10, 11, 12, 16, 18, 19, 20, 22, 24}**. The trend toward **no *further*
-bi-quadratic emirp** is strong (density heuristic: expected total ≈ 1), consistent
-with `12641 ⟷ 14621` being the only one that exists.
+d=5, emirp candidates recur in scattered windows — **all composite** — and true
+obstructions (no survivor of any kind) sit at **{6, 10, 18, 20, 22}**. The trend
+toward **no *further* bi-quadratic emirp** is strong (density heuristic: expected
+total ≈ 1), consistent with `12641 ⟷ 14621` being the only one that exists.
 
 ### The hunt (exhaustive brute force, d=5–24) — `hunt.c`
 
 `hunt.c` directly enumerates **every** `n`, forms `q = rev(p)`, and tests exactly:
 is `q` on the curve (`2q−1` a perfect square)? are `p`, `q` both prime? `q ≠ p`?
-This is the **authoritative** tool (GMP-exact). Its prime-eligible counts match the
-sieve's converged diagonal (4/6/5/0/1 for d=13–17). ⚠️ The quick helper
-`check_survivors.c` was found to **undercount — do not trust it; use `hunt.c`**.
+This is the **authoritative** tool (GMP-exact). NB: `check_survivors.c` is correct
+but counts only the **non-palindrome** emirp candidates (the teal part); `hunt.c`'s
+"raw" count is the total (candidates + palindromes). Both agree once palindromes are
+accounted for; check_survivors only overflows 64-bit at d≥19 → use hunt.c past there.
 
 **Result: `EMIRPS = 2` at d=5** (the pair 12641↔14621, counted both directions);
-**`EMIRPS = 0` for every d = 6 … 24.** Every other prime-eligible candidate has `q`
+**`EMIRPS = 0` for every d = 6 … 24.** Every other emirp candidate has `q`
 exactly on the curve yet `p` and/or `q` composite (Miller–Rabin, 40 rounds).
 
 **→ `12641 ⟷ 14621` (d=5) is the ONLY bi-quadratic emirp through 24 digits.**

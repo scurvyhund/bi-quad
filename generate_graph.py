@@ -7,12 +7,15 @@ from PIL import Image, ImageDraw, ImageFont
 prime_pals = [(1, 5, 1), (9, 181, 3), (12, 313, 3), (1262, 3187813, 7)]  # (n, p, d)
 # The ONE bi-quadratic emirp: 12641 (n=79) <-> 14621 (n=85), at d=5.
 emirp_pts = [(79, 12641), (85, 14621)]
-# survivors = raw count of n whose p AND rev(p) both lie on the curve, per d
-# (authoritative: GMP brute force hunt.c, exhaustive, every n; d=5..24)
-landscape = [(5,6),(6,0),(7,7),(8,2),(9,6),(10,0),(11,5),(12,2),(13,4),(14,6),
-             (15,6),(16,2),(17,1),(18,0),(19,3),(20,0),(21,7),(22,0),(23,3),(24,2)]
-OBSTR = {6,10,18,20,22}      # zero curve-reversal pairs at all (true obstructions)
-EMIRP_D = 5                  # the only emirp lives here (12641 <-> 14621)
+# Per digit-length d: (emirp_candidates, palindromes). Both are curve-reversal
+# survivors (n with p & rev(p) on curve). emirp candidates = non-palindrome (teal);
+# palindromes = p==rev(p) (gold). Raw total = cand+pal = hunt.c. Authoritative
+# (hunt.c, every n; cand matches check_survivors for d<=18). Among ALL of these, the
+# only PRIMES are the d=5 emirp (12641<->14621) and the d=7 palindrome 3187813.
+landscape = [(5,6,0),(6,0,0),(7,2,5),(8,2,0),(9,6,0),(10,0,0),(11,4,1),(12,2,0),
+             (13,2,2),(14,6,0),(15,2,4),(16,2,0),(17,0,1),(18,0,0),(19,0,3),(20,0,0),
+             (21,2,5),(22,0,0),(23,2,1),(24,2,0)]
+EMIRP_D = 5    # the d=5 emirp 12641<->14621 lives in the candidate segment here
 
 # ---------- canvas ----------
 W, H = 1500, 1560
@@ -115,9 +118,9 @@ text(ax_l+14, A_t+14, "★ prime palindrome (only four, all d ≤ 7)    ◆ bi-q
 # ================= PANEL B : obstruction landscape =================
 B_t, B_b = 840, 1380
 bx_l, bx_r = 150, W-90
-text(bx_l, B_t-34, "② Survivor landscape by digit-length d  (n with p & rev(p) both on curve)", FB(24), INK,"la")
+text(bx_l, B_t-34, "② Survivor landscape by digit-length d  (curve-reversal pairs on the curve)", FB(24), INK,"la")
 
-dmin,dmax = 5,24; ymax=8.0
+dmin,dmax = 5,24; ymax=8.5
 def BX(dd):
     # centered columns
     span=(bx_r-bx_l); step=span/(dmax-dmin+1)
@@ -125,59 +128,54 @@ def BX(dd):
 def BY(c): return B_b - c/ymax*(B_b-B_t)
 step=(bx_r-bx_l)/(dmax-dmin+1)
 
-# result band  d=5..24
+# result band + subtitle (clear zone above the tallest bar, total<=7)
 d.rectangle([BX(5)-step/2, B_t, BX(24)+step/2, B_b], fill=BAND)
 text((BX(5)+BX(24))/2, B_t+12,
      "12641 ⟷ 14621  is the ONLY bi-quadratic emirp through 24 digits", FB(20), (40,120,90), "ma")
+text((BX(5)+BX(24))/2, B_t+42,
+     "teal = emirp candidates (all composite)    ·    gold = palindromes (only 3187813, at d=7, is prime)",
+     F(16), MUT, "ma")
 
 # y grid
-for c in range(0,8):
+for c in range(0,9):
     d.line([bx_l,BY(c),bx_r,BY(c)], fill=GRID)
     text(bx_l-12,BY(c),str(c),F(16),MUT,"rm")
 text(bx_l-70,(B_t+B_b)/2,"survivors",F(19),INK,"mm")
 d.line([bx_l,B_b,bx_r,B_b], fill=(180,180,190), width=2)
 
-for (dd,c) in landscape:
-    cx=BX(dd); bw=step*0.52
-    if dd in OBSTR:
-        # obstruction: red X on the baseline
+for (dd,cand,pal) in landscape:
+    cx=BX(dd); bw=step*0.52; total=cand+pal
+    if total==0:
         r=10
         d.line([cx-r,B_b-r,cx+r,B_b+r],fill=RED,width=4)
         d.line([cx-r,B_b+r,cx+r,B_b-r],fill=RED,width=4)
     else:
-        col = EMR if dd==EMIRP_D else TEAL
-        d.rectangle([cx-bw/2,BY(c),cx+bw/2,B_b], fill=col)
-        text(cx,BY(c)-8,str(c),FB(18),col,"mb")
-    text(cx,B_b+12,str(dd),F(15),EMR if dd==EMIRP_D else INK,"ma")
+        if cand>0:   # bottom: emirp candidates (purple where the emirp lives)
+            d.rectangle([cx-bw/2, BY(cand), cx+bw/2, B_b], fill=(EMR if dd==EMIRP_D else TEAL))
+        if pal>0:    # top: palindromes, stacked above
+            d.rectangle([cx-bw/2, BY(total), cx+bw/2, BY(cand)], fill=GOLD)
+        text(cx, BY(total)-8, str(total), FB(16), INK, "mb")
+    text(cx, B_b+12, str(dd), F(15), EMR if dd==EMIRP_D else INK, "ma")
 text((bx_l+bx_r)/2,B_b+44,"digit-length  d",F(20),INK,"ma")
 
-# star over d=7 (the palindrome 3187813 lives there)
-star(BX(7), BY(2)-44, 12, GOLD)
-
-# emirp callout pointing at the d=5 column
-text(BX(5)+step*0.55, BY(6)-30, "the only emirp:", F(15), EMR, "lb")
-text(BX(5)+step*0.55, BY(6)-12, "12641 ⟷ 14621", FB(15), EMR, "lb")
-
-# callouts — over the empty mid zone
-cox = (BX(14)+BX(20))/2
-text(cox, B_t+74, "every other survivor through d=24 is composite", F(18), TEAL, "ma")
-text(cox, B_t+98, "→ exactly one emirp, at d=5", F(18), EMR, "ma")
+# mark the lone PRIME palindrome 3187813 with a white star in the d=7 gold segment
+# (named in the subtitle + Panel A; no inline text, to avoid colliding with d=9)
+star(BX(7), (BY(7)+BY(2))/2, 9, (255,252,240))
 
 # legend
 ly=B_b+80; lx=bx_l
 def chip(x,y,col,kind):
     if kind=="x":
         d.line([x,y-8,x+16,y+8],fill=col,width=4); d.line([x,y+8,x+16,y-8],fill=col,width=4)
-    elif kind=="star": star(x+8,y,9,col)
     elif kind=="diamond": diamond(x+8,y,9,col,(90,20,100))
     else: d.rectangle([x,y-8,x+16,y+8],fill=col)
-items=[(EMR,"diamond","emirp 12641⟷14621 (d=5)"),
-       (TEAL,"box","survivors (all composite)"),
-       (RED,"x","obstruction (no candidates)"),
-       (GOLD,"star","prime palindrome")]
+items=[(EMR,"box","the emirp 12641⟷14621 (d=5)"),
+       (TEAL,"box","emirp candidate (composite)"),
+       (GOLD,"box","palindrome (3187813 prime; rest composite)"),
+       (RED,"x","obstruction (no survivor)")]
 for col,k,lab in items:
-    chip(lx,ly,col,k); text(lx+28,ly,lab,F(16),INK,"lm"); lx+=330
-    if lx>bx_r-300: lx=bx_l; ly+=34
+    chip(lx,ly,col,k); text(lx+28,ly,lab,F(16),INK,"lm"); lx+=375
+    if lx>bx_r-330: lx=bx_l; ly+=34
 
 img.save("docs/biquad_curve_landscape.png")
 print("wrote docs/biquad_curve_landscape.png", img.size)

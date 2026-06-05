@@ -36,16 +36,17 @@ There is exactly **one** bi-quadratic emirp in this range — `12641 ⟷ 14621`
 force (every n, GMP-exact, d=5–24), cross-checked against the modular sieve:
 
 ```
-d = 5                          : EMIRP — 12641 ⟷ 14621  (both prime, both on curve)  ← the only one
-d = 6, 10, 18, 20, 22          : OBSTRUCTION — no curve-reversal pair exists at all
-d = 7,8,9,11,12,13,14,15,16,17 : pairs exist, all composite → no emirp
-d = 19, 21, 23, 24             : pairs exist, all composite → no emirp
+d = 5                          : EMIRP — 12641 ⟷ 14621  (both prime, both on curve)   ← the only one
+d = 6, 10, 18, 20, 22          : OBSTRUCTION — no curve-reversal survivor at all
+d = 17, 19                     : only palindromic survivors → no emirp candidate
+d = 7,8,9,11–16,21,23,24       : emirp candidates exist, all composite → no emirp
 ```
 
-Apart from `12641 ⟷ 14621`, every prime-eligible candidate through 24 digits has
-its reversal exactly on the curve yet `p` and/or `q` composite. So `12641 ⟷ 14621`
-is the smallest — and, so far, the **only** — bi-quadratic emirp. The next one, if
-any, has **≥ 25 digits**. (Search continues; see *Status*.)
+(An "emirp candidate" is a *non-palindrome* `n` with both `p` and `rev(p)` on the
+curve; palindromes — including the prime `3187813` — are a separate object, shown
+in gold in the figure.) Apart from `12641 ⟷ 14621`, every emirp candidate through
+24 digits has `p` and/or `q` composite. So `12641 ⟷ 14621` is the smallest — and,
+so far, the **only** — bi-quadratic emirp. The next one, if any, has **≥ 25 digits**.
 
 ### Prime palindromes: a 27-year conjecture
 
