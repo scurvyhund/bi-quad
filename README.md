@@ -32,18 +32,14 @@ These two searches turn out to be **the same sieve**: a palindrome is just the
 ### `12641 ⟷ 14621` is the only bi-quadratic emirp through 24 digits
 
 There is exactly **one** bi-quadratic emirp in this range — `12641 ⟷ 14621`
-(d=5; `79²+80² ⟷ 85²+86²`, both prime). Established by exhaustive search —
-direct enumeration for d ≤ 18 and GMP brute force (`hunt.c`) for d = 19–24 — with
-the modular sieve as a cross-check:
+(d=5; `79²+80² ⟷ 85²+86²`, both prime). Established by exhaustive `hunt.c` brute
+force (every n, GMP-exact, d=5–24), cross-checked against the modular sieve:
 
 ```
-d = 5         : EMIRP  12641 ⟷ 14621   (both prime, both on curve)   ← the only one
-d = 6, 10     : OBSTRUCTION (no candidates)
-d = 7,8,9,11,12 : candidates exist, none both-prime    → no emirp   (exhaustive enumerator)
-d = 13..18    : candidates exist, all composite        → no emirp   (exhaustive: hunt.c / check_survivors)
-d = 19,20,21  : candidates exist, none an emirp         → no emirp   (exact brute force, hunt.c)
-d = 22        : no curve-reversal pairs at all          → no emirp   (exact brute force)
-d = 23, 24    : prime-eligible candidates, none an emirp → no emirp  (exact brute force)
+d = 5                          : EMIRP — 12641 ⟷ 14621  (both prime, both on curve)  ← the only one
+d = 6, 10, 18, 20, 22          : OBSTRUCTION — no curve-reversal pair exists at all
+d = 7,8,9,11,12,13,14,15,16,17 : pairs exist, all composite → no emirp
+d = 19, 21, 23, 24             : pairs exist, all composite → no emirp
 ```
 
 Apart from `12641 ⟷ 14621`, every prime-eligible candidate through 24 digits has

@@ -1,6 +1,13 @@
 /* check_survivors.c — Enumerate all bi-quadratic emirp candidates
  * for a given digit count d.
  *
+ * !!! WARNING (2026-06-05): THIS TOOL UNDERCOUNTS — DO NOT TRUST ITS COUNTS. !!!
+ * Cross-checked against hunt.c (canonical, GMP-exact, every n): check_survivors
+ * reported d=13 -> 2 structural matches; hunt.c finds 4 (also disagrees at
+ * d=7,11,15,16). It DID correctly flag the d=5 emirp (12641<->14621), but its
+ * per-d totals are unreliable. Use hunt.c for any count or "no emirp" claim.
+ * See docs/session_2026-06-05_emirp_d5_correction.md.
+ *
  * Build: gcc -O2 -std=c99 -o check_survivors check_survivors.c -lgmp
  * Usage: ./check_survivors <d>
  */

@@ -1,5 +1,11 @@
 # Session Archive — 2026-06-04: The Day Everything Connected
 
+> ⚠️ **CORRECTION 2026-06-05:** the "no bi-quadratic emirp ≤ 19/21 digits" claims
+> in this archive are FALSE — `12641 ⟷ 14621` is a bi-quadratic emirp at **d=5**.
+> The corrected result is that it's the **only** one through 24 digits. The d=18–21
+> sieve obstructions are also partly wrong (d=21 was a range<mod cliff artifact; it
+> has 6 composite candidates). See `session_2026-06-05_emirp_d5_correction.md`.
+
 > A full, re-readable record of one extraordinary session. Where the
 > 2026-06-03 archive was about *fixing* the project (the cliff bug), this one is
 > about *harvesting* it — and discovering that the two halves of BigFermat were

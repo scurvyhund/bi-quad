@@ -7,11 +7,11 @@ from PIL import Image, ImageDraw, ImageFont
 prime_pals = [(1, 5, 1), (9, 181, 3), (12, 313, 3), (1262, 3187813, 7)]  # (n, p, d)
 # The ONE bi-quadratic emirp: 12641 (n=79) <-> 14621 (n=85), at d=5.
 emirp_pts = [(79, 12641), (85, 14621)]
-# survivors = n whose p AND rev(p) both lie on the curve, per digit-length d
-# (verified: enumerator for d<=18, GMP brute force hunt.c for d=19..24)
-landscape = [(5,6),(6,0),(7,2),(8,2),(9,6),(10,0),(11,4),(12,2),(13,2),(14,6),
-             (15,2),(16,2),(17,0),(18,0),(19,3),(20,0),(21,7),(22,0),(23,3),(24,2)]
-OBSTR = {6,10,17,18,20,22}   # zero survivors at all (true obstructions)
+# survivors = raw count of n whose p AND rev(p) both lie on the curve, per d
+# (authoritative: GMP brute force hunt.c, exhaustive, every n; d=5..24)
+landscape = [(5,6),(6,0),(7,7),(8,2),(9,6),(10,0),(11,5),(12,2),(13,4),(14,6),
+             (15,6),(16,2),(17,1),(18,0),(19,3),(20,0),(21,7),(22,0),(23,3),(24,2)]
+OBSTR = {6,10,18,20,22}      # zero curve-reversal pairs at all (true obstructions)
 EMIRP_D = 5                  # the only emirp lives here (12641 <-> 14621)
 
 # ---------- canvas ----------
@@ -46,7 +46,7 @@ text(W/2, 90, "what an obstruction sieve + exhaustive brute force found  ·  Big
 
 # ================= PANEL A : the curve, log-log =================
 ax_l, ax_r = 150, W-90
-A_t, A_b = 150, 690
+A_t, A_b = 188, 700
 text(ax_l, A_t-34, "① The curve, its palindromes, and the lone emirp  (log–log)", FB(26), INK, "la")
 
 # axis ranges: x=log10(n) 0..12 ; y=log10(p) 0..24.5

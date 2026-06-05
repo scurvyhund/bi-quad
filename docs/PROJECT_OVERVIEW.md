@@ -2,6 +2,15 @@
 
 > Canonical "start here" document. Plain-language but precise. If a term feels
 > fuzzy, it's defined here. Last reframed 2026-06-04 (convergence-diagonal insight).
+>
+> ⚠️ **CORRECTION 2026-06-05:** a bi-quadratic emirp **does exist** — `12641 ⟷
+> 14621` at **d=5** (verified by `hunt.c`: `EMIRPS=2`). The old "no emirp ≤ 22
+> digits" headline was wrong (a prose misread of the small-d sieve output). The
+> corrected result: **`12641 ⟷ 14621` is the ONLY bi-quadratic emirp through 24
+> digits** (brute-verified, every n). See `session_2026-06-05_emirp_d5_correction.md`.
+> Note: the "survivor" counts in this doc are **prime-eligible** (its glossary
+> sense); the README figure plots **raw** curve-reversal pairs, so its bars differ.
+> Also: `check_survivors.c` was found to **undercount — use `hunt.c`**.
 
 ---
 
@@ -251,51 +260,54 @@ Independent brute-force cross-checks at small `k` are the ground truth.
 ![The curve p=2n²+2n+1: prime palindromes (gold) cluster at d≤7 while the curve
 runs on barren; and the obstruction landscape by digit-length](biquad_curve_landscape.png)
 
-*Figure — **top:** the curve on log–log axes; the only four prime palindromes on
-it (5, 181, 313, 3187813) all sit at d ≤ 7, with the vast curve above confirmed
-empty. **bottom:** the emirp obstruction landscape — teal = surviving candidates
-(all composite so far), red ✗ = proven obstruction, the green band = the proven
-"no emirp ≤ 22 digits" zone. Regenerate with `generate_graph.py` as the wall climbs.*
+*Figure — **top:** the curve on log–log axes; the four prime palindromes
+(5, 181, 313, 3187813, all d ≤ 7) and the lone bi-quadratic emirp `12641 ⟷ 14621`
+(d=5). **bottom:** the survivor landscape — purple = the d=5 emirp, teal = raw
+curve-reversal survivors (all composite), red ✗ = obstruction (no curve-reversal
+pair at all). Bars are **raw** counts; the table below is **prime-eligible**
+(post composite-5 filter), so the two differ. Regenerate with `generate_graph.py`.*
 
 ```
-d:    9 10 11 12 | 13 14 15 | 16 | 17 | 18 19 20 21 22
-cnt:  0  0  0  0 |  4  6  5 |  0 |  1 |  0  0  0  0  0
-     └ OBSTRUCT ┘ └survivors┘ OBS  str  └─── OBSTRUCTED ───┘
+d:     5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
+elig:  6* 0  5  2  0  0  0  0  4  6  5  0  1  0  0  0  6  0  2  0    (prime-eligible)
+                                                       (* d=5 = the EMIRP)
 
-  d ≤ 12       : OBSTRUCTION (confirmed every k)
-  d=13:4 14:6 15:5  converged counts (stable k7,k8,k9); ALL composite (hunt.c)
-  d=16         : OBSTRUCTION (k8,k9 + exact brute force)
-  d=17         : 1  (stable k9 AND k10; the lone candidate is composite — hunt.c)
-  d=18,19,20,21: OBSTRUCTION (k10 sieve — proven impossible)
-  d=22         : OBSTRUCTION (exhaustive brute force, hunt.c — 0 curve-reversal pairs)
+  d = 5            : EMIRP — 12641 ⟷ 14621 (the ONLY bi-quadratic emirp)
+  d = 6,9,10,11,12 : OBSTRUCTION (0 prime-eligible candidates)
+  d = 7,8          : candidates, all composite (hunt.c)
+  d=13:4 14:6 15:5 : converged counts (stable k7,k8,k9); ALL composite (hunt.c)
+  d=16             : OBSTRUCTION (k8,k9 + exact brute force; 2 raw, both div-5)
+  d=17             : 1  (the lone candidate is composite — hunt.c)
+  d=18,19,20       : OBSTRUCTION (0 prime-eligible; sieve + brute force)
+  d=21             : 6  (brute force; ALL composite. NB: the sieve's old "d=21
+                        obstruction" was a range<mod cliff artifact — see §4)
+  d=22             : OBSTRUCTION (exhaustive brute force — 0 curve-reversal pairs)
+  d=23             : 2  (both composite); d=24 : OBSTRUCTION (0 prime-eligible)
 ```
 
-The obstruction set is **not** a simple low-`d` band that ends. Survivors occupy a
-**narrow window at d=13–15**; obstructions then **resume and dominate** — d=16,
-then **five consecutive** at d=18,19,20,21,22, with only d=17's single composite
-straggler breaking the wall. Proven-impossible so far:
-**{9,10,11,12, 16, 18, 19, 20, 21, 22}**. The trend toward **non-existence of large
-bi-quadratic emirps** is now strong — the opposite of the old, retracted
-"saturation" picture.
+The landscape is **not** a simple low-`d` band that ends. After the lone emirp at
+d=5, prime-eligible survivors recur in scattered windows (d=7,8,13,14,15,17,21,23)
+— **all composite** — separated by obstructions. Prime-eligible obstructions so far:
+**{6, 9, 10, 11, 12, 16, 18, 19, 20, 22, 24}**. The trend toward **no *further*
+bi-quadratic emirp** is strong (density heuristic: expected total ≈ 1), consistent
+with `12641 ⟷ 14621` being the only one that exists.
 
-### The hunt (exhaustive brute force, d=13–17) — `hunt.c`
+### The hunt (exhaustive brute force, d=5–24) — `hunt.c`
 
-For small `d` the `n`-range is only ~1.5M–153M wide, so we can skip the sieve and
-directly enumerate **every** `n`, form `q = rev(p)`, and test exactly: is `q` on
-the curve (`2q−1` a perfect square)? are `p`, `q` both prime? This is independent
-of the sieve and **re-confirms its counts exactly** once the composite-5 filter is
-applied (4 / 6 / 5 / 0 / 1 for d=13–17) — a *fourth* ground-truth check, and it
-verifies the **d=16 obstruction at full exact-arithmetic precision** (both raw
-curve-hits there are divisible by 5 → composite → ineligible).
+`hunt.c` directly enumerates **every** `n`, forms `q = rev(p)`, and tests exactly:
+is `q` on the curve (`2q−1` a perfect square)? are `p`, `q` both prime? `q ≠ p`?
+This is the **authoritative** tool (GMP-exact). Its prime-eligible counts match the
+sieve's converged diagonal (4/6/5/0/1 for d=13–17). ⚠️ The quick helper
+`check_survivors.c` was found to **undercount — do not trust it; use `hunt.c`**.
 
-**Result: EMIRPS = 0 for all of d=13–17.** Every prime-eligible candidate has `q`
+**Result: `EMIRPS = 2` at d=5** (the pair 12641↔14621, counted both directions);
+**`EMIRPS = 0` for every d = 6 … 24.** Every other prime-eligible candidate has `q`
 exactly on the curve yet `p` and/or `q` composite (Miller–Rabin, 40 rounds).
 
-**→ Combined with the sieve obstructions (d=18–21) and exact brute force (d=22):
-there are NO bi-quadratic emirps with ≤ 22 digits.** Exhaustively verified (brute
-force d≤17 and d=22, sieve d=18–21). If any exist, they are **d ≥ 23** — brute
-force is being pushed there now (feasible to ~d=25); beyond that, only the sieve
-(or new mathematics) reaches.
+**→ `12641 ⟷ 14621` (d=5) is the ONLY bi-quadratic emirp through 24 digits.**
+Exhaustively verified by brute force for d=5–24 (d=25 running). The next emirp, if
+any, has **d ≥ 25**. The density heuristic (Σ C/d² → expected total ≈ 1) is
+consistent with it being the only one that exists.
 
 **Cost note:** exact enumeration costs ~`range/mod` work per residue, so pushing
 far past a `k`'s cliff gets expensive (~10× per digit). The tractable, meaningful

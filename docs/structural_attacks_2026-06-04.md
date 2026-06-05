@@ -1,5 +1,10 @@
 # Structural Attacks — 2026-06-04: Why Neither Faster Search Nor a Congruence Proof Cracks It
 
+> ⚠️ **Note 2026-06-05:** the structural conclusions here (no MITM √-speedup, no
+> congruence obstruction) still stand. But the "no bi-quadratic emirp ≤ 22 digits"
+> premise they reference is corrected: `12641 ⟷ 14621` IS an emirp (d=5) — it's the
+> **only** one through 24 digits. See `session_2026-06-05_emirp_d5_correction.md`.
+
 > After proving **no bi-quadratic emirp ≤ 22 digits**, we asked the two natural
 > follow-ups: (a) can we *search* faster than brute force (10^(d/2)), and (b) can
 > we *prove* non-existence for **all** large d? We attacked both — rigorously,

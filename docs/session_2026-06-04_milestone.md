@@ -1,5 +1,11 @@
 # Milestone — 2026-06-04: No Bi-Quadratic Emirp Has ≤ 22 Digits
 
+> ⚠️ **SUPERSEDED 2026-06-05 — this milestone's headline is FALSE.** A bi-quadratic
+> emirp exists: `12641 ⟷ 14621` at **d=5** (the small-d range was never primality-
+> tested here). Corrected result: it is the **only** emirp through 24 digits. Kept as
+> a historical record + lesson (don't extrapolate "obstruction" across an untested
+> range). See `session_2026-06-05_emirp_d5_correction.md`.
+
 > A clean, exhaustively-verified result, reached the morning after the
 > 2026-06-03 cliff/correctness fix. See `PROJECT_OVERVIEW.md` for full method &
 > glossary; this doc records the milestone and how we got it.
