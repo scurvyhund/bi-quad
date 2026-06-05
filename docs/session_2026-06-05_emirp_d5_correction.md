@@ -55,14 +55,22 @@ survivor through d=24 is composite EXCEPT two: the d=5 emirp and the d=7 palindr
    cleanly true at d=18; d=19,20,21 needed brute force (d=19,20 raw-survivor /
    saturated, d=21 cliff).
 
-## The cvpipe "10^28" claim is NOT backed by logs
+## cvpipe — one bogus log, but the real runs ARE real (corrected 2026-06-05)
 
-The only real `cvpipe` run log (`gmp-cvo/logs/cvpipe_nitroIII_10e25-10e26_zones1-6.log`)
-covers just **d ≤ 12** (n_max=291547), finished in 0.02 s, and its "100% eliminated
-/ 6.28 BILLION× zone skip" is the illusory speedup Jim flagged. `converse.dat` is
-empty. "10^23/24/27/28" appear only as time-estimates in planning docs. Our
-exhaustive `hunt.c` (d ≤ 24) is the real frontier and supersedes cvpipe's true
-reach by 12 digits.
+Initial over-reaction: I found one cvpipe log
+(`gmp-cvo/logs/cvpipe_nitroIII_10e25-10e26_zones1-6.log`) — d ≤ 12 only, 0.02 s, with
+an illusory "100% eliminated / 6.28 BILLION× zone skip" — and wrongly concluded
+cvpipe never ran past d≤12. **That was an over-generalization.** There is a full set
+of real per-decade run logs (`gmp-cvo/logs/run_10e22 … run_10e28`, `10e25_to_10e30.txt`)
+and a verified d=24 run (`bi-quad/logs/run-10e23-to-24.txt`): 32.06 B candidates →
+2.75 B primes → 211 M emirps → **CON-VERSE = 0, otto = 0**. That run is internally
+consistent (candidates = n-range ÷ 15.08 = the proven 6-of-90 digit filter) and
+**cross-checks `hunt.c` (EMIRPS=0) and `palhunt_gmp` (found=0)** at d=24.
+
+So: the *one* zone-skip log was bogus (that critique stands); cvpipe's actual
+pipeline runs are sound. **Status:** d ≤ 25 is independently corroborated by
+`hunt.c` + `palhunt_gmp`; d ≥ 26 currently rests on cvpipe's own logs (not yet
+brute-verified, since our brute tools only reach ~d=25–26).
 
 ## Artifacts updated
 - `README.md` — headline, objects, heuristic, "Why BigFermat" (odd prime / *if
