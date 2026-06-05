@@ -96,11 +96,22 @@ first/last-digit screen *is* the `cvpipe` gatekeeper and the `valid_endings` /
 two-digit prefixes, discarding **≈ 89% of candidates — about a 9× speedup at scale**
 (≈15× under a uniform estimate; realized ~9× because low prefixes are more common),
 *before any primality test*. The trailing prime-eligibility check (dropping the ~40%
-of `n` whose `p` ends in `…5`/`…0`) adds another ~1.7× on top. And this is just the
-2-digit layer — deepened to `k` digits (§6) the same construction is what collapses
-whole digit-lengths to **zero** survivors (a proven obstruction), no primality tests
-at all. *(Note: this ~9× is the real, measured digit-filter gain — not the inflated
-"zone-skip" figure once quoted from a partial run log.)*
+of `n` whose `p` ends in `…5`/`…0`) adds another ~1.7× on top.
+
+**In raw numbers** (cumulative candidates through digit-length `d` = `n_max(d) ≈
+√(10ᵈ/2)`, since every `n` is examined once):
+
+| through | candidate `n` | filter culls (~89%) | reach primality test |
+|---------|---------------|---------------------|----------------------|
+| d ≤ 24 (done)     | ≈ 707 billion  | **≈ 629 billion**  | ≈ 78 billion  |
+| d ≤ 25 (running)  | ≈ 2.24 trillion | **≈ 1.99 trillion** | ≈ 246 billion |
+| d ≤ 26 (next)     | ≈ 7.07 trillion | **≈ 6.29 trillion** | ≈ 778 billion |
+
+And this is just the 2-digit layer — deepened to `k` digits (§6) the same
+construction is what collapses whole digit-lengths to **zero** survivors (a proven
+obstruction), no primality tests at all. *(Note: this ~9× is the real, measured
+digit-filter gain — not the inflated "zone-skip" figure once quoted from a partial
+run log.)*
 
 ## 6. Generalization — the sieve engine
 
