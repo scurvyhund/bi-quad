@@ -39,6 +39,16 @@ for such a `(p, q)` pair to exist?* If we can prove "no" for a whole digit-lengt
 we've eliminated infinitely... well, an entire size class, with zero primality
 tests. That proof is called an **obstruction**.
 
+**The seed constraint (proof by construction).** The first/last-digit filter has
+real teeth because the curve's endings are tightly constrained: every prime-eligible
+`p = 2n²+2n+1` ends in one of just **six** two-digit values — `{01, 13, 21, 41, 61,
+81}` — and (reversing, for the q-side) starts with one of `{10, 12, 14, 16, 18, 31}`.
+This is a **proof by construction**: `p` is a sum of two *consecutive* squares, so
+`even²+odd²` forces the last digit to {1,3}, and enumerating one full period (`n mod
+50`) exhibits the complete two-digit set. Full proof:
+[`ending_constraint_proof.md`](ending_constraint_proof.md). The same construction at
+depth `k` (digits via `n mod 10^k`) is the sieve's engine.
+
 **So the concrete deliverable is the obstruction landscape:** for each digit
 count `d`, either "**OBSTRUCTION** — no `d`-digit bi-quadratic emirp can exist"
 or "**N survivors** — N digit-feasible candidates remain, worth primality-testing."

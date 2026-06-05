@@ -9,6 +9,10 @@ Every value on the curve is a sum of two **consecutive** squares, `n² + (n+1)²
 the tightest special case of the sum-of-two-squares primes in Fermat's two-square
 theorem (the primes ≡ 1 mod 4). Hence the name.
 
+That consecutive-squares structure pins every value to one of just six two-digit
+endings — `{01, 13, 21, 41, 61, 81}` — the constraint the obstruction sieve exploits
+(a [proof by construction](docs/ending_constraint_proof.md)).
+
 ![The curve and its findings: prime palindromes cluster at small d; the emirp obstruction landscape](docs/biquad_curve_landscape.png)
 
 ---
