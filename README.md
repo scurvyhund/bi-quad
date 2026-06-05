@@ -11,8 +11,8 @@ theorem (the primes ≡ 1 mod 4). Hence the name.
 
 That consecutive-squares structure pins every value to one of just six two-digit
 endings — `{01, 13, 21, 41, 61, 81}` (and, reversed, six leading patterns
-`{10, 12, 14, 16, 18, 31}`). It's the cheap first/last-digit **filter that rejects
-almost all `p` and `q` candidates instantly**, before any primality test — a
+`{10, 12, 14, 16, 18, 31}`). It's the cheap first/last-digit **filter that discards
+≈ 89% of `p`/`q` candidates instantly (~9× speedup), before any primality test** — a
 [proof by construction](docs/ending_constraint_proof.md).
 
 ![The curve and its findings: prime palindromes cluster at small d; the emirp obstruction landscape](docs/biquad_curve_landscape.png)
