@@ -1,0 +1,111 @@
+// mod_obstruct.c — control-flow diagram
+// Render:  dot -Tpng mod_obstruct.dot -o mod_obstruct.png
+//          dot -Tsvg mod_obstruct.dot -o mod_obstruct.svg
+//          dot -Tpdf mod_obstruct.dot -o mod_obstruct.pdf
+
+digraph mod_obstruct {
+    rankdir=TB;
+    compound=true;
+    nodesep=0.35;
+    ranksep=0.45;
+    fontname="Helvetica";
+    node  [fontname="Helvetica", fontsize=10];
+    edge  [fontname="Helvetica", fontsize=9];
+
+    // ---------- entry ----------
+    start  [shape=oval, style=filled, fillcolor="#d0e8ff",
+            label="main(argc, argv)\nparse max_d, max_k, min_k, min_d"];
+    ckpt   [shape=box,  style="rounded,filled", fillcolor="#eef5ff",
+            label="read_checkpoint()\n(if no min_k/min_d on cmdline)"];
+    banner [shape=box,  style=rounded, label="print banner"];
+
+    start  -> ckpt -> banner;
+
+    // ---------- k loop ----------
+    kloop [shape=hexagon, style=filled, fillcolor="#fff2cc",
+           label="for k = min_k .. max_k\nmod = 10^k"];
+    banner -> kloop;
+
+    // ---------- Phase 1 ----------
+    subgraph cluster_p1 {
+        label="Phase 1  —  is_valid_ending bitset";
+        style="rounded,filled";
+        fillcolor="#f5fff0";
+        color="#88aa66";
+        p1a [shape=box, style=rounded,
+             label="for n = 0 .. mod-1\n  e = ending_for_residue(n, mod)\n  set bit e"];
+    }
+    kloop -> p1a [lhead=cluster_p1];
+
+    // ---------- Phase 2 ----------
+    subgraph cluster_p2 {
+        label="Phase 2  —  valid_firsts[] (sorted)";
+        style="rounded,filled";
+        fillcolor="#f0fff5";
+        color="#66aa88";
+        p2a [shape=box, style=rounded,
+             label="Pass 1: count\nfor each valid ending e:\n  f = reverse_k(e,k)\n  if f >= 10^(k-1): mark"];
+        p2b [shape=box, style=rounded,
+             label="Pass 2: fill right-sized\nvalid_firsts[] in sort order"];
+        p2a -> p2b;
+    }
+    p1a -> p2a [ltail=cluster_p1, lhead=cluster_p2];
+
+    // ---------- Phase 3 ----------
+    subgraph cluster_p3 {
+        label="Phase 3  —  digit-count sweep (OpenMP)";
+        style="rounded,filled";
+        fillcolor="#fff5f0";
+        color="#cc8866";
+
+        dloop [shape=hexagon, style=filled, fillcolor="#ffe0cc",
+               label="for d = k+1 .. max_d\ncompute_n_bounds(d)"];
+        rloop [shape=hexagon, style=filled, fillcolor="#ffe8d8",
+               label="#pragma omp parallel\nfor r = 0 .. mod-1"];
+
+        pside [shape=box, style=rounded,
+               label="p-side check\nfirst/last_n_with_residue\ncompute_first_k -> fk_min,fk_max\nsorted_has_value_in_range?"];
+
+        qf    [shape=diamond, style=filled, fillcolor="#ffeedd",
+               label="q_first = reverse_k(p_ending)\n>= 10^(k-1) ?"];
+
+        floop [shape=hexagon, style=filled, fillcolor="#ffe8d8",
+               label="for f in valid_firsts\n    in [fk_min, fk_max]"];
+
+        hensel [shape=box, style="rounded,filled", fillcolor="#ffe0e0",
+                label="q_ending = reverse_k(f)\nis_valid_ending?\nsolve_residues() — Hensel lift\n-> m_sols[]"];
+
+        mloop [shape=box, style=rounded,
+               label="for m_r in m_sols:\n  first/last_n_with_residue\n  mk_min,mk_max = compute_first_k\n  q_first in [mk_min,mk_max] ?"];
+
+        surv  [shape=box, style="rounded,filled", fillcolor="#e0ffe0",
+               label="if q_ok: survivors++"];
+
+        rpt   [shape=box, style=rounded,
+               label="tag = OBSTRUCTION / saturated / \"\"\nprint d, survivors\nwrite_checkpoint(k, d+1)"];
+
+        dloop  -> rloop;
+        rloop  -> pside;
+        pside  -> qf    [label="p-side ok"];
+        pside  -> rloop [label="skip", style=dashed, constraint=false];
+        qf     -> floop [label="yes"];
+        qf     -> rloop [label="no",   style=dashed, constraint=false];
+        floop  -> hensel;
+        hensel -> mloop;
+        mloop  -> surv  [label="q_ok"];
+        mloop  -> floop [label="next f", style=dashed, constraint=false];
+        surv   -> rpt;
+        rpt    -> dloop [label="next d\n(break if saturated)", style=dashed, constraint=false];
+    }
+    p2b -> dloop [ltail=cluster_p2, lhead=cluster_p3];
+
+    // ---------- end of k ----------
+    kend  [shape=box, style=rounded,
+           label="free buffers\nprint k summary\nwrite_checkpoint(k+1, 0)"];
+    done  [shape=oval, style=filled, fillcolor="#d0ffd0",
+           label="Search complete\nremove(CKPT_FILE)"];
+
+    rpt   -> kend [ltail=cluster_p3, label="d-loop done"];
+    kend  -> kloop [label="next k", style=dashed, constraint=false];
+    kend  -> done;
+}

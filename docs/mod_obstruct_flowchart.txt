@@ -1,0 +1,151 @@
+================================================================================
+          mod_obstruct.c  —  TOP-LEVEL CONTROL FLOW  (80 col, KX-P2123 safe)
+================================================================================
+
+                        +-------------------------+
+                        |       main(argc,argv)   |
+                        |  parse max_d, max_k,    |
+                        |  min_k, min_d           |
+                        +-----------+-------------+
+                                    |
+                                    v
+                        +-------------------------+
+                        |  read_checkpoint()?     |
+                        |  (only if no min_k/d    |
+                        |   given on cmd line)    |
+                        +-----------+-------------+
+                                    |
+                                    v
+                        +-------------------------+
+                        |  print banner           |
+                        +-----------+-------------+
+                                    |
+                                    v
+                 +------------------+------------------+
+                 |   FOR k = min_k .. max_k            |<-----------+
+                 |     mod = 10^k                      |            |
+                 +------------------+------------------+            |
+                                    |                               |
+                                    v                               |
+        +===================================================+       |
+        |   PHASE 1  —  Build is_valid_ending[] bitset      |       |
+        |                                                   |       |
+        |   for n = 0 .. mod-1:                             |       |
+        |     e = ending_for_residue(n, mod)    // 2n^2+... |       |
+        |     set bit e in is_valid_ending                  |       |
+        |                                                   |       |
+        |   Output: bitset of achievable last-k residues    |       |
+        +=========================+=========================+       |
+                                  |                                 |
+                                  v                                 |
+        +===================================================+       |
+        |   PHASE 2  —  Build valid_firsts[] (sorted)       |       |
+        |                                                   |       |
+        |   Pass 1 (count):                                 |       |
+        |     for each valid ending e:                      |       |
+        |       f = reverse_k(e, k)                         |       |
+        |       if f >= 10^(k-1): mark in is_valid_first_bs |       |
+        |                                                   |       |
+        |   Pass 2 (fill right-sized array in sort order)   |       |
+        |                                                   |       |
+        |   Output: valid_firsts[], num_firsts              |       |
+        +=========================+=========================+       |
+                                  |                                 |
+                                  v                                 |
+        +===================================================+       |
+        |   PHASE 3  —  Digit-count feasibility sweep       |       |
+        |                                                   |       |
+        |   FOR d = k+1 .. max_d:                           |       |
+        |     compute_n_bounds(d) -> n_min, n_max           |       |
+        |                                                   |       |
+        |     #pragma omp parallel reduction(+:survivors)   |       |
+        |     FOR r = 0 .. mod-1:     (residue loop)        |       |
+        |                                                   |       |
+        |         +-----------------------------------+     |       |
+        |         |  p-side residue check             |     |       |
+        |         |  - first_n_with_residue           |     |       |
+        |         |  - skip if > n_max                |     |       |
+        |         |  - p_ending = ending_for_residue  |     |       |
+        |         |  - last_n_with_residue            |     |       |
+        |         |  - fk_min,fk_max via              |     |       |
+        |         |    compute_first_k()              |     |       |
+        |         |  - sorted_has_value_in_range?     |     |       |
+        |         |      no  -> continue              |     |       |
+        |         +-----------------+-----------------+     |       |
+        |                           |                       |       |
+        |                           v                       |       |
+        |         +-----------------------------------+     |       |
+        |         |  q-side check                     |     |       |
+        |         |  q_first = reverse_k(p_ending)    |     |       |
+        |         |  if q_first < 10^(k-1) continue   |     |       |
+        |         |                                   |     |       |
+        |         |  FOR each f in valid_firsts       |     |       |
+        |         |      intersect [fk_min,fk_max]:   |     |       |
+        |         |    q_ending = reverse_k(f)        |     |       |
+        |         |    if !is_valid_ending: continue  |     |       |
+        |         |                                   |     |       |
+        |         |    solve_residues(q_ending,k)     |     |       |
+        |         |      --> m_sols[] via Hensel lift |     |       |
+        |         |                                   |     |       |
+        |         |    FOR each m_r in m_sols:        |     |       |
+        |         |      first/last_n_with_residue    |     |       |
+        |         |      mk_min,mk_max = first_k()    |     |       |
+        |         |      if q_first in [mk_min,mk_max]|     |       |
+        |         |         q_ok = true; break;break  |     |       |
+        |         +-----------------+-----------------+     |       |
+        |                           |                       |       |
+        |                           v                       |       |
+        |                    if q_ok: survivors++           |       |
+        |                                                   |       |
+        |     tag = OBSTRUCTION / (saturated) / ""          |       |
+        |     print "d=.. survivors=..  <tag>"              |       |
+        |     write_checkpoint(k, d+1)                      |       |
+        |     if saturated: break d-loop                    |       |
+        +=========================+=========================+       |
+                                  |                                 |
+                                  v                                 |
+                        +-------------------------+                 |
+                        |  free buffers           |                 |
+                        |  print k summary        |                 |
+                        |  write_checkpoint(k+1,0)|-----------------+
+                        +-----------+-------------+
+                                    |
+                                    v
+                        +-------------------------+
+                        |  "Search complete."     |
+                        |  remove(CKPT_FILE)      |
+                        +-------------------------+
+
+
+--------------------------------------------------------------------------------
+  KEY HELPER FUNCTIONS (called from Phase 3 inner loop)
+--------------------------------------------------------------------------------
+
+  ending_for_residue(r, m)   ->  (2r^2 + 2r + 1) mod m
+                                 fast ull path for m<=1e9, __int128 for k>=10
+
+  reverse_k(val, k)          ->  decimal reverse of k digits
+
+  compute_n_bounds(d)        ->  n_min,n_max  (GMP)   where 2n^2+2n+1 is d-digit
+
+  compute_first_k(n,d,k)     ->  floor(p / 10^(d-k))  (leading k digits of p)
+
+  first_n_with_residue(lo,r,m) ->  smallest n >= lo with n = r (mod m)
+  last_n_with_residue (hi,r,m) ->  largest  n <= hi with n = r (mod m)
+
+  sorted_has_value_in_range  ->  binary-search membership in valid_firsts[]
+
+  solve_residues(t, k, out)  ->  Hensel-lift solutions of 2m^2+2m+1 = t (mod 10^k)
+                                 base case mod 10, lifts to mod 10^k
+
+  write_checkpoint(maxd,maxk,k,d)  ->  atomic tmp+rename; resumes on restart
+
+--------------------------------------------------------------------------------
+  DATA SIZES AT k=10  (mod = 10^10)
+--------------------------------------------------------------------------------
+   is_valid_ending bitset  : ~1.25 GB   (mod/8 bytes)
+   is_valid_first_bs       : ~1.25 GB   (temporary, freed after Phase 2)
+   valid_firsts[] sorted   : ~8    GB   (~10.42% of mod, 8 bytes each)
+   Total RSS               : ~10   GB   (was ~180 GB before bitset rework)
+
+================================================================================

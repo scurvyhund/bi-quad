@@ -1,0 +1,85 @@
+Solve 2n^2 + 2n + 1 = p for n:
+
+step 1.)
+
+Subtract 1 from both side of equation:
+
+    2n^2 + 2n = p - 1
+
+step 2.)
+
+To make completion of the square easier divide the entire equation by 2:
+
+    2n^2/2 + 2n/2 = p-1/2 ==> n^2 + n = p-1/2
+
+step 3.)
+
+Now comlete the sq for n^2 + n: To complete the square, we need to add a
+specific number to both sides of the equation to make it a perfect trinomial.
+
+
+The rule for finding this number is: Take the coefficient of n, divide it by
+two, square the result.
+
+    a) in the case of (n^2 + n) the coefficient of n is 1.
+    b) divide by 2: 1/2
+    c) square 1/2 ==> (1/2)^2 ==> 1/4
+
+Add 1/4 to both sides of the equation:
+    
+    n^2 + n + 1/4 = (p-1)/2 + 1/4
+
+step 4.)
+
+Factor the perfect square:
+    
+    n^2 + n + 1/4 ==> (n+1/2)^2 ==> (n+1/2)(n+1/2)
+
+so the equation becomes: 
+    
+    (n+1/2)^2 = (p-1)/2 + 1/4
+
+step 5.)
+
+Now combine the terms on the right side. Use a common denominator for both 
+terms, say 4. Multiply first term (p-1)/2 by 2/2:
+
+    (p-1)/2 * 2/2 ==> 2(p-1)/4 
+
+Now compbine the second term:
+
+    (2p-2)/4 + 1/4 ==> (2p-2+1)/4 ==> (2p-1)/4
+
+So the full equation becomes:
+
+    (n+1/2)^2 = (2p-1)/4
+
+step 6.)
+
+Take the square root of both sides. Remember that whenever you take the square 
+root of a variable expression, you must account for both the positive and neg-
+ative roots (+-).
+
+sqrt((n+1/2)^2)) = +-sqrt(2p-1)/4 ==> n+1/2 = +-sqrt(2p-1)/2
+
+step 7.)
+
+Solve for n by subtraction 1/2 from both sides of the equation:
+
+    n+1/2 = sqrt((2p-1)/2) - 1/2 ==> n = sqrt(2p-1)/2 - 1/2
+
+
+example of p = 12641, a type of prime the bi-quad project mod_obstruct_optB program searches for,
+
+  n = (sqrt(2p-1)/2) - 1/2 ==> (sqrt(25282 - 1)/2) - 1/2 ==> (sqrt(25281)/2) - 1/2 ==> (159/2) - 1/2 ==> 79.5 - 1/2
+  n = 79.5 - .5 ==> 79 and n+1 ==> 80
+
+so 12641 can be expressed as: (79^2) + (80^2) ==> 6241 + 6400 ==> p, 12641, so 12641 is a fermat 4n+1 prime that can be 
+expressed as the sum of two consecutive positive whole numbers squared and 14621 is also a 4n+1 prime that makes it an 
+emirp (12641 <===> 14621) that is also the sum of two consecutive whole numbers squared: (85^2) + (86^2).
+    
+This is the only prime/emirp found using a brute force check of values > 2 digits <= (10^28) - 1. This was done using the
+gmp-cvo project using the cvpipe program.   
+
+cvpipe also found the largest known 4n+1 consec square palindromic prime (3187813) in the same search range which is 
+(1262^2) + (1263^2).
