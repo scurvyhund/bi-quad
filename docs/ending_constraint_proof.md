@@ -76,7 +76,23 @@ patterns** are the reverses of the endings:
 These are exactly the `valid_firsts` of the modular sieve and the `Pattern` column in
 the cvpipe zone log — the constraint is consistent end-to-end.
 
-## 5. Generalization — the sieve engine
+## 5. In practice — this is how p and q candidates are filtered
+
+The six endings (and their six reverses) are exactly the **gatekeeper** that screens
+candidates *before* any expensive test:
+
+- **p-side:** reject any `n` whose `p` doesn't end in `{01, 13, 21, 41, 61, 81}`.
+- **q-side:** since `q = rev(p)` must *also* land on the curve, `p`'s **first** two
+  digits must be the reverse of a valid ending — i.e. in `{10, 12, 14, 16, 18, 31}`.
+  Reject otherwise.
+
+Both are a couple of digit mods — **nanoseconds** — and they eliminate the
+overwhelming majority of `n` immediately. Only survivors proceed to the costlier
+steps: the `2q−1` perfect-square (consecutive-square) test, then Miller–Rabin. This
+first/last-digit screen *is* the `cvpipe` gatekeeper and the `valid_endings` /
+`valid_firsts` sets in `mod_obstruct.c`.
+
+## 6. Generalization — the sieve engine
 
 The mod-10 → mod-100 argument is just the first two layers of the same construction.
 At depth `k` the first-`k` and last-`k` digits of `p` are pinned by `n mod 10^k`
