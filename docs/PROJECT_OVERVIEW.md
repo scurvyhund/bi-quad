@@ -109,6 +109,22 @@ The four constraints, in one line: *`p`'s last-`k` ↔ `q`'s first-`k`, and `p`'
 first-`k` ↔ `q`'s last-`k`, with both sides required to be real, prime-eligible
 points on the `2x²+2x+1` curve.*
 
+**What the digit filter buys — before any primality test.** Phase 1's six valid
+endings `{01,13,21,41,61,81}` (and their reverses `{10,12,14,16,18,31}`) follow from a
+[proof by construction](ending_constraint_proof.md): `p` is a sum of two *consecutive*
+squares, so `even²+odd²` forces the last digit to {1,3} and one period (`n mod 50`)
+pins the rest. Keeping only those ≈6-of-90 leading patterns discards **≈ 89% of
+candidates (~9× speedup)** up front:
+
+| exhaustive search through | candidates `n` ≈ `√(10ᵈ/2)` | filter culls (~89%) | reach primality test |
+|---|---|---|---|
+| d ≤ 24 (done)    | ≈ 707 billion   | **≈ 629 billion**   | ≈ 78 billion  |
+| d ≤ 25 (running) | ≈ 2.24 trillion | **≈ 1.99 trillion** | ≈ 246 billion |
+| d ≤ 26 (next)    | ≈ 7.07 trillion | **≈ 6.29 trillion** | ≈ 778 billion |
+
+Deepened to `k` digits, the *same* construction collapses whole digit-lengths to zero
+survivors — an obstruction proven with **no primality tests at all**.
+
 ---
 
 ## 3b. Algorithms (pseudocode)
