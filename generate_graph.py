@@ -168,10 +168,12 @@ def chip(x,y,col,kind):
     if kind=="x":
         d.line([x,y-8,x+16,y+8],fill=col,width=4); d.line([x,y+8,x+16,y-8],fill=col,width=4)
     elif kind=="diamond": diamond(x+8,y,9,col,(90,20,100))
+    elif kind=="starbox":   # colored box with the white "prime" star on it
+        d.rectangle([x,y-8,x+16,y+8],fill=col); star(x+8,y,6,(255,252,240))
     else: d.rectangle([x,y-8,x+16,y+8],fill=col)
 items=[(EMR,"box","the emirp 12641⟷14621 (d=5)"),
        (TEAL,"box","emirp candidate (composite)"),
-       (GOLD,"box","palindrome (3187813 prime; rest composite)"),
+       (GOLD,"starbox","palindrome (★ = 3187813, prime; rest composite)"),
        (RED,"x","obstruction (no survivor)")]
 for col,k,lab in items:
     chip(lx,ly,col,k); text(lx+28,ly,lab,F(16),INK,"lm"); lx+=375
