@@ -148,8 +148,8 @@ python3 generate_graph.py
 
 The hunt began after Simon Singh's *Fermat's Enigma* (1997) — a book about
 Fermat's *Last* Theorem that sent the search into Fermat's *other* famous result,
-the **two-square theorem**: an *odd* prime is a sum of two squares **if and only
-if** it's ≡ 1 (mod 4). The curve `2n²+2n+1 = n² + (n+1)²` is the tightest case — a
+the **two-square theorem**: every prime ≡ 1 (mod 4) is a sum of two squares (and no
+prime ≡ 3 (mod 4) is). The curve `2n²+2n+1 = n² + (n+1)²` is the tightest case — a
 sum of two *consecutive* squares. Its two rare prizes are **prime palindromes**
 (read the same both ways — largest known: `3187813`) and **bi-quadratic emirps**
 (reverse to a *different* curve-prime — only known: `12641 ⟷ 14621`). The first
