@@ -17,7 +17,8 @@ theorem (the primes ≡ 1 mod 4). Hence the name.
 
 - **Bi-quadratic emirp** — a prime `p = 2n²+2n+1` whose digit-reversal
   `q = rev(p)` is **also** prime **and also** of the form `2m²+2m+1`, with `q ≠ p`.
-  (Both ends prime, both on the curve, not a palindrome.) *Existence unknown.*
+  (Both ends prime, both on the curve, not a palindrome.) **Exactly one is known:
+  `12641 ⟷ 14621` (d=5) — the only one through 24 digits.**
 - **Prime palindrome on the curve** — a prime `p = 2n²+2n+1` that reads the same
   forwards and backwards. Four are known: **5, 181, 313, 3187813**.
 
@@ -28,25 +29,27 @@ These two searches turn out to be **the same sieve**: a palindrome is just the
 
 ## Results
 
-### Proven: no bi-quadratic emirp has ≤ 22 digits
+### `12641 ⟷ 14621` is the only bi-quadratic emirp through 24 digits
 
-Gap-free, and **cross-validated four independent ways** (modular sieve at k=7, 8,
-9 — the "convergence diagonal" — plus an independent direct brute force):
+There is exactly **one** bi-quadratic emirp in this range — `12641 ⟷ 14621`
+(d=5; `79²+80² ⟷ 85²+86²`, both prime). Established by exhaustive search —
+direct enumeration for d ≤ 18 and GMP brute force (`hunt.c`) for d = 19–24 — with
+the modular sieve as a cross-check:
 
 ```
-d ≤ 12 : OBSTRUCTION (no candidates)
-d = 13 : 4 candidates,  all composite   → no emirp   ┐
-d = 14 : 6 candidates,  all composite   → no emirp   │ exhaustive brute force
-d = 15 : 5 candidates,  all composite   → no emirp   │ (hunt.c) — every n tested
-d = 16 : OBSTRUCTION                                 │
-d = 17 : 1 candidate,   composite       → no emirp   ┘
-d = 18..21 : OBSTRUCTION   (modular sieve, k=10)
-d = 22 : OBSTRUCTION       (exact brute force — 0 curve-reversal pairs)
+d = 5         : EMIRP  12641 ⟷ 14621   (both prime, both on curve)   ← the only one
+d = 6, 10     : OBSTRUCTION (no candidates)
+d = 7,8,9,11,12 : candidates exist, none both-prime    → no emirp   (exhaustive enumerator)
+d = 13..18    : candidates exist, all composite        → no emirp   (exhaustive: hunt.c / check_survivors)
+d = 19,20,21  : candidates exist, none an emirp         → no emirp   (exact brute force, hunt.c)
+d = 22        : no curve-reversal pairs at all          → no emirp   (exact brute force)
+d = 23, 24    : prime-eligible candidates, none an emirp → no emirp  (exact brute force)
 ```
 
-Every prime-eligible candidate has its reversal exactly on the curve, yet `p`
-and/or `q` is composite. If a bi-quadratic emirp exists at all, it has **≥ 23
-digits**. (Search is being pushed there; see *Status*.)
+Apart from `12641 ⟷ 14621`, every prime-eligible candidate through 24 digits has
+its reversal exactly on the curve yet `p` and/or `q` composite. So `12641 ⟷ 14621`
+is the smallest — and, so far, the **only** — bi-quadratic emirp. The next one, if
+any, has **≥ 25 digits**. (Search continues; see *Status*.)
 
 ### Prime palindromes: a 27-year conjecture
 
@@ -71,9 +74,10 @@ Two roads were rigorously **ruled out** by measurement (see
 ### Heuristic
 
 A coin-flip density argument predicts **bi-quadratic emirps are finite** (expected
-≈ `C/d²` per length, sum converges → likely none), while **prime palindromes may
-be infinite** (≈ `C′/d`, sum diverges). The single extra primality condition for
-emirps is what tips the balance.
+≈ `C/d²` per length, sum converges → **total ≈ 1** across all integers), while
+**prime palindromes may be infinite** (≈ `C′/d`, sum diverges). The single extra
+primality condition for emirps is what tips the balance — and an expected total of
+≈ 1 is consistent with `12641 ⟷ 14621` being the only one that exists.
 
 ---
 
@@ -139,8 +143,11 @@ python3 generate_graph.py
 
 The hunt began after Simon Singh's *Fermat's Enigma* (1997) — a book about
 Fermat's *Last* Theorem that sent the search into Fermat's *other* famous result,
-the **two-square theorem**: a prime is a sum of two squares iff it's ≡ 1 (mod 4).
-The curve `2n²+2n+1 = n² + (n+1)²` is the tightest case — a sum of two
-*consecutive* squares. The first champion, `3187813`, was found on a 386 by
-bending the x87 FPU's 80-bit registers into a 64-bit integer engine. The project
-has been chasing that curve ever since.
+the **two-square theorem**: an *odd* prime is a sum of two squares **if and only
+if** it's ≡ 1 (mod 4). The curve `2n²+2n+1 = n² + (n+1)²` is the tightest case — a
+sum of two *consecutive* squares. Its two rare prizes are **prime palindromes**
+(read the same both ways — largest known: `3187813`) and **bi-quadratic emirps**
+(reverse to a *different* curve-prime — only known: `12641 ⟷ 14621`). The first
+champion — the palindrome `3187813` — was found on a 386 by bending the x87 FPU's
+80-bit registers into a 64-bit integer engine. The project has been chasing that
+curve ever since.
