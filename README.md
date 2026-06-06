@@ -137,7 +137,7 @@ python3 generate_graph.py
 - [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) — **start here**: goal,
   glossary, the algorithms (pseudocode), bug-history, and the live landscape.
 - [`docs/structural_attacks_2026-06-04.md`](docs/structural_attacks_2026-06-04.md)
-  — the MITM + congruence foray and why neither cracks it.
+  — the MITM (meet in the middle) + congruence foray and why neither cracks it.
 - `docs/session_2026-06-04_*.md` — session records (the ≤22 proof, the cliff fix,
   the palindrome unification).
 - `docs/modular_obstruction_design.md` — the sieve's original design notes.
@@ -145,7 +145,7 @@ python3 generate_graph.py
 ---
 
 ## Why "BigFermat"
-
+### The hobby...
 The hunt began after Simon Singh's *Fermat's Enigma* (1997) — a book about
 Fermat's *Last* Theorem that sent the search into Fermat's *other* famous result,
 the **two-square theorem**: every prime ≡ 1 (mod 4) is a sum of two squares (and no
