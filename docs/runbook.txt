@@ -90,6 +90,27 @@ xset s on +dpms                                # restore default
 xset q | grep -iA2 -e 'Screen Saver' -e DPMS   # check current settings
 echo 'xset s off -dpms' >> ~/.config/openbox/autostart   # make it persist
 
+--- 10. ZIG (experimental — see docs/zig_experiment_2026-06-06.md) -----------
+# install (Fedora): pulls libomp as a dep. 0.14.x keeps @cImport (simplest).
+sudo dnf install -y zig          # nitroIII; 0.14.1. (apt: 'zig' on Debian too)
+zig version
+# use zig as a drop-in C compiler (zero Zig learned, good first taste):
+zig cc -O3 -mcpu=znver2 -std=c99 hunt.c -o hunt -lgmp
+# build a Zig program that calls GMP (native u128, std.Thread; no OpenMP):
+zig build-exe palhunt_gmp.zig -O ReleaseFast -lc -lgmp -mcpu=znver2 \
+  -femit-bin=palhunt_zig
+# which __udivti3 (etc.) a binary uses — IN binary (compiler-rt) vs libgcc:
+nm palhunt_zig | grep -i udivti3      # 'W'/'T' = bundled; 'U' = from a .so
+
+--- 11. BENCHMARKING UNDER LOAD (a long hunt owns the cores) -----------------
+# pin a test to spare cores so it won't slow the running hunt:
+taskset -c 6,7 ./palhunt_c 19 19
+# wall-clock is gated by core availability when oversubscribed; measure CPU
+# WORK (user+sys) instead — contention-independent, the honest metric:
+/usr/bin/time -f "user=%U s sys=%S s real=%e s" ./palhunt_c 19 19
+# isolate codegen from scheduling: compare SINGLE-core before multi-core.
+taskset -c 7 ./palhunt_c 17 17
+
 ------------------------------------------------------------------------------
  Notes:
  - Cumulative candidates through digit-length d  ~=  n_max(d) ~= sqrt(10^d / 2).

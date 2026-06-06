@@ -19,6 +19,15 @@ mod_obstruct_test
 mod_obstruct_bkup
 a.out
 
+# --- Zig experiment binaries (2026-06-06; the .zig/.c sources ARE tracked) ---
+palhunt_zig
+palhunt_c
+palhunt_opt_c
+palhunt_opt_zig
+.zig-cache/
+zig-cache/
+zig-out/
+
 # --- Object / build artifacts ---
 *.o
 *.obj
