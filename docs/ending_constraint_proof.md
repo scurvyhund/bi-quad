@@ -120,5 +120,5 @@ At depth `k` the first-`k` and last-`k` digits of `p` are pinned by `n mod 10^k`
 (Hensel-lifted), giving a `valid_endings` set and its reverse `valid_firsts`. A
 digit-length `d` is an **obstruction** when no `(first-k, last-k)` pair is mutually
 compatible under reversal — proven with **zero primality tests**. That is precisely
-what `mod_obstruct.c` computes. See `PROJECT_OVERVIEW.md` (method + glossary) and
-`modular_obstruction_design.md`.
+what `mod_obstruct.c` computes. See [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md) (method + glossary) and
+[`modular_obstruction_design.md`](modular_obstruction_design.md).

@@ -25,5 +25,5 @@ Two machines advancing the two frontiers in parallel, no core contention.
 
 ## Pending
 - cvpipe optimization (consec_sqr before Miller–Rabin) — to do together; in
-  `gmp-cvo/cvpipe.c`, not bi-quad. See `session_2026-06-05_emirp_d5_correction.md`
+  `gmp-cvo/cvpipe.c`, not bi-quad. See [`session_2026-06-05_emirp_d5_correction.md`](session_2026-06-05_emirp_d5_correction.md)
   for the emirp correction record.

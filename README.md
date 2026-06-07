@@ -140,7 +140,7 @@ python3 generate_graph.py
   — the MITM (meet in the middle) + congruence foray and why neither cracks it.
 - `docs/session_2026-06-04_*.md` — session records (the ≤22 proof, the cliff fix,
   the palindrome unification).
-- `docs/modular_obstruction_design.md` — the sieve's original design notes.
+- [`docs/modular_obstruction_design.md`](docs/modular_obstruction_design.md) — the sieve's original design notes.
 
 ---
 

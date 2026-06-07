@@ -7,7 +7,7 @@
 > 14621` at **d=5** (verified by `hunt.c`: `EMIRPS=2`). The old "no emirp ≤ 22
 > digits" headline was wrong (a prose misread of the small-d sieve output). The
 > corrected result: **`12641 ⟷ 14621` is the ONLY bi-quadratic emirp through 24
-> digits** (brute-verified, every n). See `session_2026-06-05_emirp_d5_correction.md`.
+> digits** (brute-verified, every n). See [`session_2026-06-05_emirp_d5_correction.md`](session_2026-06-05_emirp_d5_correction.md).
 > Note on metrics: a curve-reversal "survivor" splits into **emirp candidates**
 > (non-palindrome) + **palindromes** (`p=rev(p)`). The README figure and the table
 > below show the raw total, split by colour. `check_survivors.c` correctly counts
@@ -353,7 +353,7 @@ post-cliff tail.
    (→ non-existence of bi-quadratic emirps), or do prime-eligible candidates
    persist? **Status:** search is `~10^(d/2)`-bound (brute force `hunt.c` reaches
    ~d=25), and a faster search (MITM) *and* a congruence non-existence proof have
-   both been rigorously **ruled out** — see `structural_attacks_2026-06-04.md`.
+   both been rigorously **ruled out** — see [`structural_attacks_2026-06-04.md`](structural_attacks_2026-06-04.md).
    A density heuristic predicts emirps are *finite* (≈`C/d²`, sum converges);
    a theorem, if any, needs new mathematics.
 4. The Phase-3 "composite-`p`" caveat from the Option-B work — does the sieve's

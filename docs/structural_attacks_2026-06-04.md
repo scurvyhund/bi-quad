@@ -3,7 +3,7 @@
 > ⚠️ **Note 2026-06-05:** the structural conclusions here (no MITM √-speedup, no
 > congruence obstruction) still stand. But the "no bi-quadratic emirp ≤ 22 digits"
 > premise they reference is corrected: `12641 ⟷ 14621` IS an emirp (d=5) — it's the
-> **only** one through 24 digits. See `session_2026-06-05_emirp_d5_correction.md`.
+> **only** one through 24 digits. See [`session_2026-06-05_emirp_d5_correction.md`](session_2026-06-05_emirp_d5_correction.md).
 
 > After proving **no bi-quadratic emirp ≤ 22 digits**, we asked the two natural
 > follow-ups: (a) can we *search* faster than brute force (10^(d/2)), and (b) can
@@ -173,5 +173,5 @@ palindromes (1/d, maybe infinite) — a clean, satisfying distinction.
 
 **Probe code** (archived in git, recover with `git show 7f33475:<file>`):
 `mitm_probe.c`, `mitm_probeB.c`, `congru_probe.c`. Memory:
-`structural_attacks_ruled_out`. Companion: `PROJECT_OVERVIEW.md`,
-`session_2026-06-04_archive.md`.
+`structural_attacks_ruled_out`. Companion: [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md),
+[`session_2026-06-04_archive.md`](session_2026-06-04_archive.md).
