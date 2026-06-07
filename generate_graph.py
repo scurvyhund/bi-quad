@@ -86,7 +86,7 @@ text(AX(LXF)-8, A_t+8, "exhaustively searched to d=24 →", F(16), ORANGE, "ra")
 
 # "desert" annotation along the upper curve
 text(AX(7.2), AY(12.5), "no prime palindrome", F(19), MUT, "mm")
-text(AX(7.2), AY(11.1), "(confirmed d = 8 … 21)", F(17), MUT, "mm")
+text(AX(7.2), AY(11.1), "(confirmed d = 8 … 27)", F(17), MUT, "mm")
 
 # prime palindrome stars
 def star(cx,cy,r,fill):
