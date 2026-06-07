@@ -4,9 +4,10 @@
  Machines:
    nitroIII = AMD Zen2, Fedora 42, 8c  -> emirp hunt (hunt.c).   deps: dnf
    nitroII  = Intel, BunsenLabs/Debian -> palindrome hunt.       deps: apt
- Remotes (after 2026-06-05 tidy, BOTH master_dev = the active line):
+ Remotes (master_dev = the active line on ALL THREE mirrors):
    origin   = git@gitlab.com:scurvyhund/bi-quad.git
    codeberg = git@codeberg.org:scurvyhund/bi-quad.git
+   github   = git@github.com:scurvyhund/bi-quad.git    (added 2026-06-07)
  Tools: hunt.c (emirps, GMP) | palhunt_gmp.c (prime palindromes, GMP)
         mod_obstruct.c (modular sieve) | check_survivors.c (small-d, d<=18)
 ------------------------------------------------------------------------------
@@ -75,12 +76,13 @@ renice 19 -p <PID>                   # lower priority of a running job
 pkill -f palhunt_gmp                 # stop palhunt by name
 kill <PID>                           # stop one process by PID
 
---- 8. COMMIT & PUSH TO BOTH MIRRORS ----------------------------------------
+--- 8. COMMIT & PUSH TO ALL THREE MIRRORS -----------------------------------
 git status
 git add <files>
 git commit -m "message"
-git push origin   master_dev
-git push codeberg master_dev
+git push origin   master_dev      # GitLab
+git push codeberg master_dev      # Codeberg
+git push github   master_dev      # GitHub
 git log --oneline -5
 
 --- 9. nitroII DISPLAY: STOP THE SCREEN BLANKING (BunsenLabs / X11) ---------
@@ -110,6 +112,19 @@ taskset -c 6,7 ./palhunt_c 19 19
 /usr/bin/time -f "user=%U s sys=%S s real=%e s" ./palhunt_c 19 19
 # isolate codegen from scheduling: compare SINGLE-core before multi-core.
 taskset -c 7 ./palhunt_c 17 17
+
+--- 12. GITHUB MIRROR — one-time setup (gh CLI) -----------------------------
+sudo dnf install -y gh             # Fedora; Debian/nitroII: sudo apt install gh
+gh auth login                      # GitHub.com -> SSH -> Login with web browser
+#   device-code flow is CROSS-MACHINE: copy the one-time code, enter it in ANY
+#   browser already logged into the account (e.g. a second box), then the CLI
+#   completes. SSH choice auto-uploads ~/.ssh/id_ed25519.pub to the account.
+gh auth status                     # confirm: 'Logged in ... (ssh)'
+gh repo create scurvyhund/bi-quad --source=. --public --push --remote=github \
+  --description "..."              # creates repo, adds 'github' remote, pushes
+gh repo edit scurvyhund/bi-quad --add-topic number-theory --add-topic emirp \
+  --add-topic palindrome ...       # (repeat --add-topic for each)
+gh repo view --web                 # open it in a browser
 
 ------------------------------------------------------------------------------
  Notes:
