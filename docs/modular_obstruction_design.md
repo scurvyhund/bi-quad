@@ -24,7 +24,8 @@
 >   not a feature.
 >
 > The k=3..9 obstructions and survivor counts at **d ≤ 2k remain valid** (incl.
-> the d=10 and d=18/k=9 obstructions). See the project memory `d21_range_mod_cliff`
+> the d=10 and d=18/k=9 obstructions). See
+> [`session_2026-06-03_cliff_discovery.md`](session_2026-06-03_cliff_discovery.md)
 > for the full analysis and validation.
 
 ## Goal
