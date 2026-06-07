@@ -1,111 +1,118 @@
-rules for forming a perfect trinomial from '(n^2 + n)' for completing the square
+# Completing the square: turning `n² + n` into a perfect-square trinomial
 
-To form a perfect square trinomial from the expression $n^2 + n$, you need to add a specific constant term to balance the equation.
+> Plain-text / Unicode math (no LaTeX), so it renders identically on GitHub,
+> GitLab, and Codeberg. Background note for the curve `p = 2n² + 2n + 1`, whose
+> `n² + n` core is one completed square away from `(n + ½)²`.
 
-Here is the rule and the step-by-step process.
+To form a perfect-square trinomial from the expression `n² + n`, you add a
+specific constant term to balance it.
 
-### The General Rule
-To form a perfect square trinomial from an expression of the form $x^2 + bx$, **add the square of half the coefficient of the middle term**.
+### The general rule
+To complete the square on an expression of the form `x² + bx`, **add the square
+of half the coefficient of the middle term**:
 
-The formula is:
-$$ \text{Term to add} = \left(\frac{b}{2}\right)^2 $$
-
----
-
-### Step-by-Step Application
-
-**1. Identify the coefficient ($b$)**
-In the expression $n^2 + n$, the coefficient of the middle term ($n$) is implicitly **1**.
-$$ b = 1 $$
-
-**2. Divide the coefficient by 2**
-Take the coefficient $1$ and divide it by $2$.
-$$ \frac{1}{2} = \frac{1}{2} $$
-
-**3. Square the result**
-Square the fraction obtained in the previous step.
-$$ \left(\frac{1}{2}\right)^2 = \frac{1}{4} $$
-
-**4. Add this term to the expression**
-By adding $\frac{1}{4}$ to the original expression, you form a perfect square trinomial.
-$$ n^2 + n + \frac{1}{4} $$
+    Term to add = (b/2)²
 
 ---
 
-### Verifying the Result
+### Step-by-step application
 
-You can verify that this is a perfect square trinomial by factoring it:
+**1. Identify the coefficient (b).**
+In `n² + n`, the coefficient of the middle term (`n`) is implicitly **1**:
 
-The trinomial is:
-$$ n^2 + n + \frac{1}{4} $$
+    b = 1
 
-This factors into:
-$$ \left(n + \frac{1}{2}\right)\left(n + \frac{1}{2}\right) = \left(n + \frac{1}{2}\right)^2 $$
+**2. Divide the coefficient by 2.**
+
+    1 ÷ 2 = ½
+
+**3. Square the result.**
+
+    (½)² = ¼
+
+**4. Add this term to the expression.**
+Adding `¼` forms a perfect-square trinomial:
+
+    n² + n + ¼
+
+---
+
+### Verifying the result
+Factor it to check:
+
+    n² + n + ¼  =  (n + ½)(n + ½)  =  (n + ½)²
 
 ### Summary
-To turn $n^2 + n$ into a perfect square trinomial, the missing term is **$\frac{1}{4}$**.
+To turn `n² + n` into a perfect-square trinomial, the missing term is **¼**:
 
-The completed equation is:
-$$ n^2 + n \mathbf{+\ \frac{1}{4}} = \left(n + \frac{1}{2}\right)^2 $$
+    n² + n + ¼  =  (n + ½)²
 
-so for n^2 - n the last term would be -1 and the trinomial would be -1/4...regardless of the coefficient of 'n^2'? say we had
-3n^2 - n  ?
+---
 
-Let's break this down, because there are two distinct concepts here: the sign of the term and the coefficient of the leading term ($n^2$).
+So for `n² − n` the last term would be −¼ and the trinomial −¼ … regardless of
+the coefficient of `n²`? Say we had `3n² − n`?
 
-### 1. Correction on $n^2 - n$
+Two distinct concepts are tangled here: the **sign** of the term and the
+**coefficient** of the leading term (`n²`).
 
-There was a small misunderstanding in your example. You suggested the last term would be $-1/4$. That is **incorrect**.
+### 1. Correction on `n² − n`
 
-**The Rule:** You **always square** the term you calculate. A square can never be negative.
+A small misunderstanding: the term is **not** `−¼`. **You always square** the
+value you compute, and a square is never negative.
 
-Here is the math for $n^2 - n$:
-1.  **Identify $b$:** The coefficient of $n$ is $-1$.
-2.  **Divide by 2:** $\frac{-1}{2} = -\frac{1}{2}$.
-3.  **Square it:** $\left(-\frac{1}{2}\right)^2 = \mathbf{+\frac{1}{4}}$.
+For `n² − n`:
+1. **Identify b:** the coefficient of `n` is `−1`.
+2. **Divide by 2:** `−1 ÷ 2 = −½`.
+3. **Square it:** `(−½)² = +¼`.
 
-So, the perfect trinomial for $n^2 - n$ is:
-$$ n^2 - n \mathbf{+\ \frac{1}{4}} $$
+So the perfect trinomial for `n² − n` is:
 
-When you factor this, the sign inside the brackets matches the sign of the middle term:
-$$ \left(n - \frac{1}{2}\right)^2 $$
+    n² − n + ¼
 
-**Key takeaway:** Even if the middle term is negative ($-n$), the number you add to complete the square is ***always***  positive ($+\frac{1}{4}$).
+Factoring, the sign inside the brackets matches the sign of the middle term:
 
-***
+    (n − ½)²
 
-### 2. The Coefficient of $n^2$
+**Key takeaway:** even when the middle term is negative (`−n`), the number you
+add to complete the square is **always positive** (`+¼`).
 
-To answer your second question: **Yes, the coefficient of $n^2$ matters immensely.**
+---
 
-If the coefficient is anything other than $1$ (like your example of $3n^2$), you cannot use the simple "divide by 2 and square" rule directly on the whole expression. You must factor out the leading coefficient first.
+### 2. The coefficient of `n²`
 
-**Let's look at your example: $3n^2 - n$**
+**Yes — the coefficient of `n²` matters immensely.** If it is anything other
+than `1` (e.g. `3n²`), you cannot apply "divide by 2 and square" to the whole
+expression directly; factor out the leading coefficient first.
 
-**Method: Factor out the leading coefficient**
-1.  Factor the $3$ out of the terms with variables:
-    $$ 3(n^2 - \frac{1}{3}n) $$
-    *(Note: We divide the $-n$ by $3$ to get $-\frac{1}{3}n$ inside the parenthesis).*
+**Example: `3n² − n`** — factor out the leading coefficient:
 
-2.  Now apply the rule **inside the parenthesis**:
-    *   Take the coefficient of $n$ inside: $-\frac{1}{3}$.
-    *   Divide by 2: $-\frac{1}{6}$.
-    *   Square it: $\left(-\frac{1}{6}\right)^2 = \mathbf{\frac{1}{36}}$.
+1. Pull the `3` out of the variable terms (dividing `−n` by `3` gives `−⅓n`):
 
-3.  Add that number inside the parenthesis:
-    $$ 3\left(n^2 - \frac{1}{3}n \mathbf{+\ \frac{1}{36}}\right) $$
+       3(n² − ⅓n)
 
-4.  To keep the expression equal, if you add a number inside a multiplication, you must balance it. However, for "forming" the trinomial structure, the expression inside the parenthesis is now a perfect square:
-    $$ 3\left(n - \frac{1}{6}\right)^2 $$
+2. Apply the rule **inside the parentheses**:
+   - coefficient of `n` inside: `−⅓`
+   - divide by 2: `−⅙`
+   - square it: `(−⅙)² = 1/36`
 
-**Summary of Differences:**
+3. Add that inside the parentheses:
 
-| Expression | Term to Add | Perfect Square Trinomial Form |
+       3(n² − ⅓n + 1/36)
+
+4. The expression inside is now a perfect square:
+
+       3(n − ⅙)²
+
+**Summary of differences:**
+
+| Expression | Term to add | Perfect-square trinomial form |
 | :--- | :--- | :--- |
-| $n^2 - n$ | Add **$+\frac{1}{4}$** | $n^2 - n + \frac{1}{4}$ |
-| $3n^2 - n$ | Add **$+\frac{1}{36}$** (inside factor) | $3(n^2 - \frac{1}{3}n + \frac{1}{36})$ |
+| `n² − n` | **+¼** | `n² − n + ¼` |
+| `3n² − n` | **+1/36** (inside the factor) | `3(n² − ⅓n + 1/36)` |
 
-**The Rule Adjustment:**
-If you have $ax^2 + bx$, the term you need to add to complete the square is calculated as:
-$$ \left(\frac{b}{2a}\right)^2 $$
-*(Notice how the leading coefficient $a$ is now in the denominator).*
+**The rule, generalized:** for `ax² + bx`, the term to add to complete the
+square is
+
+    (b / 2a)²
+
+— the leading coefficient `a` now sits in the denominator.
