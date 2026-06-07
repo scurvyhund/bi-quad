@@ -2,8 +2,8 @@
 
 > ⚠️ **Superseded by later 2026-06-03 correction:** any "saturation at d=2k+2"
 > or obstruction-ceiling claim here is an ARTIFACT of an interval bug (fixed in
-> commit 22a7121). See `docs/modular_obstruction_design.md` correction notice
-> and project memory `d21_range_mod_cliff`. Results at d ≤ 2k remain valid.
+> commit 22a7121). See [`modular_obstruction_design.md`](modular_obstruction_design.md) correction notice
+> and [`session_2026-06-03_cliff_discovery.md`](session_2026-06-03_cliff_discovery.md). Results at d ≤ 2k remain valid.
 
 ## Objectives Accomplished
 

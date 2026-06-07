@@ -98,5 +98,5 @@ k=10 diagonal done (d=18–21 obstructed), then **d=22 closed by exact brute for
 trustworthy tool for d≥21; it reaches ~d=25. Options from here:
 - Push **d=23, 24, 25** by exact brute force (running now) — extends the wall.
 - Beyond d=25: only the sieve or new mathematics reaches (search is 10^(d/2)-bound;
-  MITM and congruence both ruled out — see memory `structural_attacks_ruled_out`).
+  MITM and congruence both ruled out — see [`structural_attacks_2026-06-04.md`](structural_attacks_2026-06-04.md)).
 - Or write up the **non-existence trend** + the prime-palindrome unification.
