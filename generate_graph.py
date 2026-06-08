@@ -100,12 +100,16 @@ def star(cx,cy,r,fill):
         rr=r if k%2==0 else r*0.42
         pp.append((cx+rr*math.cos(ang), cy+rr*math.sin(ang)))
     d.polygon(pp, fill=fill, outline=(150,110,10))
+# per-star offsets: (dx, dy, anchor)  — dy<0 = above the curve line
+_pal_off = {5:(16,-18,"lb"), 181:(-18,-24,"rb"), 313:(16,-8,"lb"),
+            3187813:(18,0,"lm")}
+_pal_lab = {5:"5", 181:"181", 313:"313",
+            3187813:"3187813  (d=7) — the largest palindrome, since 1997"}
 for (n,p,dd) in prime_pals:
     cx,cy = AX(math.log10(n)), AY(math.log10(p))
     star(cx,cy,11,GOLD)
-text(AX(math.log10(1262))+18, AY(math.log10(3187813)),
-     "3187813  (d=7) — the largest palindrome, since 1997", F(18), (150,110,10), "lm")
-text(AX(0)+14, AY(math.log10(5))-6, "5, 181, 313", F(15), (150,110,10), "lb")
+    dx,dy,anc = _pal_off[p]
+    text(cx+dx, cy+dy, _pal_lab[p], F(18 if p==3187813 else 15), (150,110,10), anc)
 
 # the ONE bi-quadratic emirp (diamond markers)
 def diamond(cx,cy,r,fill,outline):
