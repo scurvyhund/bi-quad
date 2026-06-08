@@ -101,7 +101,7 @@ def star(cx,cy,r,fill):
         pp.append((cx+rr*math.cos(ang), cy+rr*math.sin(ang)))
     d.polygon(pp, fill=fill, outline=(150,110,10))
 # per-star offsets: (dx, dy, anchor)  — dy<0 = above the curve line
-_pal_off = {5:(16,-18,"lb"), 181:(-18,-24,"rb"), 313:(16,-8,"lb"),
+_pal_off = {5:(16,-18,"lb"), 181:(-18,-24,"rb"), 313:(16,-22,"lb"),
             3187813:(18,0,"lm")}
 _pal_lab = {5:"5", 181:"181", 313:"313",
             3187813:"3187813  (d=7) — the largest palindrome, since 1997"}
