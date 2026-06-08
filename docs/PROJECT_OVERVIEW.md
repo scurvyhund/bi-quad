@@ -6,14 +6,14 @@
 > ⚠️ **CORRECTION 2026-06-05:** a bi-quadratic emirp **does exist** — `12641 ⟷
 > 14621` at **d=5** (verified by `hunt.c`: `EMIRPS=2`). The old "no emirp ≤ 22
 > digits" headline was wrong (a prose misread of the small-d sieve output). The
-> corrected result: **`12641 ⟷ 14621` is the ONLY bi-quadratic emirp through 24
+> corrected result: **`12641 ⟷ 14621` is the ONLY bi-quadratic emirp through 26
 > digits** (brute-verified, every n). See [`session_2026-06-05_emirp_d5_correction.md`](session_2026-06-05_emirp_d5_correction.md).
 > Note on metrics: a curve-reversal "survivor" splits into **emirp candidates**
 > (non-palindrome) + **palindromes** (`p=rev(p)`). The README figure and the table
 > below show the raw total, split by colour. `check_survivors.c` correctly counts
 > the emirp-candidate (non-palindrome) part; `hunt.c`'s raw count is the total —
 > both are right (check_survivors overflows 64-bit at d≥19 → use hunt.c there). Of
-> ALL these survivors through d=24, only two are prime: the d=5 emirp and 3187813.
+> ALL these survivors through d=26, only two are prime: the d=5 emirp and 3187813.
 
 ---
 
@@ -119,8 +119,8 @@ candidates (~9× speedup)** up front:
 | exhaustive search through | candidates `n` ≈ `√(10ᵈ/2)` | filter culls (~89%) | reach primality test |
 |---|---|---|---|
 | d ≤ 24 (done)    | ≈ 707 billion   | **≈ 629 billion**   | ≈ 78 billion  |
-| d ≤ 25 (running) | ≈ 2.24 trillion | **≈ 1.99 trillion** | ≈ 246 billion |
-| d ≤ 26 (next)    | ≈ 7.07 trillion | **≈ 6.29 trillion** | ≈ 778 billion |
+| d ≤ 25 (done)    | ≈ 2.24 trillion | **≈ 1.99 trillion** | ≈ 246 billion |
+| d ≤ 26 (done)    | ≈ 7.07 trillion | **≈ 6.29 trillion** | ≈ 778 billion |
 
 Deepened to `k` digits, the *same* construction collapses whole digit-lengths to zero
 survivors — an obstruction proven with **no primality tests at all**.
@@ -297,10 +297,10 @@ purple = the d=5 emirp, teal = emirp candidates (composite), gold = palindromes
 `generate_graph.py`.*
 
 ```
-d:     5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
-cand:  6* 0  2  2  6  0  4  2  2  6  2  2  0  0  0  0  2  0  2  2   emirp candidates (non-pal)
-pal:   0  0  5  0  0  0  1  0  2  0  4  0  1  0  3  0  5  0  1  0   palindromes (gold)
-raw:   6  0  7  2  6  0  5  2  4  6  6  2  1  0  3  0  7  0  3  2   total (hunt.c)
+d:     5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
+cand:  6* 0  2  2  6  0  4  2  2  6  2  2  0  0  0  0  2  0  2  2  2  6   emirp candidates (non-pal)
+pal:   0  0  5  0  0  0  1  0  2  0  4  0  1  0  3  0  5  0  1  0  5  0   palindromes (gold)
+raw:   6  0  7  2  6  0  5  2  4  6  6  2  1  0  3  0  7  0  3  2  7  6   total (hunt.c)
                                                        (* d=5 cand holds the EMIRP)
 
   d = 5                : EMIRP — 12641 ⟷ 14621 (the ONLY bi-quadratic emirp)
@@ -318,7 +318,7 @@ obstructions (no survivor of any kind) sit at **{6, 10, 18, 20, 22}**. The trend
 toward **no *further* bi-quadratic emirp** is strong (density heuristic: expected
 total ≈ 1), consistent with `12641 ⟷ 14621` being the only one that exists.
 
-### The hunt (exhaustive brute force, d=5–24) — `hunt.c`
+### The hunt (exhaustive brute force, d=5–26) — `hunt.c`
 
 `hunt.c` directly enumerates **every** `n`, forms `q = rev(p)`, and tests exactly:
 is `q` on the curve (`2q−1` a perfect square)? are `p`, `q` both prime? `q ≠ p`?
@@ -328,12 +328,12 @@ but counts only the **non-palindrome** emirp candidates (the teal part); `hunt.c
 accounted for; check_survivors only overflows 64-bit at d≥19 → use hunt.c past there.
 
 **Result: `EMIRPS = 2` at d=5** (the pair 12641↔14621, counted both directions);
-**`EMIRPS = 0` for every d = 6 … 24.** Every other emirp candidate has `q`
+**`EMIRPS = 0` for every d = 6 … 26.** Every other emirp candidate has `q`
 exactly on the curve yet `p` and/or `q` composite (Miller–Rabin, 40 rounds).
 
-**→ `12641 ⟷ 14621` (d=5) is the ONLY bi-quadratic emirp through 24 digits.**
-Exhaustively verified by brute force for d=5–24 (d=25 running). The next emirp, if
-any, has **d ≥ 25**. The density heuristic (Σ C/d² → expected total ≈ 1) is
+**→ `12641 ⟷ 14621` (d=5) is the ONLY bi-quadratic emirp through 26 digits.**
+Exhaustively verified by brute force for d=5–26 (search complete at agreed frontier).
+The next emirp, if any, has **d ≥ 27**. The density heuristic (Σ C/d² → expected total ≈ 1) is
 consistent with it being the only one that exists.
 
 **Cost note:** exact enumeration costs ~`range/mod` work per residue, so pushing
@@ -352,7 +352,7 @@ post-cliff tail.
 3. **The central question:** do obstructions become *total* for all large `d`
    (→ non-existence of bi-quadratic emirps), or do prime-eligible candidates
    persist? **Status:** search is `~10^(d/2)`-bound (brute force `hunt.c` reaches
-   ~d=25), and a faster search (MITM) *and* a congruence non-existence proof have
+   ~d=26), and a faster search (MITM) *and* a congruence non-existence proof have
    both been rigorously **ruled out** — see [`structural_attacks_2026-06-04.md`](structural_attacks_2026-06-04.md).
    A density heuristic predicts emirps are *finite* (≈`C/d²`, sum converges);
    a theorem, if any, needs new mathematics.
