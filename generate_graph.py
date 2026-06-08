@@ -59,7 +59,7 @@ def AY(ly): return A_b - (ly-ylo)/(yhi-ylo)*(A_b-A_t)
 
 # frontier shading — emirp brute force through d=26 (n ~ 7e12, log ~ 12.85)
 LXF = 12.85
-d.rectangle([AX(0),A_t,AX(LXF),A_b], fill=FRONT)
+d.rectangle([AX(0),A_t,ax_r,A_b], fill=FRONT)
 # gridlines
 for gx in range(0,14,1):
     d.line([AX(gx),A_t,AX(gx),A_b], fill=GRID)
