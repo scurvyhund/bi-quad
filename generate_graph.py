@@ -14,7 +14,7 @@ emirp_pts = [(79, 12641), (85, 14621)]
 # only PRIMES are the d=5 emirp (12641<->14621) and the d=7 palindrome 3187813.
 landscape = [(5,6,0),(6,0,0),(7,2,5),(8,2,0),(9,6,0),(10,0,0),(11,4,1),(12,2,0),
              (13,2,2),(14,6,0),(15,2,4),(16,2,0),(17,0,1),(18,0,0),(19,0,3),(20,0,0),
-             (21,2,5),(22,0,0),(23,2,1),(24,2,0)]
+             (21,2,5),(22,0,0),(23,2,1),(24,2,0),(25,2,5),(26,6,0)]
 EMIRP_D = 5    # the d=5 emirp 12641<->14621 lives in the candidate segment here
 
 # ---------- canvas ----------
@@ -44,7 +44,7 @@ def text(x,y,s,fnt,fill=INK,anchor="la"):
 
 # ================= header =================
 text(W/2, 40, "The curve  p = 2n² + 2n + 1  =  n² + (n+1)²", FB(40), INK, "ma")
-text(W/2, 90, "what an obstruction sieve + exhaustive brute force found  ·  BigFermat, 2026-06-05",
+text(W/2, 90, "what an obstruction sieve + exhaustive brute force found  ·  BigFermat, 2026-06-07",
      F(22), MUT, "ma")
 
 # ================= PANEL A : the curve, log-log =================
@@ -52,19 +52,19 @@ ax_l, ax_r = 150, W-90
 A_t, A_b = 188, 700
 text(ax_l, A_t-34, "① The curve, its palindromes, and the lone emirp  (log–log)", FB(26), INK, "la")
 
-# axis ranges: x=log10(n) 0..12 ; y=log10(p) 0..24.5
-xlo,xhi = 0,12.0; ylo,yhi = 0,24.5
+# axis ranges: x=log10(n) 0..13.6 ; y=log10(p) 0..27.6
+xlo,xhi = 0,13.6; ylo,yhi = 0,27.6
 def AX(lx): return ax_l + (lx-xlo)/(xhi-xlo)*(ax_r-ax_l)
 def AY(ly): return A_b - (ly-ylo)/(yhi-ylo)*(A_b-A_t)
 
-# frontier shading (exhaustively searched to d=24  ->  n ~ 7e11, log ~ 11.85)
-LXF = 11.85
+# frontier shading — emirp brute force through d=26 (n ~ 7e12, log ~ 12.85)
+LXF = 12.85
 d.rectangle([AX(0),A_t,AX(LXF),A_b], fill=FRONT)
 # gridlines
-for gx in range(0,13,1):
+for gx in range(0,14,1):
     d.line([AX(gx),A_t,AX(gx),A_b], fill=GRID)
     text(AX(gx),A_b+8,sup(gx) if gx else "1",F(15),MUT,"ma")
-for gy in range(0,25,5):
+for gy in range(0,28,5):
     d.line([ax_l,AY(gy),ax_r,AY(gy)], fill=GRID)
     text(ax_l-10,AY(gy),sup(gy) if gy else "1",F(15),MUT,"rm")
 text((ax_l+ax_r)/2, A_b+38, "n", F(20), INK, "ma")
@@ -81,8 +81,12 @@ for i in range(0,481):
 d.line(pts, fill=TEAL, width=4)
 
 # frontier line + label
-d.line([AX(LXF),A_t,AX(LXF),A_b], fill=ORANGE, width=2)
-text(AX(LXF)-8, A_t+8, "exhaustively searched to d=24 →", F(16), ORANGE, "ra")
+d.line([AX(LXF),A_t,AX(LXF),A_b], fill=EMR, width=2)
+text(AX(LXF)-8, A_t+8, "emirp brute force → d=26", F(16), EMR, "ra")
+# palindrome frontier line + label (gold, at d=27 ceiling)
+LXP = 13.35
+d.line([AX(LXP),A_t,AX(LXP),A_b], fill=GOLD, width=2)
+text(AX(LXP)-8, A_t+30, "palindromes → d=27", F(16), (150,110,10), "ra")
 
 # "desert" annotation along the upper curve
 text(AX(7.2), AY(12.5), "no prime palindrome", F(19), MUT, "mm")
@@ -120,7 +124,7 @@ B_t, B_b = 840, 1380
 bx_l, bx_r = 150, W-90
 text(bx_l, B_t-34, "② Survivor landscape by digit-length d  (curve-reversal pairs on the curve)", FB(24), INK,"la")
 
-dmin,dmax = 5,24; ymax=8.5
+dmin,dmax = 5,26; ymax=8.5
 def BX(dd):
     # centered columns
     span=(bx_r-bx_l); step=span/(dmax-dmin+1)
@@ -129,10 +133,10 @@ def BY(c): return B_b - c/ymax*(B_b-B_t)
 step=(bx_r-bx_l)/(dmax-dmin+1)
 
 # result band + subtitle (clear zone above the tallest bar, total<=7)
-d.rectangle([BX(5)-step/2, B_t, BX(24)+step/2, B_b], fill=BAND)
-text((BX(5)+BX(24))/2, B_t+12,
-     "12641 ⟷ 14621  is the ONLY bi-quadratic emirp through 24 digits", FB(20), (40,120,90), "ma")
-text((BX(5)+BX(24))/2, B_t+42,
+d.rectangle([BX(5)-step/2, B_t, BX(26)+step/2, B_b], fill=BAND)
+text((BX(5)+BX(26))/2, B_t+12,
+     "12641 ⟷ 14621  is the ONLY bi-quadratic emirp through 26 digits", FB(20), (40,120,90), "ma")
+text((BX(5)+BX(26))/2, B_t+42,
      "teal = emirp candidates (all composite)    ·    gold = palindromes (only 3187813, at d=7, is prime)",
      F(16), MUT, "ma")
 
