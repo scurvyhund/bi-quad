@@ -144,6 +144,16 @@ python3 generate_graph.py
 
 ---
 
+## Origins
+
+`bi-quad` grew out of `cvpipe`, an earlier pipeline implementation of the
+same search. The zone-skip breakthrough (62.8M× speedup) was achieved in
+`cvpipe` before the project was restructured and renamed.
+See [cvpipe](https://github.com/scurvyhund/cvpipe) for the original
+development history.
+
+---
+
 ## Why "BigFermat"
 ### The hobby…
 The hunt began after Simon Singh's *Fermat's Enigma* (1997) — a book about
