@@ -54,6 +54,21 @@ int main(int argc,char**argv){
             mpz_t z; mpz_init(z);
             #pragma omp for schedule(dynamic,1000000)
             for(unsigned long long i=0;i<range;i++){
+                /* MOD-5 OPTIMIZATION (available, not applied — 2026-06-19)
+                 * For p = 2n^2+2n+1:
+                 *   n≡1 (mod 5) → p≡5 (mod 5) → p divisible by 5, never prime
+                 *   n≡3 (mod 5) → p≡5 (mod 5) → p divisible by 5, never prime
+                 * So adding:
+                 *   unsigned r = (unsigned)((nmin+i) % 5);
+                 *   if (r==1 || r==3) continue;
+                 * BEFORE curve() would skip 40% of candidates before the
+                 * expensive u128 multiply.  Benchmarked 2026-06-06: ~10%
+                 * CPU-time saving (skip-fraction != speedup — the saving is
+                 * small because cost lives in the survivor path, not here).
+                 * Deliberately omitted: search is finalising and the gain
+                 * does not affect mathematical results.
+                 * Full record: docs/zig_experiment_2026-06-06.md
+                 */
                 u128 p = curve((u128)nmin + i);
                 int last=(int)(p%10);
                 if(last!=1 && last!=3) continue;            /* prime-eligible last digit */
