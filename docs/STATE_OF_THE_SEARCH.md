@@ -18,6 +18,8 @@ primes in Fermat's two-square theorem. Hence "BigFermat." Two prizes live on it:
 
 - **Bi-quadratic emirp** — a prime `p` on the curve whose digit-reversal
   `q = rev(p)` is **also** prime **and also** on the curve, with `q ≠ p`.
+  The name "bi-quadratic" means both primes satisfy the same quadratic
+  form 2n²+2n+1 — two numbers, one curve.
 - **Prime palindrome on the curve** — a prime `p` that reads the same both ways.
 
 A palindrome is just the `m = n` (i.e. `q = p`) case of the emirp relation, so

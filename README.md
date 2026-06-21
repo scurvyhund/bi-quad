@@ -1,13 +1,14 @@
 # bi-quad — Bi-Quadratic Emirps & Prime Palindromes on `2n²+2n+1`
 
-A long-running search (part of the **BigFermat** project) on the curve
+A long-running number theory search (part of the **BigFermat** project)
+on the curve
 
 > **p(n) = 2n² + 2n + 1 = n² + (n+1)²**  — the sum of two *consecutive* squares —
 
-for two kinds of rare prime: **bi-quadratic emirps** and **prime palindromes**.
-Every value on the curve is a sum of two **consecutive** squares, `n² + (n+1)²` —
-the tightest special case of the sum-of-two-squares primes in Fermat's two-square
-theorem (the primes ≡ 1 mod 4). Hence the name.
+for two kinds of rare prime: **bi-quadratic emirps** and **prime palindromes**
+(palindromic primes). Every value on the curve is a sum of two **consecutive**
+squares, `n² + (n+1)²` — the tightest special case of the sum-of-two-squares
+primes in Fermat's two-square theorem (the primes ≡ 1 mod 4). Hence the name.
 
 That consecutive-squares structure pins every value to one of just six two-digit
 endings — `{01, 13, 21, 41, 61, 81}` (and, reversed, six leading patterns
@@ -23,9 +24,10 @@ endings — `{01, 13, 21, 41, 61, 81}` (and, reversed, six leading patterns
 ## The objects of the hunt
 
 - **Bi-quadratic emirp** — a prime `p = 2n²+2n+1` whose digit-reversal
-  `q = rev(p)` is **also** prime **and also** of the form `2m²+2m+1`, with `q ≠ p`.
-  (Both ends prime, both on the curve, not a palindrome.) **Exactly one is known:
-  `12641 ⟷ 14621` (d=5) — the only one through 26 digits.**
+  `q = rev(p)` is **also** prime **and also** of the form `2m²+2m+1`,
+  with `q ≠ p`. Both ends prime, both on the same quadratic curve —
+  that is what "bi-quadratic" means: two numbers, one curve. **Exactly
+  one is known: `12641 ⟷ 14621` (d=5) — the only one through 26 digits.**
 - **Prime palindrome on the curve** — a prime `p = 2n²+2n+1` that reads the same
   forwards and backwards. Four are known: **5, 181, 313, 3187813**.
 
@@ -151,6 +153,15 @@ same search. The zone-skip breakthrough (62.8M× speedup) was achieved in
 `cvpipe` before the project was restructured and renamed.
 See [cvpipe](https://github.com/scurvyhund/cvpipe) for the original
 development history.
+
+## Related projects
+
+- [cvpipe](https://github.com/scurvyhund/cvpipe) — the original converse
+  prime pipeline; zone-skip optimization and fast Miller-Rabin search.
+- [bigint-mul](https://github.com/scurvyhund/bigint-mul) — arbitrary-
+  precision big integer multiplication in C (`__uint128_t` and schoolbook).
+- [bigdec2hex](https://github.com/scurvyhund/bigdec2hex) — arbitrary-
+  precision decimal-to-hexadecimal converter.
 
 ---
 
