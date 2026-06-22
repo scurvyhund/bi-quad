@@ -51,6 +51,7 @@ text(W/2, 90, "what an obstruction sieve + exhaustive brute force found  ·  Big
 ax_l, ax_r = 150, W-90
 A_t, A_b = 188, 700
 text(ax_l, A_t-34, "① The curve, its palindromes, and the lone emirp  (log–log)", FB(26), INK, "la")
+text(ax_r, A_t-34, "d = digit-length of p", F(22), MUT, "ra")
 
 # axis ranges: x=log10(n) 0..13.6 ; y=log10(p) 0..27.6
 xlo,xhi = 0,13.6; ylo,yhi = 0,27.6
@@ -86,7 +87,7 @@ text(AX(LXF)-8, A_t+8, "emirp brute force → d=26", F(16), EMR, "ra")
 # palindrome frontier line + label (gold, at d=27 ceiling)
 LXP = 13.35
 d.line([AX(LXP),A_t,AX(LXP),A_b], fill=GOLD, width=2)
-text(AX(LXP)-8, A_t+30, "palindromes → d=27", F(16), (150,110,10), "ra")
+text(AX(LXP)-8, A_t+160, "palindromes → d=27", F(16), (150,110,10), "ra")
 
 # "desert" annotation along the upper curve
 text(AX(7.2), AY(12.5), "no prime palindrome", F(19), MUT, "mm")
