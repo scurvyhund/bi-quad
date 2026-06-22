@@ -49,8 +49,7 @@ int main(void)
     printf("====================================================\n\n");
 
     /* For d=7: 1000000 <= 2n²+2n+1 <= 9999999
-     * n_min = 70 (2·70²+2·70+1 = 9941 → 4 digits, so 71)
-     * Let's compute precisely */
+     * n_min hardcoded to 710; n_max computed in loop below. */
     int n_min = 710, n_max = 0;
     for (int n = 0; n < 3162; n++) {
         long p = 2L * n * n + 2 * n + 1;
@@ -80,9 +79,7 @@ int main(void)
         int len = strlen(p_str);
         reverse_str(p_str, rev_str, len);
 
-        /* Skip palindromes */
-        //if (strcmp(p_str, rev_str) == 0)
-        //    continue;
+        /* Skip palindromes (p == q) */
 
         /* Skip if rev(p) has leading zero (would be fewer digits) */
         if (rev_str[0] == '0')

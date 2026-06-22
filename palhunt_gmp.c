@@ -1,5 +1,5 @@
 /*
- * palhunt_big.c — Prime palindromes on the curve 2n^2+2n+1, PAST the 64-bit wall.
+ * palhunt_gmp.c — Prime palindromes on the curve 2n^2+2n+1, PAST the 64-bit wall.
  *
  * n in uint64, p = 2n^2+2n+1 in unsigned __int128 (good to ~37 digits), and GMP
  * is called ONLY to certify the rare palindrome — so it stays fast while reaching
@@ -7,7 +7,7 @@
  *
  * Hunts for the next prime palindrome on the curve beyond Jim's 3187813 (1997).
  *
- * Build: gcc palhunt_big.c -o palhunt_big -O3 -march=znver2 -std=c99 -Wall -fopenmp -lgmp
+ * Build: gcc palhunt_gmp.c -o palhunt_gmp -O3 -march=znver2 -std=c99 -Wall -fopenmp -lgmp
  * Usage: ./palhunt_big [min_d] [max_d]
  */
 #include <stdio.h>
