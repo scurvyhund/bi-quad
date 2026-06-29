@@ -1,23 +1,26 @@
 /*
  * hunt.c — Direct brute-force hunt for bi-quadratic emirps.
  *
- * For each digit count d, enumerate EVERY n with p = 2n^2+2n+1 having d digits,
- * form q = rev(p), and test the full (exact) conditions:
+ * For each digit count d, enumerate EVERY n with p = 2n^2+2n+1
+ * having d digits, form q = rev(p), and test the full conditions:
  *
- *   (1) q lies on the curve: q = 2m^2+2m+1 for some integer m
- *       <=> 2q-1 is a perfect square S and m = (sqrt(S)-1)/2 is a non-neg int
+ *   (1) q lies on the curve: q = 2m^2+2m+1  (on_curve check)
  *   (2) p is prime
  *   (3) q is prime
  *   (4) p != q  (genuine emirp, not a palindrome)
  *
- * A hit on (1) alone = a "survivor" (should match mod_obstruct's count at
- * k >= ceil(d/2), an independent cross-check). A hit on all four = an actual
- * bi-quadratic emirp.
+ * A hit on (1) alone = a "survivor". Palindromic survivors (p==q)
+ * are tracked separately from emirp candidates (p!=q). A hit on all
+ * four conditions = a bi-quadratic emirp. Hits are printed immediately
+ * to stdout with fflush so no result is lost on crash or kill.
  *
- * This is tractable only for small d (range = n_max-n_min is ~2M..216M for
- * d=13..17). For large d use the modular sieve (mod_obstruct) instead.
+ * Checkpointing: every BLOCK_SIZE iterations the run saves progress
+ * atomically to hunt_d<N>.ckpt (written via tmp+rename). On restart
+ * the run resumes from the last checkpoint, restoring cumulative
+ * counts. The checkpoint file is deleted on clean completion.
  *
- * Build:  gcc hunt.c -o hunt -O3 -march=znver2 -std=c99 -Wall -fopenmp -lgmp
+ * Build:  gcc hunt.c -o hunt -O3 -march=znver2 -std=c99 -Wall \
+ *             -fopenmp -lgmp
  * Usage:  ./hunt [min_d] [max_d]      (defaults 13 17)
  */
 
@@ -28,15 +31,15 @@
 #include <omp.h>
 #include <gmp.h>
 
-#define NUM_THREADS 8
-#define MAX_HITS    1024
+#define NUM_THREADS  8
+#define BLOCK_SIZE   5000000000L    /* 5 B iters per checkpoint block */
 
-/* n_min, n_max for d-digit p = 2n^2+2n+1  (same logic as mod_obstruct.c) */
+/* n_min, n_max for d-digit p = 2n^2+2n+1 */
 static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
    mpz_t target, sq, check, lo;
    mpz_inits(target, sq, check, lo, NULL);
 
-   mpz_ui_pow_ui(target, 10, d - 1);          /* 10^(d-1) */
+   mpz_ui_pow_ui(target, 10, d - 1);
    mpz_mul_ui(target, target, 2);
    mpz_sub_ui(target, target, 1);
    mpz_sqrt(sq, target);
@@ -52,7 +55,7 @@ static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
    if (mpz_cmp(check, lo) < 0)
       mpz_add_ui(n_min, n_min, 1);
 
-   mpz_ui_pow_ui(target, 10, d);              /* 10^d */
+   mpz_ui_pow_ui(target, 10, d);
    mpz_mul_ui(target, target, 2);
    mpz_sub_ui(target, target, 1);
    mpz_sqrt(sq, target);
@@ -62,18 +65,34 @@ static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
    mpz_clears(target, sq, check, lo, NULL);
 }
 
-/* If val = 2m^2+2m+1 for an integer m>=0, store m and return true. */
+/* If val = 2m^2+2m+1 for integer m>=0, store m in m and return true. */
 static bool on_curve(const mpz_t val, mpz_t m, mpz_t s) {
-   /* 2*val - 1 must be a perfect square */
    mpz_mul_ui(s, val, 2);
    mpz_sub_ui(s, s, 1);
    if (mpz_sgn(s) < 0) return false;
    if (!mpz_perfect_square_p(s)) return false;
-   mpz_sqrt(s, s);                 /* s = sqrt(2val-1) = 2m+1, must be odd */
+   mpz_sqrt(s, s);
    if (mpz_even_p(s)) return false;
    mpz_sub_ui(s, s, 1);
-   mpz_fdiv_q_ui(m, s, 2);         /* m = (sqrt-1)/2 */
+   mpz_fdiv_q_ui(m, s, 2);
    return true;
+}
+
+/* Atomic checkpoint write: write to .tmp then rename over target. */
+static void write_ckpt(const char *path, long blk_end,
+                        long surv, long elig,
+                        long emrp, long pals) {
+   char tmp[80];
+   snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+   FILE *f = fopen(tmp, "w");
+   if (!f) {
+      fprintf(stderr, "  WARNING: cannot write ckpt %s\n", tmp);
+      return;
+   }
+   fprintf(f, "%ld %ld %ld %ld %ld\n",
+           blk_end, surv, elig, emrp, pals);
+   fclose(f);
+   rename(tmp, path);
 }
 
 int main(int argc, char *argv[]) {
@@ -90,105 +109,153 @@ int main(int argc, char *argv[]) {
       mpz_inits(n_min, n_max, NULL);
       compute_n_bounds(d, n_min, n_max);
 
-      /* range as a long for the parallel loop (fits for d<=~20) */
       mpz_t rng;
       mpz_init(rng);
       mpz_sub(rng, n_max, n_min);
       if (!mpz_fits_slong_p(rng)) {
-         gmp_printf("  d=%2d: range too large for brute force (%Zd) — skip\n",
-                  d, rng);
+         gmp_printf(
+            "  d=%2d: range too large (%Zd) — skip\n", d, rng);
          mpz_clears(n_min, n_max, rng, NULL);
          continue;
       }
-      long range = mpz_get_si(rng) + 1;       /* inclusive */
+      long range = mpz_get_si(rng) + 1;
       mpz_clear(rng);
 
-      long survivors = 0;       /* q on curve (raw) */
-      long elig_survivors = 0;  /* q on curve AND p,q prime-eligible (matches sieve) */
-      long emirps    = 0;       /* all four conditions */
+      char ckpt[64];
+      snprintf(ckpt, sizeof(ckpt), "hunt_d%02d.ckpt", d);
+
+      long start_i        = 0;
+      long survivors      = 0;
+      long elig_survivors = 0;
+      long emirps         = 0;
+      long palindromes    = 0;
+
+      /* Load checkpoint if present */
+      {
+         FILE *cf = fopen(ckpt, "r");
+         if (cf) {
+            long ci, cs, ce, cemrp, cpal;
+            if (fscanf(cf, "%ld %ld %ld %ld %ld",
+                       &ci, &cs, &ce, &cemrp, &cpal) == 5
+                  && ci > 0 && ci <= range) {
+               start_i        = ci;
+               survivors      = cs;
+               elig_survivors = ce;
+               emirps         = cemrp;
+               palindromes    = cpal;
+               printf(
+                  "  d=%2d: resuming from i=%ld/%ld (%.1f%%)\n",
+                  d, start_i, range,
+                  100.0 * start_i / range);
+               fflush(stdout);
+            }
+            fclose(cf);
+         }
+      }
+
       double t0 = omp_get_wtime();
 
-      /* collect hit n-values (curve survivors) as strings for reporting */
-      char  *hit_buf[MAX_HITS];
-      int    hit_kind[MAX_HITS];   /* 1=survivor only, 2=full emirp */
-      int    n_hits = 0;
+      /* Outer block loop (sequential) — parallel region per block.
+       * A complete block is the checkpoint unit. */
+      for (long blk = start_i; blk < range; blk += BLOCK_SIZE) {
+         long blk_end = blk + BLOCK_SIZE;
+         if (blk_end > range) blk_end = range;
 
-      #pragma omp parallel num_threads(NUM_THREADS)
-      {
-         mpz_t n, p, q, m, s;
-         mpz_inits(n, p, q, m, s, NULL);
-         char *pbuf = malloc(d + 2);
-         char *qbuf = malloc(d + 2);
+         #pragma omp parallel num_threads(NUM_THREADS)
+         {
+            mpz_t n, p, q, m, s;
+            mpz_inits(n, p, q, m, s, NULL);
+            char *pbuf = malloc(d + 2);
+            char *qbuf = malloc(d + 2);
 
-         #pragma omp for schedule(dynamic, 100000)
-         for (long i = 0; i < range; i++) {
-            mpz_add_ui(n, n_min, (unsigned long)i);
+            #pragma omp for schedule(dynamic, 100000)
+            for (long i = blk; i < blk_end; i++) {
+               mpz_add_ui(n, n_min, (unsigned long)i);
 
-            /* p = 2n^2 + 2n + 1 */
-            mpz_mul(p, n, n);
-            mpz_mul_ui(p, p, 2);
-            mpz_addmul_ui(p, n, 2);
-            mpz_add_ui(p, p, 1);
+               mpz_mul(p, n, n);
+               mpz_mul_ui(p, p, 2);
+               mpz_addmul_ui(p, n, 2);
+               mpz_add_ui(p, p, 1);
 
-            /* q = reverse digits of p */
-            mpz_get_str(pbuf, 10, p);
-            int len = (int)strlen(pbuf);
-            for (int a = 0; a < len; a++)
-               qbuf[a] = pbuf[len - 1 - a];
-            qbuf[len] = '\0';
-            mpz_set_str(q, qbuf, 10);
+               mpz_get_str(pbuf, 10, p);
+               int len = (int)strlen(pbuf);
+               for (int a = 0; a < len; a++)
+                  qbuf[a] = pbuf[len - 1 - a];
+               qbuf[len] = '\0';
+               mpz_set_str(q, qbuf, 10);
 
-            /* (1) q on curve? */
-            if (!on_curve(q, m, s))
-               continue;
+               if (!on_curve(q, m, s))
+                  continue;
 
-            #pragma omp atomic
-            survivors++;
+               bool pal  = (mpz_cmp(p, q) == 0);
+               bool elig = (mpz_fdiv_ui(p, 5) != 0)
+                        && (mpz_fdiv_ui(q, 5) != 0);
 
-            /* prime-eligibility (composite-5) filter: matches the sieve's
-             * count. p or q divisible by 5 can never be prime. p,q are odd,
-             * so this is just "last digit == 5". */
-            bool elig = (mpz_fdiv_ui(p, 5) != 0) && (mpz_fdiv_ui(q, 5) != 0);
-            if (elig) {
                #pragma omp atomic
-               elig_survivors++;
-            }
+               survivors++;
+               if (pal) {
+                  #pragma omp atomic
+                  palindromes++;
+               }
+               if (elig) {
+                  #pragma omp atomic
+                  elig_survivors++;
+               }
 
-            /* full test: p,q prime and p != q */
-            bool full = (mpz_cmp(p, q) != 0)
-                    && mpz_probab_prime_p(p, 40)
-                    && mpz_probab_prime_p(q, 40);
-            if (full) {
-               #pragma omp atomic
-               emirps++;
-            }
+               bool full = !pal
+                        && mpz_probab_prime_p(p, 40)
+                        && mpz_probab_prime_p(q, 40);
+               if (full) {
+                  #pragma omp atomic
+                  emirps++;
+               }
 
-            #pragma omp critical (hits)
-            {
-               if (n_hits < MAX_HITS) {
-                  hit_buf[n_hits] = malloc(d + 4);
-                  mpz_get_str(hit_buf[n_hits], 10, n);
-                  hit_kind[n_hits] = full ? 2 : (elig ? 1 : 0);
-                  n_hits++;
+               /* Print hit immediately — never buffer results. */
+               #pragma omp critical (stdout)
+               {
+                  const char *lbl =
+                     full ? "*** EMIRP ***" :
+                     pal  ? "palindrome   " :
+                            "survivor     ";
+                  printf("  %s  n=", lbl);
+                  mpz_out_str(stdout, 10, n);
+                  printf("  p=");
+                  mpz_out_str(stdout, 10, p);
+                  if (!pal) {
+                     printf("  q=");
+                     mpz_out_str(stdout, 10, q);
+                  }
+                  printf("\n");
+                  fflush(stdout);
                }
             }
-         }
-         mpz_clears(n, p, q, m, s, NULL);
-         free(pbuf); free(qbuf);
-      }
+
+            mpz_clears(n, p, q, m, s, NULL);
+            free(pbuf); free(qbuf);
+         } /* end omp parallel */
+
+         write_ckpt(ckpt, blk_end,
+                    survivors, elig_survivors, emirps, palindromes);
+         fprintf(stderr,
+            "  d=%2d  ckpt %ld/%ld (%.1f%%)"
+            "  surv=%ld  pals=%ld  emrp=%ld  [%.2f h]\n",
+            d, blk_end, range,
+            100.0 * blk_end / range,
+            survivors, palindromes, emirps,
+            (omp_get_wtime() - t0) / 3600.0);
+      } /* end block loop */
 
       double dt = omp_get_wtime() - t0;
-      printf("  d=%2d  range=%ld  survivors(raw)=%ld  prime-eligible=%ld  EMIRPS=%ld   [%.1fs]\n",
-            d, range, survivors, elig_survivors, emirps, dt);
-      for (int h = 0; h < n_hits; h++) {
-         const char *lbl = hit_kind[h] == 2 ? "*** EMIRP ***"
-                     : hit_kind[h] == 1 ? "survivor     "
-                     :                    "(p|q div 5)  ";
-         printf("        %s  n=%s\n", lbl, hit_buf[h]);
-         free(hit_buf[h]);
-      }
+      printf(
+         "  d=%2d  range=%ld  survivors(raw)=%ld"
+         "  palindromes=%ld  prime-eligible=%ld"
+         "  EMIRPS=%ld   [%.2f h]\n",
+         d, range, survivors,
+         palindromes, elig_survivors,
+         emirps, dt / 3600.0);
       fflush(stdout);
 
+      remove(ckpt);
       mpz_clears(n_min, n_max, NULL);
    }
 

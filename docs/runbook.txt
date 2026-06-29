@@ -51,8 +51,12 @@ make
 
 --- 5. LAUNCH A LONG RUN (survives logout via nohup) ------------------------
 mkdir -p logs
-# emirp hunt, one digit-length d
-nohup ./hunt 26 26 > logs/hunt_d26.log 2>&1 &
+# emirp hunt, one digit-length d (stdout=hits, stderr=progress)
+nohup ./hunt 26 26 > logs/hunt_d26.log 2>logs/hunt_d26.stderr &
+echo "PID $!"
+# d=27 run (launched 2026-06-28; est. ~9 days; auto-resumes from
+# hunt_d27.ckpt if present — just re-run the same command)
+nohup ./hunt 27 27 > logs/hunt_d27.log 2>logs/hunt_d27.stderr &
 echo "PID $!"
 # palindrome hunt, a digit range. NOTE: even d = 0 (palindrome /11), so
 # only ODD d are genuine tests -> run them one at a time, e.g. d=27:
