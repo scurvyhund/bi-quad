@@ -149,7 +149,11 @@ search is compute. **If the economics change, the hunt reopens:**
 - **What to rebuild:** `hunt.c` (emirps, the ground truth), `palhunt_gmp.c`
   (palindromes past the 64-bit wall), `mod_obstruct.c` (the sieve). Build + sanity
   steps are in [`runbook.txt`](runbook.txt). Sanity check first (d = 5 must report
-  the emirp; d = 3/7 must report 181/313/3187813).
+  the emirp; d = 3/7 must report 181/313/3187813). Note: `hunt.c` contains a
+  **~35% speedup** via the n mod 10 skip optimization (added 2026-06-29) — see
+  [`skip_optimization.md`](skip_optimization.md) for the math, full history
+  (the same table existed in the 2010 original code and was lost in the GMP
+  refactor), and the mixed-binary footnote for the d=27 run.
 - **Where to resume:** emirp frontier **d = 26**, palindrome frontier **d = 27**.
   Pick up at the next digit.
 - **What's still open:** does a second bi-quadratic emirp exist at any d ≥ 27? Is
@@ -172,6 +176,8 @@ one curve, `2n² + 2n + 1`, carried from a 386 to here.
 
 *See also:* [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md) (glossary, algorithms,
 full landscape) · [`ending_constraint_proof.md`](ending_constraint_proof.md) (the
-digit filter) · [`structural_attacks_2026-06-04.md`](structural_attacks_2026-06-04.md)
+digit filter) · [`skip_optimization.md`](skip_optimization.md) (n mod 10 skip —
+history, math, d=27 mixed-run footnote) ·
+[`structural_attacks_2026-06-04.md`](structural_attacks_2026-06-04.md)
 (ruled-out attacks) · [`zig_experiment_2026-06-06.md`](zig_experiment_2026-06-06.md)
 (tooling coda).
