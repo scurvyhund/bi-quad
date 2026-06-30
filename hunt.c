@@ -34,6 +34,9 @@
 #define NUM_THREADS  8
 #define BLOCK_SIZE   5000000000L    /* 5 B iters per checkpoint block */
 
+/* n%10 in {1,3,6,8} -> p ends in 5 -> composite; skip those. */
+static const int VALID_NMOD[10] = {1,0,1,0,1,1,0,1,0,1};
+
 /* n_min, n_max for d-digit p = 2n^2+2n+1 */
 static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
    mpz_t target, sq, check, lo;
@@ -153,6 +156,7 @@ int main(int argc, char *argv[]) {
          }
       }
 
+      int nmod_base = (int)mpz_fdiv_ui(n_min, 10);
       double t0 = omp_get_wtime();
 
       /* Outer block loop (sequential) — parallel region per block.
@@ -170,6 +174,7 @@ int main(int argc, char *argv[]) {
 
             #pragma omp for schedule(dynamic, 100000)
             for (long i = blk; i < blk_end; i++) {
+               if (!VALID_NMOD[(nmod_base + i % 10) % 10]) continue;
                mpz_add_ui(n, n_min, (unsigned long)i);
 
                mpz_mul(p, n, n);

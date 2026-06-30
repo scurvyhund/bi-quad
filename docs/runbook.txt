@@ -137,4 +137,7 @@ gh repo view --web                 # open it in a browser
    bi-quadratic emirp count. hunt.c is the trustworthy ground truth.
  - A long run that makes the box unusable = MEMORY thrash (swap), not CPU.
    Watch 'free -h'; hunt.c uses ~3 MB, mod_obstruct can be large at high k.
+ - hunt.c skip-value opt (2026-06-29): n%10 in {1,3,6,8} -> p ends in 5
+   (composite); skipped before any GMP work via VALID_NMOD[] table. Saves
+   ~40% of iterations (~35% wall-clock). Validated d=5..19 vs landscape.
 ==============================================================================

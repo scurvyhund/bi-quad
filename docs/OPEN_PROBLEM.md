@@ -141,7 +141,7 @@ a reformulation that sidesteps the reversal, not more computation.
 
 ## Reproducibility
 
-All code and logs are in the BigFermat repository. The exhaustive
+All code and logs are in the bi-quad repository. The exhaustive
 checkers (`hunt.c`, `brute_validate.py`) enumerate every n directly;
 the modular sieve (`mod_obstruct.c`) proves digit-length obstructions;
 `palhunt.c` searches palindromic primes directly. The four-way
