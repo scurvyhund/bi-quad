@@ -53,7 +53,9 @@ The d = 27 run (completed 2026-07-05, ~5.0 days) is the gap-closing run that
 brought the emirp frontier up to the palindrome one. Its 5 raw survivors are
 3 palindromic curve-values (all composite — see below) plus one reciprocal
 non-palindrome pair (`n=9654578976541 ↔ n=16495551105259`, p/q swapped), not an
-emirp.
+emirp. (The d=27 counts are div-5-excluded — the run used the skip-optimized
+binary; div-5 palindromes are trivially composite and unlisted. See
+[`skip_optimization.md`](skip_optimization.md).)
 
 Every curve-reversal survivor through d = 27 has `p` and/or `q` composite, except
 the d = 5 emirp itself. True obstructions (no survivor of any kind): d = 6, 10,

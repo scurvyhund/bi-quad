@@ -6,6 +6,12 @@
 # (verified). So there is no prime palindrome at d = 27, and the
 # conjecture (3187813 is the largest prime palindrome on the curve)
 # holds through 27 digits.
+#
+# NOTE: these 3 are the PRIME-ELIGIBLE palindromes. The d=27 run used
+# the skip-optimized hunt, which skips n where p is divisible by 5, so
+# any div-5 palindromes (ending in 5, trivially composite) were not
+# enumerated and are not listed here. They cannot be prime, so the
+# conjecture is unaffected. See docs/skip_optimization.md.
   - 108491007414868414700194801 (n=7365154696775)   composite
       = 73 * 101 * 137 * 28343893 * 3789391189657
   - 318216440234333432044612813 (n=12613810689762)  composite

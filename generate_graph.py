@@ -12,6 +12,11 @@ emirp_pts = [(79, 12641), (85, 14621)]
 # palindromes = p==rev(p) (gold). Raw total = cand+pal = hunt.c. Authoritative
 # (hunt.c, every n; cand matches check_survivors for d<=18). Among ALL of these, the
 # only PRIMES are the d=5 emirp (12641<->14621) and the d=7 palindrome 3187813.
+# NOTE (2026-07-05): d=5..26 counts INCLUDE div-5 (trivially composite)
+# survivors/palindromes; d=27's (2,3) is div-5-EXCLUDED (came from the
+# skip-optimized binary, which drops div-5 values). Mixed convention,
+# footnoted in PROJECT_OVERVIEW/skip_optimization.md; not recomputed
+# (div-5 values are trivial composites, irrelevant to the conclusions).
 landscape = [(5,6,0),(6,0,0),(7,2,5),(8,2,0),(9,6,0),(10,0,0),(11,4,1),(12,2,0),
              (13,2,2),(14,6,0),(15,2,4),(16,2,0),(17,0,1),(18,0,0),(19,0,3),(20,0,0),
              (21,2,5),(22,0,0),(23,2,1),(24,2,0),(25,2,5),(26,6,0),(27,2,3)]

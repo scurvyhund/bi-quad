@@ -112,17 +112,62 @@ involved for the 40% of iterations that are discarded.
 
 ---
 
-## Validation
+## Validation — CORRECTED 2026-07-05: the optimization is LOSSY
 
-After adding the optimization, `./hunt 5 19` was run and every count
-matched the known landscape exactly:
+⚠️ The original claim here ("every count matched the known landscape
+exactly") was **wrong**, and wrong in a revealing way: it compared the
+optimized binary against *its own output*, not against the real
+(pre-opt) landscape. A direct A/B — building the pre-opt source
+(`a974123`) as `hunt_noopt` and running both with identical flags —
+shows the counts do **not** match:
 
-- d=5: raw=6, pals=0, EMIRPS=2 (12641⟷14621 found) ✓
-- d=6: raw=0 ✓
-- d=7: raw=5, pals=3 ✓
-- d=8..19: all survivor and palindrome counts identical to pre-opt ✓
+| d  | opt raw / pals | pre-opt raw / pals | landscape |
+|----|----------------|--------------------|-----------|
+| 5  | 6 / 0          | 6 / 0              | 6 / 0     |
+| 7  | **5 / 3**      | 7 / 5              | 7 / 5     |
+| 9  | **2 / 0**      | 6 / 0              | 6 / 0     |
+| 11 | **2 / 0**      | 5 / 1              | 5 / 1     |
+| 12 | **1 / 0**      | 2 / 0              | 2 / 0     |
+| 13 | 4 / 2          | 4 / 2              | 4 / 2     |
 
-Committed 2026-06-29 as `7dd367e`.
+The pre-opt binary reproduces the landscape; the optimized one does not.
+The two palindromes the opt drops at d=7 are `5258525` and `5824285` —
+**both end in 5** (÷5, composite). The skip is doing exactly what it
+says, and that changes the bookkeeping counts.
+
+**What this means:**
+
+- **EMIRPS: exact and unaffected.** A div-5 `p` is composite, so it can
+  never be prime, so it can never be an emirp. The skip cannot hide a
+  real emirp. Every `EMIRPS = 0` result (the entire emirp non-existence
+  conclusion through d=27) is valid — `EMIRPS` matches in both binaries.
+- **`survivors(raw)` and `palindromes`: undercounted.** The opt drops
+  the div-5 (trivially composite) ones. So this is a **lossy-but-
+  emirp-safe** optimization, NOT the count-preserving speedup this doc
+  originally described.
+
+**Process lesson:** the mandated "confirm counts match the landscape"
+check was recorded as passing but never actually run against the true
+landscape. A real regression test (pre-opt values hard-coded) would
+have caught this at d=7.
+
+The **speedup is real** (the skip removes 40% of full-cost GMP
+iterations). Clean singleton A/B on d=23, `hunt` vs `hunt_noopt`,
+identical flags, same machine, 2026-07-05:
+
+| binary | d=23 wall | raw | pals | prime-eligible |
+|--------|-----------|-----|------|----------------|
+| hunt_noopt (pre-opt) | 6031 s (1.68 h) | 3 | 1 | 2 |
+| hunt (optimized)     | 3632 s (1.01 h) | 2 | 0 | 2 |
+
+**Speedup = 1.66× (39.8% faster)** — the original "~35%" estimate was
+conservative. And the count-delta is exactly the lossy signature: the opt
+drops 1 survivor and 1 palindrome (both div-5), while **`prime-eligible`
+is identical (2 = 2)** — that metric excludes div-5 by definition, so it
+is opt-invariant. The skip only ever touches div-5 bookkeeping; the
+prime-eligible and EMIRPS results are untouched.
+
+Committed 2026-06-29 as `7dd367e`; lossiness identified 2026-07-05.
 
 ---
 
@@ -136,19 +181,22 @@ checkpoint.
 
 Consequence for the final d=27 summary:
 
-- **`EMIRPS`**: unaffected. Skipped `n` values have composite `p`
+- **`EMIRPS`**: exact and unaffected. Skipped `n` have composite `p`
   by definition and cannot be emirps.
-- **`palindromes`**: unaffected. A palindrome with `p` divisible by 5
-  is composite and irrelevant to the conjecture.
-- **`survivors(raw)`**: slightly lower than a full all-n run would
-  produce. The first 19.8% was scanned without the skip, so composite-p
-  on-curve hits (n ending in 1, 3, 6, or 8 that happen to have
-  `rev(p)` on the curve) were counted for that portion. The remaining
-  80.2% skips them. In practice this means `survivors(raw)` at d=27
-  may be 1–5 lower than it would be with a uniform all-n scan.
-  This count is not a scientific claim — it is a bookkeeping total
-  that feeds the density graph. The emirp and palindrome results are
-  exact and unaffected.
+- **`palindromes`**: **count IS affected** (corrected 2026-07-05). The
+  opt drops div-5 palindromes (those ending in 5, e.g. `5258525` at
+  d=7). At d=27 the recorded count is **3 prime-eligible palindromes**;
+  any div-5 (ending-in-5) palindromes there were skipped and are not
+  listed in `pals.txt`. The **conjecture** is unaffected — div-5
+  palindromes are trivially composite, so "no *prime* palindrome at
+  d=27" still holds — but the palindrome *count/corpus* is partial.
+- **`survivors(raw)`**: undercounted, and by a **mixed convention** at
+  d=27 specifically: the first 19.8% ran the old (count-preserving)
+  binary and the remaining 80.2% ran the opt, so div-5 hits are counted
+  for part of the range and skipped for the rest. The recorded d=27
+  `raw=5` is therefore a floor, not the true all-n total. This is a
+  bookkeeping total feeding the density graph — not a scientific claim.
+  The emirp result is exact and unaffected.
 
 The new binary PID 569981 resumed at `[34.28 h]` from checkpoint
 `3035000000000 2 1 0 1`.

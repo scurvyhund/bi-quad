@@ -310,6 +310,14 @@ raw:   6  0  7  2  6  0  5  2  4  6  6  2  1  0  3  0  7  0  3  2  7  6  5   tot
   NB: d=7's 5 palindromes include 3187813 (PRIME). The sieve's old "d=21
       obstruction" was a range<mod cliff artifact (§4); hunt shows d=21 has 2
       composite emirp candidates + 5 palindromes.
+  NB2: d=5..26 counts INCLUDE div-5 (trivially composite) survivors &
+      palindromes. d=27's (cand=2, pal=3, raw=5) is div-5-EXCLUDED --
+      it came from the skip-optimized binary, which drops div-5 values
+      (see skip_optimization.md). So the true all-n d=27 totals are a
+      touch higher; the excluded values are all ÷5 composites, so the
+      emirp and prime-palindrome conclusions are unchanged. Mixed
+      convention footnoted rather than recomputed (that needs the slow
+      pre-opt binary, ~days, for composite bookkeeping only).
 ```
 
 The landscape is **not** a simple low-`d` band that ends. After the lone emirp at

@@ -101,7 +101,9 @@ All C99 + OpenMP; the GMP ones use arbitrary precision for large `p`.
 | `hunt.c` | **Exhaustive emirp brute force** (GMP) — enumerates every `n`, tests `rev(p)` on-curve + both prime. The trustworthy tool for d ≥ 21. |
 | `palhunt.c` | **Prime-palindrome hunter** (64-bit, ≤ 19 digits). |
 | `palhunt_gmp.c` | Prime-palindrome hunter **past the 64-bit wall** (uint64 `n`, `__int128` `p`, GMP-certified; reaches ~d=27). |
+| `palfirst.py` | **Palindrome-first** verifier — independent cross-check of `hunt.c` (loops palindromes, tests `2P−1` a perfect square). |
 | `generate_graph.py` | Renders the findings figure (pure Pillow — no matplotlib). |
+| `gen_ending_figure.py` | Renders the palindrome ending-distribution figure (Pillow). |
 
 Archived in git history (commit `7f33475`): `mitm_probe.c`, `mitm_probeB.c`,
 `congru_probe.c` — the probes behind the ruled-out structural attacks.
@@ -141,6 +143,9 @@ python3 generate_graph.py
 
 - [`docs/PROJECT_OVERVIEW.md`](docs/PROJECT_OVERVIEW.md) — **start here**: goal,
   glossary, the algorithms (pseudocode), bug-history, and the live landscape.
+- [`docs/palindrome_insights.md`](docs/palindrome_insights.md) — a summation of
+  what we know about palindromes on the curve (÷11 dodge, the `9/√10` Poisson
+  count, the `…13` ending signature, the Fermat confluence).
 - [`docs/structural_attacks_2026-06-04.md`](docs/structural_attacks_2026-06-04.md)
   — the MITM (meet in the middle) + congruence foray and why neither cracks it.
 - `docs/session_2026-06-04_*.md` — session records (the ≤22 proof, the cliff fix,
