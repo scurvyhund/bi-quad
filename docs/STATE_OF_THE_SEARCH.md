@@ -4,9 +4,9 @@
 > rare kinds of prime. This document is the honest summary of where the search
 > stands, what is *proven*, what is *believed*, and why it stops where it stops.
 >
-> **Status (2026-06-07):** emirps brute-confirmed **through d = 26**; prime
-> palindromes brute-confirmed **through d = 27**. Search complete at the agreed
-> frontiers.
+> **Status (2026-07-05):** emirps brute-confirmed **through d = 27**; prime
+> palindromes brute-confirmed **through d = 27**. Both frontiers now coincide at
+> d = 27 — the earlier 26-vs-27 mismatch is closed. Search complete.
 
 ---
 
@@ -34,11 +34,11 @@ candidates before any primality test.
 
 ## 2. Results — proven by exhaustion
 
-### Bi-quadratic emirps: exactly one, through d = 26
+### Bi-quadratic emirps: exactly one, through d = 27
 
 **`12641 ⟷ 14621` (d = 5; `79²+80² ⟷ 85²+86²`, both prime) is the only
-bi-quadratic emirp through 26 digits.** Established by exhaustive `hunt.c` (every
-n, GMP-exact); `EMIRPS = 0` for every d = 6…26, cross-checked against the modular
+bi-quadratic emirp through 27 digits.** Established by exhaustive `hunt.c` (every
+n, GMP-exact); `EMIRPS = 0` for every d = 6…27, cross-checked against the modular
 sieve. Representative tail of the brute log:
 
 ```
@@ -46,9 +46,16 @@ d=23  range=152,896,119,631  raw=3  prime-eligible=2  EMIRPS=0
 d=24  range=483,499,983,437  raw=2  prime-eligible=0  EMIRPS=0
 d=25  range=1,528,961,196,313 raw=7 prime-eligible=4  EMIRPS=0   [13.3 h]
 d=26  range=4,834,999,834,365  raw=6 prime-eligible=2  EMIRPS=0   [53.9 h]
+d=27  range=15,289,611,963,133 raw=5 prime-eligible=3 EMIRPS=0   [120.3 h]
 ```
 
-Every curve-reversal survivor through d = 26 has `p` and/or `q` composite, except
+The d = 27 run (completed 2026-07-05, ~5.0 days) is the gap-closing run that
+brought the emirp frontier up to the palindrome one. Its 5 raw survivors are
+3 palindromic curve-values (all composite — see below) plus one reciprocal
+non-palindrome pair (`n=9654578976541 ↔ n=16495551105259`, p/q swapped), not an
+emirp.
+
+Every curve-reversal survivor through d = 27 has `p` and/or `q` composite, except
 the d = 5 emirp itself. True obstructions (no survivor of any kind): d = 6, 10,
 18, 20, 22. Full landscape: [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md).
 
@@ -62,8 +69,10 @@ The **only** prime palindromes on the curve through **27 digits** are
 **5, 181, 313, 3187813** — all ≤ 7 digits. Confirmed by `palhunt_gmp` (every n,
 GMP-certified): `found = 0` for d = 8…27 (even d are trivially 0 — divisible by 11
 — so the genuine tests are the odd d = 9, 11, …, 27, all empty). d = 27 cleared a
-range of 15,289,611,963,133 n-values in ~22.3 h. The standing conjecture (Jim,
-since ~1997):
+range of 15,289,611,963,133 n-values in ~22.3 h. **Independently corroborated at
+d = 27 by the emirp brute `hunt.c`**, which flagged exactly 3 palindromic
+curve-values there — all three factored composite by quadratic sieve, so
+`found = 0` now stands from two unrelated tools. The conjecture (Jim, since ~1997):
 
 > **3187813 is the largest prime palindrome on the curve.**
 
@@ -73,13 +82,13 @@ Now confirmed 20 digits past where it was first found.
 
 ## 3. What is proven vs. what is believed (the honesty line)
 
-- **Brute-verified (two independent tools):** emirps to d = 26, palindromes to
+- **Brute-verified (two independent tools):** emirps and palindromes both to
   d = 27 — `hunt.c` (`EMIRPS = 0`) and `palhunt_gmp` (`found = 0`). This is the
   hard floor of the result.
 - **Rests on `cvpipe`'s own logs (not yet brute-verified):** anything beyond the
   brute frontier. The fast pipeline ran further (a verified d = 24 run exists and
-  cross-checks the brute tools), but d = 26 is the brute-force ceiling for emirps.
-  The agreed stopping points sit exactly at the brute-verified floor; nothing is
+  cross-checks the brute tools), but d = 27 is the brute-force ceiling for both
+  objects. The stopping point sits exactly at the brute-verified floor; nothing is
   promoted beyond that.
 
 ---
@@ -108,7 +117,7 @@ A coin-flip density argument:
 - **Bi-quadratic emirps are expected to be *finite*** — expected count ≈ `C/d²`
   per length; the sum converges, with an **expected total ≈ 1 across all
   integers.** That a single emirp (`12641 ⟷ 14621`) exists and no other has
-  appeared through 26 digits is exactly what "expected total ≈ 1" predicts.
+  appeared through 27 digits is exactly what "expected total ≈ 1" predicts.
 - **Prime palindromes may be *infinite*** — expected count ≈ `C′/d`; the sum
   diverges. So the conjecture "3187813 is the last" is the *interesting* claim:
   the heuristic does **not** guarantee it, which is precisely why it's worth
@@ -125,12 +134,14 @@ This is a **resource boundary, not a mathematical one.** Each additional digit i
 ~3.2× the compute of the last; the heuristic says the expected yield beyond the
 known results is ≈ 0 (emirps) and the palindrome conjecture has held 20 digits
 deep. Burning weeks of CPU per digit for a near-certain null is not where the
-interest lives. So the agreed final frontiers are:
+interest lives. So the final frontiers — now aligned at the same digit — are:
 
-- **Emirps: d = 26** (done) — then stop.
+- **Emirps: d = 27** (done) — then stop.
 - **Palindromes: d = 27** (done) — then stop.
 
-The capstone rests on the brute-verified floor plus the convergent heuristic. No
+The emirp side was originally to stop at d = 26; the d = 27 run was the deliberate
+gap-closing pass so both objects share one honest frontier. The capstone rests on
+the brute-verified floor plus the convergent heuristic. No
 overclaim of a proof that doesn't exist; no pretense that the wall is anything but
 a wall.
 
@@ -154,9 +165,10 @@ search is compute. **If the economics change, the hunt reopens:**
   [`skip_optimization.md`](skip_optimization.md) for the math, full history
   (the same table existed in the 2010 original code and was lost in the GMP
   refactor), and the mixed-binary footnote for the d=27 run.
-- **Where to resume:** emirp frontier **d = 26**, palindrome frontier **d = 27**.
-  Pick up at the next digit.
-- **What's still open:** does a second bi-quadratic emirp exist at any d ≥ 27? Is
+- **Where to resume:** both frontiers at **d = 27**. Next genuine tests: the next
+  emirp digit is **d = 28**; the next genuine palindrome digit is **d = 29** (d =
+  28 is even → trivially 0 by the ÷11 rule).
+- **What's still open:** does a second bi-quadratic emirp exist at any d ≥ 28? Is
   3187813 truly the last prime palindrome? Both are *unproven* — only unobserved.
 
 ---

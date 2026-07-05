@@ -1,3 +1,14 @@
-  - 108491007414868414700194801 (n=7365154696775)
-  - 318216440234333432044612813 (n=12613810689762)
-  - 318288756988131889657882813 (n=12615243893562)
+# Palindromic curve-values p = 2n^2+2n+1 found at d = 27 by hunt.c.
+# These are numeric palindromes on the curve, NOT prime palindromes:
+# all three are COMPOSITE. Factored with Michel Leonard's qs (quadratic
+# sieve; see CREDITS.md), 2026-07-05. Each factorization below is a
+# self-checkable certificate -- the product of the factors equals p
+# (verified). So there is no prime palindrome at d = 27, and the
+# conjecture (3187813 is the largest prime palindrome on the curve)
+# holds through 27 digits.
+  - 108491007414868414700194801 (n=7365154696775)   composite
+      = 73 * 101 * 137 * 28343893 * 3789391189657
+  - 318216440234333432044612813 (n=12613810689762)  composite
+      = 33601 * 9470445529428690576013
+  - 318288756988131889657882813 (n=12615243893562)  composite
+      = 409 * 23917 * 200461 * 7548241 * 21503821

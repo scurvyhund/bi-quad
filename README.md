@@ -13,8 +13,8 @@ primes in Fermat's two-square theorem (the primes ≡ 1 mod 4). Hence the name.
 That consecutive-squares structure pins every value to one of just six two-digit
 endings — `{01, 13, 21, 41, 61, 81}` (and, reversed, six leading patterns
 `{10, 12, 14, 16, 18, 31}`). It's the cheap first/last-digit **filter that discards
-≈ 89% of `p`/`q` candidates instantly (~9× speedup) — roughly 6.29 trillion of the
-~7.07 trillion candidates through 26 digits — before any primality test** — a
+≈ 89% of `p`/`q` candidates instantly (~9× speedup) — roughly 19.9 trillion of the
+~22.4 trillion candidates through 27 digits — before any primality test** — a
 [proof by construction](docs/ending_constraint_proof.md).
 
 ![The curve and its findings: prime palindromes cluster at small d; the emirp obstruction landscape](docs/biquad_curve_landscape.png)
@@ -27,7 +27,7 @@ endings — `{01, 13, 21, 41, 61, 81}` (and, reversed, six leading patterns
   `q = rev(p)` is **also** prime **and also** of the form `2m²+2m+1`,
   with `q ≠ p`. Both ends prime, both on the same quadratic curve —
   that is what "bi-quadratic" means: two numbers, one curve. **Exactly
-  one is known: `12641 ⟷ 14621` (d=5) — the only one through 26 digits.**
+  one is known: `12641 ⟷ 14621` (d=5) — the only one through 27 digits.**
 - **Prime palindrome on the curve** — a prime `p = 2n²+2n+1` that reads the same
   forwards and backwards. Four are known: **5, 181, 313, 3187813**.
 
@@ -38,31 +38,34 @@ These two searches turn out to be **the same sieve**: a palindrome is just the
 
 ## Results
 
-### `12641 ⟷ 14621` is the only bi-quadratic emirp through 26 digits
+### `12641 ⟷ 14621` is the only bi-quadratic emirp through 27 digits
 
 There is exactly **one** bi-quadratic emirp in this range — `12641 ⟷ 14621`
 (d=5; `79²+80² ⟷ 85²+86²`, both prime). Established by exhaustive `hunt.c` brute
-force (every n, GMP-exact, d=5–26), cross-checked against the modular sieve:
+force (every n, GMP-exact, d=5–27), cross-checked against the modular sieve:
 
 ```
 d = 5                          : EMIRP — 12641 ⟷ 14621  (both prime, both on curve)   ← the only one
 d = 6, 10, 18, 20, 22          : OBSTRUCTION — no curve-reversal survivor at all
 d = 17, 19                     : only palindromic survivors → no emirp candidate
-d = 7,8,9,11–16,21,23–26       : emirp candidates exist, all composite → no emirp
+d = 7,8,9,11–16,21,23–27       : emirp candidates exist, all composite → no emirp
 ```
 
 (An "emirp candidate" is a *non-palindrome* `n` with both `p` and `rev(p)` on the
 curve; palindromes — including the prime `3187813` — are a separate object, shown
 in gold in the figure.) Apart from `12641 ⟷ 14621`, every emirp candidate through
-26 digits has `p` and/or `q` composite. So `12641 ⟷ 14621` is the smallest — and,
-so far, the **only** — bi-quadratic emirp. The next one, if any, has **≥ 27 digits**.
+27 digits has `p` and/or `q` composite. So `12641 ⟷ 14621` is the smallest — and,
+so far, the **only** — bi-quadratic emirp. The next one, if any, has **≥ 28 digits**.
 
 ### Prime palindromes: a 27-year conjecture
 
 The **only** prime palindromes on the curve through **27 digits** — confirmed
 exhaustively — are **5, 181, 313, 3187813**, all at ≤ 7 digits. (d ≤ 21 via the
 modular sieve; **d = 8…27 independently re-confirmed by a direct GMP-certified hunt**
-— `palhunt_gmp`, every n, all `found = 0`.) The standing conjecture (Jim, since ~1997):
+— `palhunt_gmp`, every n, all `found = 0`.) At d = 27 the emirp brute (`hunt.c`)
+independently corroborates this: it flags exactly **3** palindromic values, all
+composite (verified by quadratic sieve) — so `found = 0` stands from a second,
+unrelated tool. The standing conjecture (Jim, since ~1997):
 
 > **3187813 is the largest prime palindrome on the curve.**
 
@@ -73,7 +76,7 @@ Two roads were rigorously **ruled out** by measurement (see
 
 - **No faster search.** A meet-in-the-middle attack gives no √-speedup — the
   digit-reversal of a quadratic entangles the middle digits irreducibly. Search
-  is **~10^(d/2)-bound** (brute force reaches ~d=26).
+  is **~10^(d/2)-bound** (brute force reaches ~d=27).
 - **No congruence proof.** A sweep of 50 base-aligned / 2-power / 5-power moduli
   found **zero** obstructions: the real obstructions are *non-congruential*
   (sporadic). A non-existence theorem, if any, needs new mathematics.
@@ -162,6 +165,16 @@ development history.
   precision big integer multiplication in C (`__uint128_t` and schoolbook).
 - [bigdec2hex](https://github.com/scurvyhund/bigdec2hex) — arbitrary-
   precision decimal-to-hexadecimal converter.
+
+---
+
+## Acknowledgements
+
+- **[C-Quadratic-Sieve](https://github.com/michel-leonard/C-Quadratic-Sieve)**
+  by Michel Léonard — a self-contained, public-domain SIQS integer factorizer.
+  Used here to certify the compositeness of large candidate values (the three
+  d=27 palindromic curve-values were all shown composite this way). Full note:
+  [`CREDITS.md`](CREDITS.md).
 
 ---
 

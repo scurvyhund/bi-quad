@@ -46,7 +46,7 @@ both prime, both on the curve, mutual digit-reversals. It has 5 digits.
 > **Open question.** Is 12641 ⟷ 14621 the *only* bi-quadratic emirp?
 
 **Evidence.** An exhaustive search (enumerate every n, form p, reverse,
-test all four conditions) finds no other example through 26 decimal
+test all four conditions) finds no other example through 27 decimal
 digits, with an independent modular-obstruction sieve confirming the
 same "no candidate of any kind" obstruction. The result has been
 cross-validated four ways (two independent brute forces in different

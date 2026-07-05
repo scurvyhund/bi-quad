@@ -72,6 +72,18 @@ tail -3 logs/palhunt_d27.log         # last few lines
 uptime                               # load average
 free -h                              # RAM / swap (swap use => thrash!)
 sensors 2>/dev/null | grep -iE 'Tdie|Tctl|Core 0'   # CPU temp
+# VERIFY a completed run's "prime-eligible" / palindrome candidates.
+# hunt.c "prime-eligible" and "palindrome" = passed the composite SIEVE
+# only, NOT proven prime. Before claiming a prime palindrome (or emirp),
+# factor each candidate p independently:
+factor <p>                           # GNU factor: definitive (full facts)
+# for 27+ digit p, GNU factor can be slow on a large prime factor; a
+# quadratic sieve settles composites fast. We use Michel Leonard's qs:
+#   https://github.com/michel-leonard/C-Quadratic-Sieve  (public domain)
+# A single proper factor => composite => NOT a prime palindrome, and the
+# factors are a self-checkable certificate (factor1*factor2 == p). See
+# CREDITS.md. (d=27: all 3 palindrome candidates in pals.txt composite
+# by qs, 2026-07-05.)
 
 --- 7. THROTTLE / STOP A JOB ------------------------------------------------
 nice -n 19 ./hunt 19 21              # start at lowest priority
