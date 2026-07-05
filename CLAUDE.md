@@ -105,7 +105,8 @@ At session wrap-up, append genuinely reusable CLI commands to
 docs/runbook.txt (curated, grouped by section, ≤80 cols). Commit
 and push all three remotes. Skip one-off probes and typos — only
 add commands worth re-running. Cross-project universals go to
-~/notes/cmdline_gold.txt (or both).
+~/claude_cmdln_gold/cmdline_gold.txt (or both); reusable Python
+scripts go to ~/programming/python_gold/ (curated, header + INDEX).
 
 ## Communication Style
 
