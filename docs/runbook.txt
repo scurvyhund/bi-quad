@@ -142,6 +142,21 @@ gh repo edit scurvyhund/bi-quad --add-topic number-theory --add-topic emirp \
   --add-topic palindrome ...       # (repeat --add-topic for each)
 gh repo view --web                 # open it in a browser
 
+--- 13. VALIDATE / A-B BENCHMARK / TIMING FORENSICS -------------------------
+# palindrome-first cross-check of hunt.c (independent method; agree = truth):
+python3 palfirst.py 1 15
+# A/B a hunt.c optimization: build the PRE-opt source from git, race both
+# (same flags, singleton). 7dd367e added the skip-opt; a974123 is pre-opt:
+git show a974123:hunt.c > /tmp/hunt_noopt.c
+gcc -O3 -march=native -std=c99 -Wall -fopenmp -o /tmp/hunt_noopt \
+  /tmp/hunt_noopt.c -lgmp
+/usr/bin/time -v ./hunt 23 23 ; /usr/bin/time -v /tmp/hunt_noopt 23 23
+#   NOTE: the skip-opt is LOSSY (drops div-5) -- counts differ by design;
+#   compare EMIRPS / prime-eligible (opt-invariant), not raw/palindromes.
+# per-block rate profile of a checkpoint log (spot contention vs clean run):
+python3 ~/programming/python_gold/rate_profile.py logs/hunt_d27.stderr
+#   corr(rate,progress)~0 => flat/clean; big spread => contended/throttled.
+
 ------------------------------------------------------------------------------
  Notes:
  - Cumulative candidates through digit-length d  ~=  n_max(d) ~= sqrt(10^d / 2).
