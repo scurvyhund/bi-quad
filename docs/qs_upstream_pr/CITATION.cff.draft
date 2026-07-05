@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "C-Quadratic-Sieve"
+abstract: >-
+  A self-contained Self-Initializing Quadratic Sieve (SIQS) integer
+  factorization program written in C, with no external dependencies.
+authors:
+  - family-names: "Léonard"
+    given-names: "Michel"
+repository-code: "https://github.com/michel-leonard/C-Quadratic-Sieve"
+url: "https://github.com/michel-leonard/C-Quadratic-Sieve"
+version: "2.0.0"
+date-released: "2025-02-01"
+keywords:
+  - integer-factorization
+  - quadratic-sieve
+  - SIQS
+  - number-theory
+  - cryptography
+  - C
