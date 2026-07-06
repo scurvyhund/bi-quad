@@ -1,0 +1,24 @@
+# Palindromic curve-values p = 2n^2+2n+1 found at d = 25 by hunt_noopt.
+# These are numeric palindromes on the curve, NOT prime palindromes:
+# all five are COMPOSITE. The four prime-eligible ones were factored
+# with Michel Leonard's qs (quadratic sieve; see CREDITS.md), 2026-07-06;
+# each product below was re-multiplied and equals p (self-checkable
+# certificate). So there is no prime palindrome at d = 25, and the
+# conjecture (3187813 is the largest prime palindrome on the curve)
+# holds through 25 digits.
+#
+# NOTE: unlike the d=27 list (pals.txt), this run used the NON-skip,
+# count-preserving hunt (hunt_noopt), so the div-5 palindrome -- ending
+# in 5, trivially composite, and omitted by the skip-optimized hunt --
+# IS enumerated here (last row). Endings of the five p: 1, 3, 3, 3, 5.
+#
+  - 1427056470511150746507241 (n=844706005220)    composite
+      = 17 * 83944498265361808618073
+  - 3130000999262629990000313 (n=1250999800012)   composite
+      = 73 * 69737 * 614834679112899913
+  - 3153012324698964232103513 (n=1255589965852)   composite
+      = 89 * 14127161 * 2507729951679497
+  - 3169345937085807395439613 (n=1258837943717)   composite
+      = 14845657 * 213486404615559109
+  - 5054998070382830708994505 (n=1589811006123)   composite
+      = div-5 (ends in 5); not factored, cannot be prime

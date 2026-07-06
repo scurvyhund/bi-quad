@@ -1,6 +1,7 @@
 # --- Compiled binaries (built in place from the .c sources; regenerate with make/gcc) ---
 mod_obstruct
 hunt
+hunt_noopt
 palhunt
 palhunt_gmp
 mitm_probe

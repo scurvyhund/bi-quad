@@ -157,6 +157,21 @@ gcc -O3 -march=native -std=c99 -Wall -fopenmp -o /tmp/hunt_noopt \
 python3 ~/programming/python_gold/rate_profile.py logs/hunt_d27.stderr
 #   corr(rate,progress)~0 => flat/clean; big spread => contended/throttled.
 
+--- 14. PALINDROME COMPOSITENESS CERTIFICATES (qs) --------------------------
+# A palindrome hunt only flags candidates; PROVE each prime-eligible one
+# composite before claiming the conjecture holds at a new d. Two steps:
+# (1) quick verdict, (2) self-checkable factorization certificate.
+# quick deterministic verdict (valid < 3.317e24, i.e. through d=24 fully
+# and most of d=25; above that it is strong-probabilistic, so still factor):
+python3 ~/programming/python_gold/miller_rabin.py 1427056470511150746507241
+# factor a prime-eligible palindrome (Michel Leonard's qs; ~mins at d=25):
+qs 3153012324698964232103513          # -> 89 * 14127161 * 2507729951679497
+# certify the factorization (re-multiplies; no trust in qs required):
+python3 ~/programming/python_gold/verify_factors.py \
+  "3153012324698964232103513 = 89 * 14127161 * 2507729951679497"
+#   div-5 palindromes (p ends in 5) are trivially composite -- skip qs.
+#   Record results in pals_d<dd>.txt (see pals.txt / pals_d25.txt style).
+
 ------------------------------------------------------------------------------
  Notes:
  - Cumulative candidates through digit-length d  ~=  n_max(d) ~= sqrt(10^d / 2).
