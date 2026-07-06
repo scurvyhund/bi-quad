@@ -5,9 +5,9 @@ Build: python3 gen_ending_figure.py  ->  docs/palindrome_endings.png"""
 from PIL import Image, ImageDraw, ImageFont
 
 # (label, count, kind)  kind: 'gold' holds the primes; 'teal' eligible; 'div5'
-DATA = [("…13", 8, "gold"), ("…21", 4, "teal"), ("…01", 2, "teal"),
-        ("…61", 2, "teal"), ("…41", 1, "teal"), ("…81", 1, "teal"),
-        ("…5", 10, "div5")]
+DATA = [("…13", 11, "gold"), ("…21", 4, "teal"), ("…01", 2, "teal"),
+        ("…61", 2, "teal"), ("…41", 2, "teal"), ("…81", 1, "teal"),
+        ("…5", 11, "div5")]
 
 W, H = 1200, 760
 BG = (252, 252, 250); INK = (34, 34, 40); MUT = (120, 120, 130)
@@ -31,13 +31,13 @@ def text(x, y, s, fnt, fill=INK, anchor="la"):
 
 text(W / 2, 40, "Endings of palindromic curve-values on  p = 2n²+2n+1",
      font(34, True), INK, "ma")
-text(W / 2, 86, "…13 is the single densest ending — and holds both large "
-     "prime palindromes (313, 3187813)", font(19), MUT, "ma")
+text(W / 2, 86, "…13 is the densest prime-eligible ending — and holds both "
+     "large prime palindromes (313, 3187813)", font(19), MUT, "ma")
 
 # axes
 ax_l, ax_r = 120, W - 60
 A_t, A_b = 170, 620
-ymax = 10
+ymax = 12
 def BY(c): return A_b - c / ymax * (A_b - A_t)
 for c in range(0, ymax + 1, 2):
     d.line([ax_l, BY(c), ax_r, BY(c)], fill=GRID)

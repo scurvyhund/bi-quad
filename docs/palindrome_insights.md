@@ -5,11 +5,12 @@ what is proven by construction, what is conjectured, and the structure in
 between. Companion to [`STATE_OF_THE_SEARCH.md`](STATE_OF_THE_SEARCH.md)
 and [`PROJECT_OVERVIEW.md`](PROJECT_OVERVIEW.md).
 
-Corpus: 28 palindromic curve-values on record — the small primes, the
-complete odd d = 7…23 set (from `hunt.c` / `hunt_noopt`, div-5 inclusive),
-and d = 27's three prime-eligible ones. (d = 25's five are not yet
-value-dumped; d = 27's div-5 palindromes were skipped by the optimized
-binary — see §9.)
+Corpus: 33 palindromic curve-values on record — the small primes, the
+complete odd d = 7…25 set (from `hunt.c` / `hunt_noopt`, div-5 inclusive),
+and d = 27's three prime-eligible ones. (d = 25's five were value-dumped
+2026-07-06 by the count-preserving `hunt_noopt`, div-5 inclusive — see
+[`pals_d25.txt`](../pals_d25.txt); d = 27's div-5 palindromes were skipped
+by the optimized binary — see §9.)
 
 ---
 
@@ -108,46 +109,63 @@ Two unrelated methods agreeing is the ground truth.
 ## 5. The ending signature — `…13` is the densest
 
 ![Ending distribution: …13 is the densest prime-eligible ending and holds
-313 and 3187813; the div-5 (…5) group is the single largest, all
-composite](palindrome_endings.png)
+313 and 3187813; after d = 25 the div-5 (…5) group ties …13 as the
+largest, all composite](palindrome_endings.png)
 
 Among prime-eligible palindromes (last digit 1 or 3), the two-digit
 endings are far from uniform:
 
 | ending (→ leading) | count |
 |---|---|
-| **`…13`** (`31…`) | **8** ← densest by far |
+| **`…13`** (`31…`) | **11** ← densest by far |
 | `…21` (`12…`) | 4 |
 | `…01` (`10…`) | 2 |
 | `…61` (`16…`) | 2 |
-| `…41` (`14…`) | 1 |
+| `…41` (`14…`) | 2 |
 | `…81` (`18…`) | 1 |
 
-`…13` is the single most common ending — ~2× the next. It comes from the
-curve's ending supply: `…13` occurs 10× per period of 50 in n, versus 4×
-for each other ending (last-digit-3 funnels into the *one* ending `13`,
-while last-digit-1 spreads across five). Grouped 1-vs-5, the five "even-1"
-endings only just edge `13` (10 vs 8) — far less than their 2× aggregate
-supply, because a palindrome's leading digits mirror its ending and
-Benford favours leading `1`. Net: **`13` is over-represented per ending;**
-the famous primes `313` and `3187813` are both `31…13`.
+**What d = 25 added** (count-preserving dump, 2026-07-06) — it *sharpened*
+the signal rather than blurring it: three of its five palindromes landed
+in the densest `…13` channel.
+
+| ending | before (d ≤ 27) | + d = 25 | now |
+|---|---|---|---|
+| `…13` | 8 | +3 | **11** |
+| `…41` | 1 | +1 | 2 |
+| `…5` (÷5) | 10 | +1 | 11 |
+
+`…13` is the single most common prime-eligible ending — now **~2.75× the
+next**, and d = 25 alone added three more. It comes from the curve's
+ending supply: `…13` occurs 10× per period of 50 in n, versus 4× for each
+other ending (last-digit-3 funnels into the *one* ending `13`, while
+last-digit-1 spreads across five). Grouped, the five "last-digit-1"
+endings now only **tie** `13` (11 vs 11) — despite carrying 2× the
+aggregate supply — because a palindrome's leading digits mirror its ending
+and Benford favours leading `1`. Net: **`13` is over-represented per
+ending, more so after d = 25;** the famous primes `313` and `3187813` are
+both `31…13`.
 
 ---
 
 ## 6. Div-5 palindromes — a third of the population
 
-Of the 28 palindromic curve-values, the last-digit split is:
+Of the 33 palindromic curve-values, the last-digit split is a dead heat:
 
-| last digit | count | note |
-|---|---|---|
-| 1 (`1…1`) | 10 | prime-eligible |
-| 3 (`31…13`) | 8 | prime-eligible |
-| **5 (`5…5`)** | **10** | **÷5 — trivially composite** |
+| last digit | of 28 (d ≤ 27) | of 33 (+ d = 25) | note |
+|---|---|---|---|
+| 1 (`1…1`) | 10 | **11** | prime-eligible |
+| 3 (`31…13`) | 8 | **11** | prime-eligible |
+| **5 (`5…5`)** | 10 | **11** | **÷5 — trivially composite** |
 
-**~36% end in 5** (`5258525`, `5649436330336349465`, …) — composite on
-sight. Some odd d (11, 19, 23) produce *only* div-5 palindromes. These
-are exactly what the skip-optimized `hunt` drops (§9); they are irrelevant
-to the conjecture but real members of the palindrome population.
+Folding in d = 25 tips the split to a clean **11 / 11 / 11**. That tidy
+three-way tie is almost certainly a **coincidence** — at n = 33 in a
+sparse, near-constant-mean Poisson process (§4) there is no structural
+reason the ÷5 group should track the 1- and 3-ending groups, and the next
+odd d will likely break it. The durable fact is the ÷5 share: **~1/3 end
+in 5** (`5258525`, `5649436330336349465`, …) — composite on sight. Some
+odd d (11, 19, 23) produce *only* div-5 palindromes. These are exactly
+what the skip-optimized `hunt` drops (§9); they are irrelevant to the
+conjecture but real members of the palindrome population.
 
 ---
 
