@@ -12,11 +12,13 @@
 >
 > **What this means for the results below:**
 > - **Cells with d ≤ 2k are VALID** (range<mod → interval was exact).
-> - **In every k-column, the last two filled cells — the large "~59%" count and
->   the "sat" cell — are ARTIFACTS.** They are over-counts and a fake saturation,
->   not real. *Proven:* the fixed code + an independent brute force give k=6 d=13
->   = **8** (this doc says 591606) and d=14 = **30** (this doc says "sat").
-> - **The headline conclusion "obstructions only exist for d up to ~2k" is WRONG.**
+> - **In every k-column, the last two filled cells — the large "~59%" count
+>   and the "sat" cell — are ARTIFACTS.** They are over-counts and a fake
+>   saturation, not real. *Proven:* the fixed code + an independent brute
+>   force give k=6 d=13 = **8** (this doc says 591606) and d=14 = **30**
+>   (this doc says "sat").
+> - **The headline conclusion "obstructions only exist for d up to ~2k" is
+>   WRONG.**
 >   With correct counting, survivors past the cliff are tiny and grow ~10×/digit
 >   (k=6: d13=8, d14=30, d15=269, d16=2494, d17=25292…). There is no 2k+2
 >   saturation; the true landscape past the cliff is unknown and must be
@@ -50,8 +52,9 @@ For a converse pair, the reversal ties them together:
 - Last k digits of q = reverse of first k digits of p
 - First k digits of q = reverse of last k digits of p
 
-Both q's endings AND q's beginnings must be compatible with the form 2m² + 2m + 1.
-This creates a **two-sided squeeze** that tightens with increasing k.
+Both q's endings AND q's beginnings must be compatible with the form
+2m² + 2m + 1. This creates a **two-sided squeeze** that tightens with
+increasing k.
 
 ---
 
@@ -132,7 +135,8 @@ require ~20GB+. Instead, we solve `2m² + 2m + 1 ≡ target (mod 10^k)` on
 the fly using iterative Hensel lifting:
 
 1. **Base case:** brute-force solutions mod 10 (at most 4: endings 1,3,5 only)
-2. **Lift:** from mod 10^j to mod 10^(j+1) — try 10 digit extensions per solution
+2. **Lift:** from mod 10^j to mod 10^(j+1) — try 10 digit extensions per
+   solution
 3. **Growth:** each lift step ≤ doubles the solution count
 
 Max solutions ≈ 4 × 2^(k-1). At k=10 that's ~2048 — fits in a stack-allocated

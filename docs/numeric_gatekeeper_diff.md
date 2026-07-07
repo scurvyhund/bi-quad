@@ -2,19 +2,20 @@
 
 ## Problem
 
-`gmp_sprintf(cand_str, "%Zd", candidate)` is called for every candidate (5.3 trillion
-times in the 10^28 run). Full string conversion of 28-digit GMP integers is expensive
-and likely the cause of 50% CPU stall observed via memory/cache pressure.
+`gmp_sprintf(cand_str, "%Zd", candidate)` is called for every candidate
+(5.3 trillion times in the 10^28 run). Full string conversion of 28-digit
+GMP integers is expensive and likely the cause of 50% CPU stall observed
+via memory/cache pressure.
 
 ## Solution
 
-Move the gatekeeper check to pure GMP arithmetic. Only convert to string for the
-~0.06% of candidates that pass the gatekeeper (3.2B out of 5.3T).
+Move the gatekeeper check to pure GMP arithmetic. Only convert to string
+for the ~0.06% of candidates that pass the gatekeeper (3.2B out of 5.3T).
 
 ## Key Insight
 
-Each zone has a fixed digit count (`zones[z].digits`), so `10^(digits-2)` can be
-precomputed once per zone rather than per iteration.
+Each zone has a fixed digit count (`zones[z].digits`), so `10^(digits-2)`
+can be precomputed once per zone rather than per iteration.
 
 ---
 
@@ -126,12 +127,14 @@ already resets it.
 | Gatekeeper (every candidate) | `gmp_sprintf` full 28-digit string conversion | `mpz_fdiv_ui` (mod 100) + `mpz_tdiv_q` (div by precomputed constant) |
 | String conversion | 5.3T calls | ~3.2B calls (0.06% of before) |
 
-- `mpz_fdiv_ui(candidate, 100)` extracts last 2 digits — single-limb mod, essentially free
-- `mpz_tdiv_q(result, candidate, pow10)` extracts first 2 digits — GMP integer division
-  by a precomputed power of 10, much cheaper than full decimal string conversion
+- `mpz_fdiv_ui(candidate, 100)` extracts last 2 digits — single-limb mod,
+  essentially free
+- `mpz_tdiv_q(result, candidate, pow10)` extracts first 2 digits — GMP integer
+  division by a precomputed power of 10, much cheaper than full decimal
+  string conversion
 - `pow10` is computed once per zone, not per iteration
-- The check-last-digits-first ordering provides early exit: most candidates fail on
-  last-digit check before even computing the first-2-digit division
+- The check-last-digits-first ordering provides early exit: most candidates
+  fail on last-digit check before even computing the first-2-digit division
 
 ## Expected Impact
 
@@ -146,6 +149,7 @@ computation itself — benchmarking will tell).
 
 ## Also Consider
 
-- **`NUM_THREADS 8`** instead of 16: since SMT gives no benefit for this workload,
-  saves thread management overhead
-- **Fix "CPU time" label** (line 567): `omp_get_wtime()` is wall time, not CPU time
+- **`NUM_THREADS 8`** instead of 16: since SMT gives no benefit for this
+  workload, saves thread management overhead
+- **Fix "CPU time" label** (line 567): `omp_get_wtime()` is wall time, not
+  CPU time

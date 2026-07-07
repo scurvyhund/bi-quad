@@ -3,18 +3,20 @@
 A long-running number theory search (part of the **BigFermat** project)
 on the curve
 
-> **p(n) = 2n² + 2n + 1 = n² + (n+1)²**  — the sum of two *consecutive* squares —
+> **p(n) = 2n² + 2n + 1 = n² + (n+1)²**  — the sum of two
+*consecutive* squares —
 
 for two kinds of rare prime: **bi-quadratic emirps** and **prime palindromes**
 (palindromic primes). Every value on the curve is a sum of two **consecutive**
 squares, `n² + (n+1)²` — the tightest special case of the sum-of-two-squares
 primes in Fermat's two-square theorem (the primes ≡ 1 mod 4). Hence the name.
 
-That consecutive-squares structure pins every value to one of just six two-digit
-endings — `{01, 13, 21, 41, 61, 81}` (and, reversed, six leading patterns
-`{10, 12, 14, 16, 18, 31}`). It's the cheap first/last-digit **filter that discards
-≈ 89% of `p`/`q` candidates instantly (~9× speedup) — roughly 19.9 trillion of the
-~22.4 trillion candidates through 27 digits — before any primality test** — a
+That consecutive-squares structure pins every value to one of just six
+two-digit endings — `{01, 13, 21, 41, 61, 81}` (and, reversed, six
+leading patterns `{10, 12, 14, 16, 18, 31}`). It's the cheap
+first/last-digit **filter that discards ≈ 89% of `p`/`q` candidates
+instantly (~9× speedup) — roughly 19.9 trillion of the ~22.4 trillion
+candidates through 27 digits — before any primality test** — a
 [proof by construction](docs/ending_constraint_proof.md).
 
 ![The curve and its findings: prime palindromes cluster at small d; the emirp obstruction landscape](docs/biquad_curve_landscape.png)
@@ -51,21 +53,25 @@ d = 17, 19                     : only palindromic survivors → no emirp candida
 d = 7,8,9,11–16,21,23–27       : emirp candidates exist, all composite → no emirp
 ```
 
-(An "emirp candidate" is a *non-palindrome* `n` with both `p` and `rev(p)` on the
-curve; palindromes — including the prime `3187813` — are a separate object, shown
-in gold in the figure.) Apart from `12641 ⟷ 14621`, every emirp candidate through
-27 digits has `p` and/or `q` composite. So `12641 ⟷ 14621` is the smallest — and,
-so far, the **only** — bi-quadratic emirp. The next one, if any, has **≥ 28 digits**.
+(An "emirp candidate" is a *non-palindrome* `n` with both `p` and
+`rev(p)` on the curve; palindromes — including the prime `3187813` —
+are a separate object, shown in gold in the figure.) Apart from
+`12641 ⟷ 14621`, every emirp candidate through 27 digits has `p` and/or
+`q` composite. So `12641 ⟷ 14621` is the smallest — and,
+so far, the **only** — bi-quadratic emirp. The next one, if any, has
+**≥ 28 digits**.
 
 ### Prime palindromes: a 27-year conjecture
 
-The **only** prime palindromes on the curve through **27 digits** — confirmed
-exhaustively — are **5, 181, 313, 3187813**, all at ≤ 7 digits. (d ≤ 21 via the
-modular sieve; **d = 8…27 independently re-confirmed by a direct GMP-certified hunt**
-— `palhunt_gmp`, every n, all `found = 0`.) At d = 27 the emirp brute (`hunt.c`)
-independently corroborates this: it flags exactly **3** palindromic values, all
-composite (verified by quadratic sieve) — so `found = 0` stands from a second,
-unrelated tool. The standing conjecture (Jim, since ~1997):
+The **only** prime palindromes on the curve through **27 digits** —
+confirmed exhaustively — are **5, 181, 313, 3187813**, all at ≤ 7
+digits. (d ≤ 21 via the modular sieve; **d = 8…27 independently
+re-confirmed by a direct GMP-certified hunt** — `palhunt_gmp`, every
+n, all `found = 0`.) At d = 27 the emirp brute (`hunt.c`)
+independently corroborates this: it flags exactly **3** palindromic
+values, all composite (verified by quadratic sieve) — so `found = 0`
+stands from a second, unrelated tool. The standing conjecture (Jim,
+since ~1997):
 
 > **3187813 is the largest prime palindrome on the curve.**
 
@@ -83,11 +89,12 @@ Two roads were rigorously **ruled out** by measurement (see
 
 ### Heuristic
 
-A coin-flip density argument predicts **bi-quadratic emirps are finite** (expected
-≈ `C/d²` per length, sum converges → **total ≈ 1** across all integers), while
-**prime palindromes may be infinite** (≈ `C′/d`, sum diverges). The single extra
-primality condition for emirps is what tips the balance — and an expected total of
-≈ 1 is consistent with `12641 ⟷ 14621` being the only one that exists.
+A coin-flip density argument predicts **bi-quadratic emirps are
+finite** (expected ≈ `C/d²` per length, sum converges → **total ≈ 1**
+across all integers), while **prime palindromes may be infinite** (≈
+`C′/d`, sum diverges). The single extra primality condition for emirps
+is what tips the balance — and an expected total of ≈ 1 is consistent
+with `12641 ⟷ 14621` being the only one that exists.
 
 ---
 
@@ -112,8 +119,8 @@ Archived in git history (commit `7f33475`): `mitm_probe.c`, `mitm_probeB.c`,
 
 ## Build & run
 
-Requires `gcc`, `libgmp`, OpenMP. The Makefile targets AMD Zen2 (`-march=znver2`);
-use `-march=native` elsewhere.
+Requires `gcc`, `libgmp`, OpenMP. The Makefile targets AMD Zen2
+(`-march=znver2`); use `-march=native` elsewhere.
 
 ```sh
 make                      # or build individually:
@@ -148,9 +155,10 @@ python3 generate_graph.py
   count, the `…13` ending signature, the Fermat confluence).
 - [`docs/structural_attacks_2026-06-04.md`](docs/structural_attacks_2026-06-04.md)
   — the MITM (meet in the middle) + congruence foray and why neither cracks it.
-- `docs/session_2026-06-04_*.md` — session records (the ≤22 proof, the cliff fix,
-  the palindrome unification).
-- [`docs/modular_obstruction_design.md`](docs/modular_obstruction_design.md) — the sieve's original design notes.
+- `docs/session_2026-06-04_*.md` — session records (the ≤22 proof,
+  the cliff fix, the palindrome unification).
+- [`docs/modular_obstruction_design.md`](docs/modular_obstruction_design.md)
+  — the sieve's original design notes.
 
 ---
 
@@ -185,13 +193,15 @@ development history.
 
 ## Why "BigFermat"
 ### The hobby…
-The hunt began after Simon Singh's *Fermat's Enigma* (1997) — a book about
-Fermat's *Last* Theorem that sent the search into Fermat's *other* famous result,
-the **two-square theorem**: every prime ≡ 1 (mod 4) is a sum of two squares (and no
-prime ≡ 3 (mod 4) is). The curve `2n²+2n+1 = n² + (n+1)²` is the tightest case — a
-sum of two *consecutive* squares. Its two rare prizes are **prime palindromes**
-(read the same both ways — largest known: `3187813`) and **bi-quadratic emirps**
-(reverse to a *different* curve-prime — only known: `12641 ⟷ 14621`). The first
-champion — the palindrome `3187813` — was found on a 386 by bending the x87 FPU's
-80-bit registers into a 64-bit integer engine. The project has been chasing that
-curve ever since.
+The hunt began after Simon Singh's *Fermat's Enigma* (1997) — a book
+about Fermat's *Last* Theorem that sent the search into Fermat's
+*other* famous result, the **two-square theorem**: every prime ≡ 1
+(mod 4) is a sum of two squares (and no prime ≡ 3 (mod 4) is). The
+curve `2n²+2n+1 = n² + (n+1)²` is the tightest case — a sum of two
+*consecutive* squares. Its two rare prizes are **prime palindromes**
+(read the same both ways — largest known: `3187813`) and
+**bi-quadratic emirps** (reverse to a *different* curve-prime — only
+known: `12641 ⟷ 14621`). The first champion — the palindrome
+`3187813` — was found on a 386 by bending the x87 FPU's 80-bit
+registers into a 64-bit integer engine. The project has been chasing
+that curve ever since.

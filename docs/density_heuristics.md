@@ -62,7 +62,8 @@ Summing over all d: **Σ C′/d diverges** (harmonic series).
 ### Bi-quadratic emirp at digit-length d
 
 Requirements:
-1. q = rev(p) is on the curve      [prob ~ 10^(−d/2); d-digit nums on curve ≈ N_d/10^d]
+1. q = rev(p) is on the curve
+   [prob ~ 10^(−d/2); d-digit nums on curve ≈ N_d/10^d]
 2. p is prime                      [prob ~ 1/(d·ln10)]
 3. q is prime                      [prob ~ 1/(d·ln10), independent of p]
 4. q ≠ p (not a palindrome)        [probability ≈ 1 for large d]
