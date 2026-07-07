@@ -87,9 +87,11 @@ for i in range(0,481):
     pts.append((AX(lx), AY(math.log10(p))))
 d.line(pts, fill=TEAL, width=4)
 
-# frontier line + label
+# frontier line + label. Both frontiers coincide at d=27; the labels sit in
+# the open frontier band well below the top-right, where the rising curve has
+# already exited — otherwise the top label overwrites the curve polyline.
 d.line([AX(LXF),A_t,AX(LXF),A_b], fill=EMR, width=2)
-text(AX(LXF)-8, A_t+8, "emirp brute force → d=27", F(16), EMR, "ra")
+text(AX(LXF)-8, A_t+130, "emirp brute force → d=27", F(16), EMR, "ra")
 # palindrome frontier line + label (gold, at d=27 ceiling)
 LXP = 13.35
 d.line([AX(LXP),A_t,AX(LXP),A_b], fill=GOLD, width=2)

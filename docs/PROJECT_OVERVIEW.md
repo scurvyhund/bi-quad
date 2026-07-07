@@ -132,9 +132,10 @@ patterns discards **≈ 89% of candidates (~9× speedup)** up front:
 
 | exhaustive search through | candidates `n` ≈ `√(10ᵈ/2)` | filter culls (~89%) | reach primality test |
 |---|---|---|---|
-| d ≤ 24 (done)    | ≈ 707 billion   | **≈ 629 billion**   | ≈ 78 billion  |
-| d ≤ 25 (done)    | ≈ 2.24 trillion | **≈ 1.99 trillion** | ≈ 246 billion |
-| d ≤ 26 (done)    | ≈ 7.07 trillion | **≈ 6.29 trillion** | ≈ 778 billion |
+| d ≤ 24            | ≈ 707 billion   | **≈ 629 billion**   | ≈ 78 billion   |
+| d ≤ 25            | ≈ 2.24 trillion | **≈ 1.99 trillion** | ≈ 246 billion  |
+| d ≤ 26            | ≈ 7.07 trillion | **≈ 6.29 trillion** | ≈ 778 billion  |
+| d ≤ 27 (frontier) | ≈ 22.4 trillion | **≈ 19.9 trillion** | ≈ 2.46 trillion |
 
 Deepened to `k` digits, the *same* construction collapses whole digit-lengths
 to zero survivors — an obstruction proven with **no primality tests at all**.

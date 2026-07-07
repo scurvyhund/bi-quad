@@ -97,5 +97,5 @@ Observed vs expected:
 - 4 prime palindromes found (d = 1, 3, 3, 7); none found d = 8…27.
   C′/d predicts slow growth — 20 extra digits of search, roughly log(27/7)
   additional expected, consistent with 0 new ones found.
-- 1 emirp found (d = 5); none found d = 6…26.
+- 1 emirp found (d = 5); none found d = 6…27.
   C/d² predicts expected total ≈ 1 across all d — exactly what was observed.
