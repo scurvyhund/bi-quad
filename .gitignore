@@ -58,4 +58,4 @@ endsN5.txt
 .claude/
 
 # Generated 80-col print artifacts (render_print.sh)
-print/
+docs/doc_txt/

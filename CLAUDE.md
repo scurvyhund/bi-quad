@@ -108,9 +108,9 @@ line "semantic" breaks over long paragraphs).
 
 The 80-col hardcopy for the Panasonic KX-P2123 is a GENERATED artifact:
 
-    ./render_print.sh        # pandoc: docs/*.md + README.md -> print/*.txt
+    ./render_print.sh    # pandoc: docs/*.md + README.md -> docs/doc_txt/
 
-`print/*.txt` is exact 80-col UTF-8 (git-ignored; regenerate on demand).
+`docs/doc_txt/*.txt` is exact 80-col UTF-8 (git-ignored; regenerate on demand).
 pandoc strips markup, renders tables as aligned ASCII, keeps code blocks
 verbatim, wraps prose to 80. Wide tables can still exceed 80 (pandoc can't
 shrink below a cell's widest content) — same as the pre-existing "table
