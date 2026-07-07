@@ -99,13 +99,15 @@ two-digit prefixes, discarding **≈ 89% of candidates — about a 9× speedup a
 of `n` whose `p` ends in `…5`/`…0`) adds another ~1.7× on top.
 
 **In raw numbers** (cumulative candidates through digit-length `d` = `n_max(d) ≈
-√(10ᵈ/2)`, since every `n` is examined once):
+√(10ᵈ/2)`, since every `n` is examined once) — the brute search is now
+**complete through d = 27** (both frontiers, 2026-07-05):
 
 | through | candidate `n` | filter culls (~89%) | reach primality test |
 |---------|---------------|---------------------|----------------------|
-| d ≤ 24 (done)     | ≈ 707 billion  | **≈ 629 billion**  | ≈ 78 billion  |
-| d ≤ 25 (running)  | ≈ 2.24 trillion | **≈ 1.99 trillion** | ≈ 246 billion |
-| d ≤ 26 (next)     | ≈ 7.07 trillion | **≈ 6.29 trillion** | ≈ 778 billion |
+| d ≤ 24            | ≈ 707 billion   | **≈ 629 billion**   | ≈ 78 billion   |
+| d ≤ 25            | ≈ 2.24 trillion | **≈ 1.99 trillion** | ≈ 246 billion  |
+| d ≤ 26            | ≈ 7.07 trillion | **≈ 6.29 trillion** | ≈ 778 billion  |
+| d ≤ 27 (frontier) | ≈ 22.4 trillion | **≈ 19.9 trillion** | ≈ 2.46 trillion |
 
 And this is just the 2-digit layer — deepened to `k` digits (§6) the same
 construction is what collapses whole digit-lengths to **zero** survivors (a proven
