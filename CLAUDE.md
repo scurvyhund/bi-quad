@@ -99,6 +99,27 @@ Do NOT re-propose without a genuinely new idea:
 
 Full writeup: docs/structural_attacks_2026-06-04.md.
 
+## Markdown Docs — Freeform Source, Generated Print Files
+
+This project DECOUPLES markdown from the 80-col printer rule. Do NOT
+hand-wrap `.md` files to 80 columns. Write `.md` source freeform — for
+on-screen / rendered reading and small git diffs (prefer one-clause-per-
+line "semantic" breaks over long paragraphs).
+
+The 80-col hardcopy for the Panasonic KX-P2123 is a GENERATED artifact:
+
+    ./render_print.sh        # pandoc: docs/*.md + README.md -> print/*.txt
+
+`print/*.txt` is exact 80-col UTF-8 (git-ignored; regenerate on demand).
+pandoc strips markup, renders tables as aligned ASCII, keeps code blocks
+verbatim, wraps prose to 80. Wide tables can still exceed 80 (pandoc can't
+shrink below a cell's widest content) — same as the pre-existing "table
+rows are exempt from 80-col" rule; the script flags such files. Run it
+after editing docs / before printing.
+
+EXCEPTION: `.c` / `.h` stay hard-≤80 in source (printed directly, and a
+code-style rule). Only markdown is decoupled.
+
 ## Runbook Convention
 
 At session wrap-up, append genuinely reusable CLI commands to

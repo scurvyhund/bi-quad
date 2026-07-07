@@ -56,3 +56,6 @@ endsN5.txt
 
 # --- Claude Code local state ---
 .claude/
+
+# Generated 80-col print artifacts (render_print.sh)
+print/
