@@ -171,6 +171,26 @@ python3 ~/programming/python_gold/verify_factors.py \
   "3153012324698964232103513 = 89 * 14127161 * 2507729951679497"
 #   div-5 palindromes (p ends in 5) are trivially composite -- skip qs.
 #   Record results in pals_d<dd>.txt (see pals.txt / pals_d25.txt style).
+#   Certificates now stored for every odd d: pals_d13/15/21/25.txt + pals.txt
+#   (d=27); palindrome_insights.md sec 4 links them.
+
+--- 15. CLAUDE CODE — SAVE / RESUME A SESSION (v2.1.215) ---------------------
+# Transcripts: ~/.claude/projects/<dir-as-dashes>/<session-id>.jsonl
+#   (this repo's dir -> -home-jim-programming-c-BigFermat-bi-quad)
+# get the LAST session id while sitting in the project dir:
+ls -t ~/.claude/projects/-home-jim-programming-c-BigFermat-bi-quad/*.jsonl \
+  | head -1 | xargs basename | sed 's/\.jsonl$//'
+# resume the MOST RECENT session in the current dir (no id needed):
+claude -c                            # --continue
+# resume a SPECIFIC session by id (picker if no id given):
+claude -r <session-id>               # --resume <id>
+claude -r                            # --resume : interactive picker
+# CRITICAL: resume is DIRECTORY-SCOPED -- cd back to THIS repo FIRST, else id
+#   lookup fails ('No conversation found with session ID: <id>'). In the
+#   picker: Ctrl+W widens to worktrees, Ctrl+A to all projects.
+# NOT restored on resume: launch flags (--add-dir, --mcp-config, --settings,
+#   --fallback-model) and plan/bypassPermissions modes -- pass them again,
+#   e.g. re-add the extra dir:  claude -c --add-dir ~/programming/c/lock256
 
 ------------------------------------------------------------------------------
  Notes:
