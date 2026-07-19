@@ -104,6 +104,20 @@ This matches the project's recurring theme: obstructions here are
 
 Two unrelated methods agreeing is the ground truth.
 
+**Compositeness certificates (every odd d, 13…27).**
+For each prime-eligible on-curve palindrome, an in-repo, self-checkable
+`f₁·f₂·… = p` factorization (via Michel Léonard's `qs`) is stored:
+- [`pals_d13.txt`](../pals_d13.txt) — 2 values
+- [`pals_d15.txt`](../pals_d15.txt) — 3 values (+1 div-5, omitted)
+- [`pals_d21.txt`](../pals_d21.txt) — 4 values (+1 div-5, omitted)
+- [`pals_d25.txt`](../pals_d25.txt) — 4 values
+- [`pals.txt`](../pals.txt) / [`d27_qs_certificates.txt`](d27_qs_certificates.txt) — 3 values (d=27)
+
+d=17 has an explicit factorization in the 2026-06-04 session archive;
+d=11/19/23 palindromes are all div-5 (trivially composite). So every odd
+d from 9 to 27 has a stored certificate or a trivial-divisibility record —
+no step rests on a `found=0` summary alone.
+
 ---
 
 ## 5. The ending signature — `…13` is the densest
