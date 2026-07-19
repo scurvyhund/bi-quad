@@ -1,0 +1,23 @@
+# Prime-eligible palindromic curve-values p = 2n^2+2n+1 at d = 21.
+# These are numeric palindromes on the curve (2p-1 is an odd perfect
+# square), NOT prime palindromes: all are COMPOSITE. Each factorization
+# is a self-checkable certificate -- the product of the factors equals p
+# (independently re-verified, and every factor Miller-Rabin prime). So
+# there is no prime palindrome at d = 21, and the conjecture (3187813 is
+# the largest prime palindrome on the curve) holds through 21 digits.
+#
+# Factored with Michel Leonard's qs (quadratic sieve; see CREDITS.md),
+# 2026-07-18. The 4 prime-eligible palindromes were enumerated with an
+# n-first C sweep modeled on palhunt_gmp.c (same u128 curve/is_pal, but
+# printing every on-curve palindrome, not only primes); ~3m4s over the
+# full d=21 range on 8 threads. One further d=21 palindrome ends in 5
+# (div-5, trivially composite) and is omitted -- it cannot be prime.
+#
+  - 108348382545283843801 (n=7360311900)    composite
+      = 7457 * 14529754934327993
+  - 129052205999502250921 (n=8032814139)    composite
+      = 2180006221 * 59198090701
+  - 129776662212266677921 (n=8055329360)    composite
+      = 2029 * 63960898083916549
+  - 316234169939961432613 (n=12574461617)   composite
+      = 53 * 1201 * 4241 * 1171444304881

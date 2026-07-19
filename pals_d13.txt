@@ -1,0 +1,17 @@
+# Prime-eligible palindromic curve-values p = 2n^2+2n+1 at d = 13.
+# These are numeric palindromes on the curve (2p-1 is an odd perfect
+# square), NOT prime palindromes: all are COMPOSITE. Each factorization
+# is a self-checkable certificate -- the product of the factors equals p
+# (independently re-verified, and every factor Miller-Rabin prime). So
+# there is no prime palindrome at d = 13, and the conjecture (3187813 is
+# the largest prime palindrome on the curve) holds through 13 digits.
+#
+# Factored with Michel Leonard's qs (quadratic sieve; see CREDITS.md),
+# 2026-07-18. Enumerated via the palindrome-first method (palfirst.py /
+# the 2P-1 perfect-square test). At d = 13 both on-curve palindromes are
+# prime-eligible (last digit 1 or 3); there are no div-5 palindromes.
+#
+  - 1635446445361 (n=904280)    composite
+      = 109 * 9461 * 1585889
+  - 3166046406613 (n=1258182)   composite
+      = 173 * 13537 * 1351913
