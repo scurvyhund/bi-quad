@@ -59,3 +59,7 @@ endsN5.txt
 
 # Generated 80-col print artifacts (render_print.sh)
 docs/doc_txt/
+
+# Personal correspondence — contains name/email, must not reach the
+# public mirrors (GitLab / GitHub / Codeberg)
+PrimeCurios.txt
