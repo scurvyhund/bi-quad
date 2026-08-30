@@ -11,6 +11,12 @@ This is deliberately a dumb, self-contained brute force: it exists to
 cross-check mod_obstruct / hunt under the project's verification rule,
 so it shares no code with them.
 
+is_prime() and curve_index() are INTENTIONALLY duplicated from
+~/programming/python_gold/{miller_rabin,perfect_square}.py rather than
+imported. A cross-check tool that depends on a shared library is only
+as independent as that library; keeping this file standalone means it
+runs anywhere with nothing but python3. Do not "de-duplicate" it.
+
 Usage:
    python3 converse_pairs.py [limit]     # default 10**12
    python3 converse_pairs.py 1e14        # scientific notation ok

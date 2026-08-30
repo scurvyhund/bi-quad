@@ -158,9 +158,10 @@ Every even-`d` converse pair known to the project, from an independent Python sc
 | 26 | 3000805374559 | 18009665791970362179638081 | 3    | 8    | (3,8) ok |
 
 Zero violations.
-Also clean across all 25+ known converse pairs at both parities:
-the reversal law `q ≡ (−1)^(d−1)·p` holds 25/25,
-and the mod-9 corollary `3|a ⟺ 3|b` holds 25/25.
+Also clean across all **21 distinct** known converse pairs at both parities —
+15 from the scan to 10^14, 16 from the log harvest, overlapping in 10:
+the reversal law `q ≡ (−1)^(d−1)·p` holds 21/21,
+and the mod-9 corollary `3|a ⟺ 3|b` holds 21/21.
 The `(5,6)` flavour has no known instance yet — permitted, just unobserved.
 
 ### Converse-pair census
@@ -169,6 +170,7 @@ The `(5,6)` flavour has no known instance yet — permitted, just unobserved.
 |--------|-------|-------|--------|
 | Independent Python scan | p < 10^14 | 15 | 1 (d=5) |
 | Survivor lines in `logs/` | d = 7 … 27 | 16 | 0 |
+| **Distinct union** | **d = 5 … 27** | **21** | **1** |
 
 Only 15 converse pairs below 10^14, exactly one of which is an emirp.
 **Primality is not the bottleneck — the pairing is.**
