@@ -45,6 +45,11 @@ Regression markers (fixed-code values, not the buggy old ones):
 - d=11: OBSTRUCTION, d=12: OBSTRUCTION
 - d=13: 8 survivors, d=14: 30 survivors
 
+This command does NOT terminate: past d≈15 at k=6 it is beyond the
+cliff and grinds indefinitely. That is expected — watch the four
+marker lines above appear, then Ctrl-C. Do not pipe it through
+`tail`/`less`, which buffers and hides the markers until exit.
+
 ONLY start long runs after this passes. Skipping cost 22 CPU-days
 (May 2026 run — synced code printed a header but never checkpointed).
 
