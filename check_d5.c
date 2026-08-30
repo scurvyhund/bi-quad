@@ -93,19 +93,19 @@ int main(void)
 
       if (is_consec_sq(q_mpz, m_out)) {
          long m = mpz_get_ui(m_out);
-         bool p_prime = mpz_probab_prime_p(q_mpz, 25) > 0;
+         bool q_prime = mpz_probab_prime_p(q_mpz, 25) > 0;
 
          mpz_t p_mpz;
          mpz_init_set_ui(p_mpz, p);
-         bool p_is_prime = mpz_probab_prime_p(p_mpz, 25) > 0;
+         bool p_prime = mpz_probab_prime_p(p_mpz, 25) > 0;
          mpz_clear(p_mpz);
 
          const char *status;
-         if (p_is_prime && p_prime)
+         if (p_prime && q_prime)
             status = "BOTH PRIME — CONVERSE PAIR!";
-         else if (p_is_prime)
-            status = "p prime, rev(p) composite";
          else if (p_prime)
+            status = "p prime, rev(p) composite";
+         else if (q_prime)
             status = "p composite, rev(p) prime";
          else
             status = "both composite";

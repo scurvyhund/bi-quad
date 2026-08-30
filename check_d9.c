@@ -43,14 +43,10 @@ int main(void)
    printf("\n  9-Digit Bi-Quadratic Emirp Candidate Enumeration\n");
    printf("====================================================\n\n");
 
-   /* Compute n range for d=9 */
-   mpz_t n_mpz, p_mpz, q_mpz, m_out;
-   mpz_init(n_mpz);
-   mpz_init(p_mpz);
-   mpz_init(q_mpz);
-   mpz_init(m_out);
-
-   /* n_min: smallest n where 2n²+2n+1 >= 10^8 */
+   /* Bracket the n range for d=9 before allocating anything, so the
+    * error path below has nothing to free.
+    * n_min: smallest n where 2n²+2n+1 >= 10^8
+    * n_max: largest  n where 2n²+2n+1 <= 10^9 - 1 */
    long n_min = 0, n_max = 0;
    for (long n = 7000; n < 8000; n++) {
       long p = 2L * n * n + 2 * n + 1;
@@ -60,6 +56,16 @@ int main(void)
       long p = 2L * n * n + 2 * n + 1;
       if (p <= 999999999L) { n_max = n; break; }
    }
+
+   if (n_min == 0 || n_max == 0) {
+      fprintf(stderr, "error: could not bracket the 9-digit n range\n");
+      return 1;
+   }
+
+   mpz_t p_mpz, q_mpz, m_out;
+   mpz_init(p_mpz);
+   mpz_init(q_mpz);
+   mpz_init(m_out);
 
    printf("  n range for 9-digit p: [%ld, %ld]\n", n_min, n_max);
    printf("  Total n values: %ld\n\n", n_max - n_min + 1);
@@ -80,8 +86,11 @@ int main(void)
       int len = strlen(p_str);
       reverse_str(p_str, rev, len);
 
+      /* Skip palindromes (p == q) */
       if (strcmp(p_str, rev) == 0)
          continue;
+
+      /* Skip if rev(p) has leading zero (would be fewer digits) */
       if (rev[0] == '0')
          continue;
 
@@ -114,7 +123,6 @@ int main(void)
    printf("\n  Total structural matches (both consec-sq): %d\n", matches);
    printf("====================================================\n\n");
 
-   mpz_clear(n_mpz);
    mpz_clear(p_mpz);
    mpz_clear(q_mpz);
    mpz_clear(m_out);

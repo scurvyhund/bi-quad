@@ -48,13 +48,20 @@ int main(void)
    printf("\n  7-Digit Bi-Quadratic Emirp Candidate Enumeration\n");
    printf("====================================================\n\n");
 
-   /* For d=7: 1000000 <= 2n²+2n+1 <= 9999999
-    * n_min hardcoded to 710; n_max computed in loop below. */
-   int n_min = 710, n_max = 0;
+   /* For d=7: 1000000 <= 2n²+2n+1 <= 9999999.
+    * Both ends are computed. n_min used to be hardcoded to 710 with a
+    * guard (n_min == 0) that could never fire, so the true first
+    * 7-digit n = 707 and its two successors were never enumerated. */
+   int n_min = 0, n_max = 0;
    for (int n = 0; n < 3162; n++) {
       long p = 2L * n * n + 2 * n + 1;
-      if (p >= 10000000 && n_min == 0) n_min = n;
+      if (p >= 1000000 && n_min == 0) n_min = n;
       if (p <= 9999999) n_max = n;
+   }
+
+   if (n_min == 0 || n_max == 0) {
+      fprintf(stderr, "error: could not bracket the 7-digit n range\n");
+      return 1;
    }
 
    printf("  n range for 7-digit p: [%d, %d]\n", n_min, n_max);
@@ -79,32 +86,32 @@ int main(void)
       int len = strlen(p_str);
       reverse_str(p_str, rev_str, len);
 
-      /* Skip palindromes (p == q) */
-
       /* Skip if rev(p) has leading zero (would be fewer digits) */
       if (rev_str[0] == '0')
          continue;
 
       long q = atol(rev_str);
       mpz_set_ui(q_mpz, q);
-      
-      if (p == q) continue;
+
+      /* Skip palindromes (p == q) */
+      if (p == q)
+         continue;
 
       if (is_consec_sq(q_mpz, m_out)) {
          long m = mpz_get_ui(m_out);
-         bool p_prime = mpz_probab_prime_p(q_mpz, 25) > 0;
+         bool q_prime = mpz_probab_prime_p(q_mpz, 25) > 0;
 
          mpz_t p_mpz;
          mpz_init_set_ui(p_mpz, p);
-         bool p_is_prime = mpz_probab_prime_p(p_mpz, 25) > 0;
+         bool p_prime = mpz_probab_prime_p(p_mpz, 25) > 0;
          mpz_clear(p_mpz);
 
          const char *status;
-         if (p_is_prime && p_prime)
+         if (p_prime && q_prime)
             status = "BOTH PRIME — CONVERSE PAIR!";
-         else if (p_is_prime)
-            status = "p prime, rev(p) composite";
          else if (p_prime)
+            status = "p prime, rev(p) composite";
+         else if (q_prime)
             status = "p composite, rev(p) prime";
          else
             status = "both composite";

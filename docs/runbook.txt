@@ -192,6 +192,20 @@ claude -r                            # --resume : interactive picker
 #   --fallback-model) and plan/bypassPermissions modes -- pass them again,
 #   e.g. re-add the extra dir:  claude -c --add-dir ~/programming/c/lock256
 
+--- 16. CONVERSE PAIRS & THE mod-11 CONSTRAINT -------------------------------
+# Theory: docs/mod11_converse_constraint.md  (PROVEN, verified d=5..27)
+# EVEN d  ->  a converse pair requires  p mod 11 in {3,5,6,8}.
+# ODD  d  ->  no constraint on p at all.
+# Independent brute-force enumerator (shares no code with the C engines,
+#   so it satisfies the verification rule):
+python3 docs/converse_pairs.py 1e12          # list pairs + primality
+python3 docs/converse_pairs.py --check 1e12  # assert the mod-11 law holds
+# Harvest every converse pair the C engines have ever reported, from the
+#   'survivor n=' lines in the run logs (d=7..27):
+grep -rhoE "survivor[^n]*n=[0-9]+" logs/ | grep -oE "[0-9]+$" | sort -n -u
+# General digit-reversal primitives (mod 9 / mod 11 laws, any number):
+python3 ~/programming/python_gold/digit_reversal.py 1426361 12641
+
 ------------------------------------------------------------------------------
  Notes:
  - Cumulative candidates through digit-length d  ~=  n_max(d) ~= sqrt(10^d / 2).
