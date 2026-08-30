@@ -42,12 +42,32 @@ gcc -O3 -march=native -std=c99 -fopenmp -o hunt hunt.c -lgmp
 #   (nitroIII production CPU flag instead of native: -march=znver2)
 # modular sieve (uses the Makefile's znver2 CFLAGS)
 make
+# ... or by hand -- NOTE -lgmp, mod_obstruct.c does not link without it:
+gcc -O3 -march=znver2 -mtune=znver2 -std=c99 -Wall -Wextra -fopenmp \
+  -o mod_obstruct mod_obstruct.c -lgmp
+# mod_obstruct calls the OpenMP runtime directly (omp_get_wtime,
+#   omp_set_num_threads) so it CANNOT be built single-threaded for
+#   Valgrind. Run the normal build under OMP_NUM_THREADS=1 instead:
+OMP_NUM_THREADS=1 valgrind --leak-check=full ./mod_obstruct 14 6 6 13
+#   (expect OpenMP pool noise in "possibly lost"; judge "definitely lost")
 
 --- 4. SANITY CHECK (always run before a long job) --------------------------
 # palindrome build is good if this prints 181, 313 (d=3) and 3187813 (d=7)
 ./palhunt_gmp 1 7
 # emirp build quick check (d=5 must report the emirp 12641<->14621)
 ./hunt 5 7
+# modular sieve regression -- markers are d=11 OBSTRUCTION, d=12
+#   OBSTRUCTION, d=13 = 8 survivors, d=14 = 30 survivors:
+./mod_obstruct 50 6 6 11
+# WARNING: that command NEVER TERMINATES -- past d~15 at k=6 it is beyond
+#   the range<mod cliff and grinds indefinitely. Watch the four marker
+#   lines appear, then Ctrl-C. Do NOT pipe it through tail/less: they
+#   buffer, so nothing prints until exit and you see no markers at all.
+#   To watch it without a terminal, line-buffer into a file:
+nohup stdbuf -oL -eL ./mod_obstruct 50 6 6 11 > sanity.log 2>&1 &
+until grep -q 'd=14' sanity.log; do sleep 3; done; cat sanity.log
+#   then resolve the PID FRESH and confirm exactly one match before kill:
+pgrep -f '^\./mod_obstruct 50 6 6 11'
 
 --- 5. LAUNCH A LONG RUN (survives logout via nohup) ------------------------
 mkdir -p logs
