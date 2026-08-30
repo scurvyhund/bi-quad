@@ -23,7 +23,12 @@ Three remotes — push ALL three on every commit:
 ## Build
 
     gcc -O3 -march=znver2 -mtune=znver2 -std=c99 -Wall -Wextra \
-        -fopenmp -o mod_obstruct mod_obstruct.c
+        -fopenmp -o mod_obstruct mod_obstruct.c -lgmp
+
+`-lgmp` is required — the link fails without it. mod_obstruct.c also
+calls the OpenMP runtime directly (`omp_get_wtime`,
+`omp_set_num_threads`), so it cannot be built single-threaded for
+Valgrind; run the normal build under `OMP_NUM_THREADS=1` instead.
 
 ## Mandatory Sanity Check Before Any Long Run
 

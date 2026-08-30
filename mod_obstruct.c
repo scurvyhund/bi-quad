@@ -432,7 +432,8 @@ int main(int argc, char *argv[]) {
 
          compute_n_bounds(d, n_min, n_max);
 
-         long survivors = 0;   /* 64-bit: counts reach 10^k, past INT_MAX at k>=10 */
+         /* 64-bit: counts reach 10^k, past INT_MAX at k>=10 */
+         long survivors = 0;
 
          /* Shared progress counters (atomic). g_scanned = TRUE aggregate
           * residues examined across ALL threads — robust to load imbalance,
@@ -463,7 +464,8 @@ int main(int argc, char *argv[]) {
             mpz_init(t_n);
             mpz_init(t_m);
 
-            long loc_scanned = 0;   /* per-thread tally, flushed to g_scanned in batches */
+            /* per-thread tally, flushed to g_scanned in batches */
+            long loc_scanned = 0;
 
             /* dynamic scheduling: the per-residue cost is highly skewed
              * (most continue cheaply, a few do expensive Hensel/GMP work),
@@ -618,8 +620,41 @@ int main(int argc, char *argv[]) {
                      break;
                }
 
-               if (surv)
+               if (surv) {
                   survivors++;
+
+                  /* Even-d mod-11 invariant -- VALID ONLY WHEN d <= 2k.
+                   * See docs/mod11_converse_constraint.md.
+                   *
+                   * A survivor here is a residue class whose p matches
+                   * on its first k and last k digits. Those cover all
+                   * d digits only when d <= 2k; past that the middle
+                   * digits are free, q need not equal rev(p), and
+                   * p mod 11 is unconstrained -- so the check MUST NOT
+                   * run there or it fires on legitimate candidates.
+                   * Within d <= 2k the survivor is an exact converse
+                   * pair and p mod 11 must be 3, 5, 6 or 8.
+                   *
+                   * Diagnostic only: printed, never fatal. Aborting a
+                   * worker mid-run would discard the survivor count
+                   * this pass is about to report. */
+                  if (d % 2 == 0 && d <= 2 * k) {
+                     unsigned long nr = mpz_fdiv_ui(t_n, 11);
+                     unsigned long r11 =
+                        (2 * nr * nr + 2 * nr + 1) % 11;
+                     if (r11 != 3 && r11 != 5
+                         && r11 != 6 && r11 != 8) {
+                        #pragma omp critical (mod11)
+                        {
+                           fprintf(stderr,
+                              "  *** BUG d=%2d k=%d: survivor breaks "
+                              "the mod-11 invariant (p mod 11 = %lu, "
+                              "r=%ld)\n", d, k, r11, r);
+                           fflush(stderr);
+                        }
+                     }
+                  }
+               }
             }
 
             mpz_clear(t_first);

@@ -196,6 +196,38 @@ int main(int argc, char *argv[]) {
                bool elig = (mpz_fdiv_ui(p, 5) != 0)
                         && (mpz_fdiv_ui(q, 5) != 0);
 
+               /* Even-d mod-11 invariant.
+                * See docs/mod11_converse_constraint.md. Since 10 = -1
+                * (mod 11), rev(p) = (-1)^(d-1) * p, so at EVEN d a
+                * converse pair forces a^2 + b^2 = 9 (mod 11) where
+                * a^2 = 2p-1, b^2 = 2q-1. Consequences:
+                *   - palindrome (b == a) needs a^2 = 10, which is not
+                *     a square mod 11 -> NO even-d palindrome lies on
+                *     this curve at all;
+                *   - otherwise p mod 11 must be 3, 5, 6 or 8.
+                * A survivor here is an exact converse pair (q is the
+                * literal digit reversal and on_curve(q) passed), so
+                * this holds at every d -- no guard needed. A hit is a
+                * bug in this hunt, not a discovery. Reported loudly
+                * rather than aborted: a 100+ hour run should not die
+                * on a diagnostic. */
+               if (d % 2 == 0) {
+                  unsigned long r11 = mpz_fdiv_ui(p, 11);
+                  if (pal || (r11 != 3 && r11 != 5
+                              && r11 != 6 && r11 != 8)) {
+                     #pragma omp critical (mod11)
+                     {
+                        fprintf(stderr,
+                           "  *** BUG d=%d: even-d survivor breaks the "
+                           "mod-11 invariant (p mod 11 = %lu, pal=%d)\n"
+                           "      p = ", d, r11, (int)pal);
+                        mpz_out_str(stderr, 10, p);
+                        fprintf(stderr, "\n");
+                        fflush(stderr);
+                     }
+                  }
+               }
+
                #pragma omp atomic
                survivors++;
                if (pal) {

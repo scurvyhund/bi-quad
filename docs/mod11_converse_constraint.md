@@ -130,12 +130,28 @@ With `d` even:
 q = p  and  q ≡ −p   →   p ≡ −p   →   2p ≡ 0   →   11 | p   →   p composite
 ```
 
-This is the classical fact that *every even-digit palindrome is divisible by 11*, recovered as a special case.
-Two consequences, both reassuring rather than new:
+That is the classical fact — *every even-digit palindrome is divisible by 11* — recovered as a special case.
 
-- The general even-`d` result is the same mechanism that kills even-digit palindromes, applied to the case where the two ends may differ.
-  The palindrome case is *tighter* (one class survives, and it is the composite one) precisely because `q = p` is the strongest possible coupling.
-- It explains a pattern already on disk: every palindrome dump (`pals_d15.txt`, `pals_d21.txt`, `pals_d25.txt`) is at **odd** `d`.
+**On this curve it is strictly stronger than that.**
+A palindrome has `m = n`, so `b = a`, and the general even-`d` identity `a² + b² ≡ 9` becomes:
+
+```
+2a² ≡ 9   →   a² ≡ 9 · 2⁻¹ ≡ 9 · 6 = 54 ≡ 10   (mod 11)
+```
+
+but `10` is not a square mod 11 (the squares are `{0,1,3,4,5,9}`).
+So there is no such `a` at all:
+
+> **No even-digit palindrome lies on the curve `p = 2n²+2n+1`** — prime or composite.
+
+Not "they exist and are composite": they do not exist.
+Confirmed empirically — zero even-digit palindromes on the curve below 10^15.
+
+Two consequences:
+
+- The general even-`d` result is the same mechanism, applied to the case where the two ends may differ.
+  The palindrome case is *tighter* precisely because `q = p` is the strongest possible coupling — it over-constrains to the point of impossibility.
+- It explains a pattern already on disk: every palindrome dump (`pals_d13.txt`, `pals_d15.txt`, `pals_d21.txt`, `pals_d25.txt`) is at **odd** `d`.
   The even lengths were never worth searching, and
   the 3187813 conjecture (see [palindrome_insights.md](palindrome_insights.md)) is really a statement about odd `d` only.
 
@@ -193,24 +209,49 @@ Recorded so it is not rediscovered and re-chased.
 - **Not an obstruction.**
   Four classes survive, so it proves nothing about non-existence.
 - **A free correctness assertion**, which is where the real value sits given this codebase's history (interval over-approximation, the d=21 cliff, the lossy skip-optimisation).
-  Any even-`d` survivor reported outside the four classes is a sieve bug, caught instantly:
+
+### Where the assertion is valid — and where it is NOT
+
+The word "survivor" means different things in the two engines, and the constraint applies to only one of them unconditionally.
+Getting this backwards would fire the check on legitimate candidates and abort a 100-hour run, so it is worth stating precisely.
+
+| Engine | What a survivor is | Assertion valid? |
+|--------|--------------------|------------------|
+| `hunt.c` | exact converse pair: `q` is the literal digit reversal and `on_curve(q)` passed | **always** |
+| `mod_obstruct.c` | residue class matching on `p`'s first `k` and last `k` digits | **only when `d ≤ 2k`** |
+
+`mod_obstruct` pins the first `k` and last `k` digits of `p`.
+Those cover all `d` digits only when `d ≤ 2k`.
+Past that the middle digits are free, `q` need not equal `rev(p)`, and `p mod 11` is unconstrained — a survivor violating the four classes there is **not** a bug.
+Within `d ≤ 2k` the survivor is a genuine converse pair and the check is exact.
+(At the standard `k = 10` that means `d ≤ 20`, which is also where the `range < mod` validity limit sits.)
+
+Both assertions are implemented as **loud diagnostics, never `abort()`** — a long run should not die on a check, and aborting a worker mid-pass discards the survivor count it was about to report.
 
 ```c
-/* Even-d converse pairs admit only p mod 11 in {3,5,6,8}.
-   See docs/mod11_converse_constraint.md:
-   reversal law q = (-1)^(d-1) p (mod 11), plus 2p-1 = a^2.
-   A hit here is a bug, not a discovery. */
+/* hunt.c -- survivors are exact converse pairs, so no guard.
+   At even d: a palindrome would need a^2 = 10 (mod 11), impossible,
+   so pal must be unreachable; otherwise p mod 11 in {3,5,6,8}. */
 if (d % 2 == 0) {
-   unsigned long r = mpz_fdiv_ui(p, 11);
-   if (r != 3 && r != 5 && r != 6 && r != 8) {
-      fprintf(stderr, "BUG d=%d: survivor p %% 11 = %lu\n", d, r);
-      abort();
+   unsigned long r11 = mpz_fdiv_ui(p, 11);
+   if (pal || (r11 != 3 && r11 != 5 && r11 != 6 && r11 != 8)) {
+      /* report loudly, do not abort */
+   }
+}
+
+/* mod_obstruct.c -- MUST be guarded: only d <= 2k pins every digit. */
+if (d % 2 == 0 && d <= 2 * k) {
+   unsigned long nr  = mpz_fdiv_ui(t_n, 11);
+   unsigned long r11 = (2 * nr * nr + 2 * nr + 1) % 11;
+   if (r11 != 3 && r11 != 5 && r11 != 6 && r11 != 8) {
+      /* report loudly, do not abort */
    }
 }
 ```
 
-`mod_obstruct.c` has no mod-11 logic today.
-(The `11` in the k=6 sanity command `./mod_obstruct 50 6 6 11` is `min_d`, not a modulus.)
+Both are now in the tree.
+(Note: the `11` in the k=6 sanity command `./mod_obstruct 50 6 6 11` is `min_d`, not a modulus.
+Also, the build line in `CLAUDE.md` omits `-lgmp`, which `mod_obstruct.c` needs.)
 
 ## Provenance
 
@@ -223,7 +264,7 @@ It looked like a link between the near-miss and the only known emirp.
 It is not.
 A third pair at d=21 (n=8529868069) sits in the identical class,
 and `a ≡ 6 (mod 9)`, `p ≡ 5 (mod 9)` and `n ≡ 7 (mod 9)` are all the *same fact* rather than three independent matches.
-Two coordinates hitting 3 of ~25 pairs is a coincidence.
+Two coordinates hitting 3 of 21 pairs is a coincidence.
 
 The fingerprint was a dead end.
 The machinery built to test it was not.
