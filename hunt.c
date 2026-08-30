@@ -34,8 +34,24 @@
 #define NUM_THREADS  8
 #define BLOCK_SIZE   5000000000L    /* 5 B iters per checkpoint block */
 
-/* n%10 in {1,3,6,8} -> p ends in 5 -> composite; skip those. */
+/* n%10 in {1,3,6,8} -> p ends in 5 -> composite; skip those.
+ * NOTE: LOSSY for counts -- see docs/skip_optimization.md. */
 static const int VALID_NMOD[10] = {1,0,1,0,1,1,0,1,0,1};
+
+/* EVEN d only: a converse pair needs p mod 11 in {3,5,6,8}
+ * (docs/mod11_converse_constraint.md). n mod 11 determines p mod 11
+ * via p = 2n^2+2n+1, so the condition becomes a lookup on n:
+ *
+ *   n%11 :  0  1  2  3  4  5  6  7  8  9 10
+ *   p%11 :  1  5  2  3  8  6  8  3  2  5  1
+ *   keep :  .  y  .  y  y  y  y  y  .  y  .
+ *
+ * Skips 4/11 = 36.4% of even-d iterations. Unlike VALID_NMOD this is
+ * COUNT-PRESERVING: at even d both ends of every converse pair lie in
+ * {3,5,6,8} (the flavours are (6,5),(5,6),(8,3),(3,8)), so no survivor
+ * is dropped, and no even-d palindrome exists to drop. Independent of
+ * VALID_NMOD since gcd(10,11) = 1. */
+static const int VALID_NMOD11[11] = {0,1,0,1,1,1,1,1,0,1,0};
 
 /* n_min, n_max for d-digit p = 2n^2+2n+1 */
 static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
@@ -156,7 +172,21 @@ int main(int argc, char *argv[]) {
          }
       }
 
-      int nmod_base = (int)mpz_fdiv_ui(n_min, 10);
+      /* Fuse both residue filters into one table indexed by i % 110.
+       * 110 = lcm(10,11), so i % 110 fixes both n%10 and n%11 (n =
+       * n_min + i). One modulo and one lookup in the inner loop
+       * instead of two of each, and the even-d test is hoisted out
+       * entirely -- odd d pays nothing for the mod-11 filter. */
+      int nmod_base   = (int)mpz_fdiv_ui(n_min, 10);
+      int nmod11_base = (int)mpz_fdiv_ui(n_min, 11);
+      bool even_d     = (d % 2 == 0);
+
+      int keep_n[110];
+      for (int j = 0; j < 110; j++)
+         keep_n[j] = VALID_NMOD[(nmod_base + j) % 10]
+                  && (!even_d
+                      || VALID_NMOD11[(nmod11_base + j) % 11]);
+
       double t0 = omp_get_wtime();
 
       /* Outer block loop (sequential) — parallel region per block.
@@ -174,7 +204,7 @@ int main(int argc, char *argv[]) {
 
             #pragma omp for schedule(dynamic, 100000)
             for (long i = blk; i < blk_end; i++) {
-               if (!VALID_NMOD[(nmod_base + i % 10) % 10]) continue;
+               if (!keep_n[i % 110]) continue;
                mpz_add_ui(n, n_min, (unsigned long)i);
 
                mpz_mul(p, n, n);

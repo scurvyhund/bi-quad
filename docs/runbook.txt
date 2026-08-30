@@ -205,6 +205,12 @@ python3 docs/converse_pairs.py --check 1e12  # assert the mod-11 law holds
 grep -rhoE "survivor[^n]*n=[0-9]+" logs/ | grep -oE "[0-9]+$" | sort -n -u
 # General digit-reversal primitives (mod 9 / mod 11 laws, any number):
 python3 ~/programming/python_gold/digit_reversal.py 1426361 12641
+# A/B a hunt.c filter change (counts first, then speed):
+#   build both, diff the 'range=' lines, then time with cooldowns and
+#   compare MINIMA -- means are contaminated by thermal throttling.
+./hunt_A 13 18 | grep range= > A.txt ; ./hunt_B 13 18 | grep range= > B.txt
+diff A.txt B.txt && echo COUNTS-IDENTICAL
+rm -f hunt_d*.ckpt        # stale ckpt makes the next run resume, not restart
 
 ------------------------------------------------------------------------------
  Notes:

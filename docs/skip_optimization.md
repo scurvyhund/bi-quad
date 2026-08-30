@@ -1,6 +1,7 @@
 # The n mod 10 Skip Optimization in hunt.c
 
-> ⚠️ **This optimization is LOSSY for counts.**
+> ⚠️ **The `n mod 10` div-5 skip is LOSSY for counts.**
+> (The `n mod 11` wheel added later — see below — is *not*; it is count-preserving. Don't tar both with the same brush.)
 > Emirp results are unaffected — a div-5 `p` is composite, so no emirp is ever skipped, and the non-existence result through d=27 stands.
 > But `survivors(raw)` and `palindromes` are **undercounted**: the skip silently drops the div-5 ones.
 > Read [Validation — CORRECTED 2026-07-05](#validation--corrected-2026-07-05-the-optimization-is-lossy) before trusting any count from an optimized run.
@@ -211,3 +212,105 @@ Consequence for the final d=27 summary:
 
 The new binary PID 569981 resumed at `[34.28 h]` from checkpoint
 `3035000000000 2 1 0 1`.
+
+---
+
+# The n mod 11 wheel (even d only) — added 2026-08-29
+
+A second residue filter, from a different modulus, on a different
+justification, with the opposite bookkeeping property.
+
+## Why it exists
+
+`docs/mod11_converse_constraint.md` proves that at **even** `d`, a
+converse pair requires `p mod 11 ∈ {3,5,6,8}`.
+Because `p = 2n²+2n+1`, `n mod 11` determines `p mod 11`, so the
+condition becomes a lookup on `n`:
+
+| n mod 11 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+|----------|---|---|---|---|---|---|---|---|---|---|----|
+| p mod 11 | 1 | 5 | 2 | 3 | 8 | 6 | 8 | 3 | 2 | 5 | 1  |
+| keep     | · | ✓ | · | ✓ | ✓ | ✓ | ✓ | ✓ | · | ✓ | ·  |
+
+```c
+static const int VALID_NMOD11[11] = {0,1,0,1,1,1,1,1,0,1,0};
+```
+
+7 of 11 residues survive — it skips **36.4%** of even-`d` iterations.
+At odd `d` the constraint does not exist and the filter is disabled.
+
+## It is COUNT-PRESERVING — unlike the div-5 skip
+
+This is the important difference from the `n mod 10` optimization above.
+
+- **No survivor can be dropped.** At even `d` *both* ends of a converse
+  pair lie in `{3,5,6,8}` — the four flavours are `(6,5)`, `(5,6)`,
+  `(8,3)`, `(3,8)` — so both members pass the filter.
+  Verified against all six d=14 survivors: all kept.
+- **No palindrome can be dropped**, because no even-`d` palindrome lies
+  on the curve at all (a palindrome would need `a² ≡ 10 (mod 11)`,
+  and 10 is not a square mod 11).
+
+Measured: `survivors(raw)`, `palindromes`, `prime-eligible` and
+`EMIRPS` are byte-identical to the pre-wheel binary at d = 13…18.
+
+To be explicit, since it is easy to misread: this does **not** repair
+the div-5 lossiness documented above. hunt is exactly as lossy as it
+was. The wheel is a pure speed change that adds no new loss.
+
+## Implementation: a mod-110 wheel
+
+The two filters are fused into one table indexed by `i % 110`
+(`n = n_min + i`):
+
+```c
+int keep_n[110];
+for (int j = 0; j < 110; j++)
+   keep_n[j] = VALID_NMOD[(nmod_base + j) % 10]
+            && (!even_d || VALID_NMOD11[(nmod11_base + j) % 11]);
+...
+if (!keep_n[i % 110]) continue;      /* the whole inner-loop cost */
+```
+
+`110 = lcm(10,11)`, and since `gcd(10,11) = 1` the Chinese Remainder
+Theorem makes `j ↦ (j mod 10, j mod 11)` a bijection on `Z/110` — so
+one index pins both residues, and the two skip fractions multiply
+exactly: `0.600 × 7/11 = 0.3818`, and the table has 42/110 = 0.3818
+entries set.
+
+No CRT *algorithm* runs — no modular inverse, no reconstruction. Only
+the CRT *guarantee* that 110 is the correct period. This is the same
+construct as a mod-30 wheel in a classical prime sieve.
+
+Two consequences worth having:
+
+- One modulo and one lookup in the hot loop instead of two of each.
+- The `even_d` test is hoisted into the table build, so at odd `d` the
+  table degenerates to the original div-5 wheel and the inner loop
+  never learns the mod-11 filter exists.
+
+The table is built per `d` at runtime (110 iterations) because the base
+residues depend on `n_min`.
+
+## Benchmark
+
+A/B/C on 8 cores, 4 reps each with 12 s cooldowns, **minima** (the mean
+is contaminated by thermal throttling on the slowest build — baseline
+d=18 min 6.32 s vs mean 7.93 s):
+
+| build | d=18 (even, active) | d=17 (odd, inactive) |
+|-------|---------------------|----------------------|
+| A — no mod-11 filter | 6.32 s | 1.90 s |
+| B — separate mod-11 lookup | 4.39 s (**1.44×**) | 1.97 s (**0.96× — slower**) |
+| C — fused mod-110 wheel | 4.13 s (**1.53×**) | 1.89 s (1.01×) |
+
+**C shipped, B discarded.** B taxed odd `d` by ~4% for a filter that
+cannot help there; the fused wheel removes that by construction.
+
+1.53× against a ceiling of 1.57× (what you would get if the skipped
+iterations were the entire per-iteration cost). Unlike the div-5 skip,
+here the skip fraction and the speedup nearly coincide — the filter sits
+ahead of all GMP work, so a skipped iteration really is free.
+
+Caveat on the numbers: the faster builds run shorter and heat the CPU
+less, which flatters them slightly. Treat 1.53× as an upper bound.
