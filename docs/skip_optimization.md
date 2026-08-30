@@ -1,5 +1,11 @@
 # The n mod 10 Skip Optimization in hunt.c
 
+> ⚠️ **This optimization is LOSSY for counts.**
+> Emirp results are unaffected — a div-5 `p` is composite, so no emirp is ever skipped, and the non-existence result through d=27 stands.
+> But `survivors(raw)` and `palindromes` are **undercounted**: the skip silently drops the div-5 ones.
+> Read [Validation — CORRECTED 2026-07-05](#validation--corrected-2026-07-05-the-optimization-is-lossy) before trusting any count from an optimized run.
+> For the full survivor/palindrome corpus, use the pre-opt binary (built from commit `a974123`).
+
 ## What it is
 
 For the curve `p = 2n² + 2n + 1 = n² + (n+1)²`, the last digit of `p`
@@ -29,7 +35,12 @@ Estimated wall-clock speedup: **~35%** (the remaining 60% still bears
 the full GMP cost per iteration).
 
 This is a **proof by arithmetic**, not a heuristic. No primality test,
-no approximation, no edge case.
+no approximation, no edge case *in the skip itself*.
+
+The edge case is in the **bookkeeping**, not the arithmetic: the skipped
+`n` are still genuine survivors and palindromes when `rev(p)` lands on
+the curve, so removing them from the loop also removes them from the
+counts. See the corrected Validation section below.
 
 ---
 
