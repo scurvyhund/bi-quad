@@ -167,3 +167,4 @@ There is no analogous bridge for mod 7, mod 13, or anything else: `10 ≡ −1` 
 - `structural_attacks_2026-06-04.md` — the three eliminated approaches, in detail
 - `density_heuristics.md` — frontier formula and emirp-vs-palindrome rarity
 - `OPEN_PROBLEM.md` — current statement of the search
+- `curve_families.md` — one mod-11 theorem for every conic curve

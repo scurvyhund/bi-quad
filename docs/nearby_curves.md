@@ -163,3 +163,4 @@ It is deliberately standalone — it shares no code with `hunt.c` or `mod_obstru
 - `mod11_converse_constraint.md` — the k=1 case, proven in full
 - `structural_attacks_2026-06-04.md` — the three eliminated approaches
 - `GLOSSARY.md` — terms used across the project
+- `curve_families.md` — the general theorem: turning the *quadratic form* dial
