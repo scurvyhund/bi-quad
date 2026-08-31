@@ -186,6 +186,50 @@ def check_falsification(limit=2 * 10**8):
    return "permitted curves really do contain them: %r" % found
 
 
+def check_centered_polygons():
+   """Section 8b: C_k(n) = k*n(n+1)/2 + 1 has membership
+      8p + (k-8) = k(2n+1)^2, and Theorem B classifies every k."""
+   # our curve is k=4, the cuban curve is k=6
+   for n in range(200):
+      assert 4 * n * (n + 1) // 2 + 1 == 2 * n * n + 2 * n + 1
+      assert 6 * n * (n + 1) // 2 + 1 == 3 * n * n + 3 * n + 1
+   # the general membership identity
+   for k in range(3, 13):
+      for n in range(200):
+         p = k * n * (n + 1) // 2 + 1
+         assert 8 * p + (k - 8) == k * (2 * n + 1) ** 2, (k, n)
+   # k=8 collapses to the odd squares
+   for n in range(200):
+      assert 8 * n * (n + 1) // 2 + 1 == (2 * n + 1) ** 2
+   # Theorem B per k, against exhaustive search
+   want = {3: False, 4: False, 5: False, 6: False,
+           7: True, 8: True, 9: True, 10: True}
+   for k, may in want.items():
+      assert (((k - 8) * inv11(k)) % 11 in SQ11) == may, "k=%d flag" % k
+      pals = []
+      n = 0
+      while True:
+         v = k * n * (n + 1) // 2 + 1
+         if v > 3 * 10**8:
+            break
+         s = str(v)
+         if len(s) % 2 == 0 and s == s[::-1]:
+            pals.append(v)
+         n += 1
+      if not may:
+         assert not pals, "k=%d forbids even-d palindromes, found %r" % (k, pals[:3])
+   # 'possible' is necessary, not sufficient: k=8 has none below 1e12
+   n = 0
+   oct_pals = []
+   while (2 * n + 1) ** 2 <= 10**12:
+      s = str((2 * n + 1) ** 2)
+      if len(s) % 2 == 0 and s == s[::-1]:
+         oct_pals.append((2 * n + 1) ** 2)
+      n += 1
+   assert not oct_pals, "octagon: unexpected %r" % oct_pals[:3]
+   return "centered k-gonal: ours=k4, cuban=k6, k8=odd squares; Thm B ok for k=3..10"
+
+
 def check_odd_d_is_toothless():
    """Odd d gives only a^2 = b^2, i.e. a = +-b -- and our known objects
       (the d=5 emirp, the d=7 palindrome) live there."""
@@ -205,7 +249,7 @@ def main():
    checks = [check_membership, check_cuban_is_cube_difference,
              check_reversal_law, check_published_tables,
              check_theorems_empirically, check_falsification,
-             check_odd_d_is_toothless]
+             check_centered_polygons, check_odd_d_is_toothless]
    print("\n  verifying docs/curve_families.md\n")
    for fn in checks:
       try:

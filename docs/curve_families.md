@@ -286,6 +286,83 @@ Step 4 is a table lookup. A question that took a full session to settle for one 
 
 ---
 
+## 8b. Centered polygonal numbers — the curve family with no lattice
+
+Prompted by: *"would some number with a 5 in it be a skeleton for a pentagon?"*
+
+It would, and this turns out to be the sharpest evidence that Theorems A and B are **not** geometric.
+
+### Our curve is a polygon already
+
+The **centered k-gonal numbers** are `C_k(n) = k·n(n+1)/2 + 1` — one central dot, then rings of k-gons around it:
+
+| k | shape | polynomial | first values |
+|---|---|---|---|
+| 3 | triangle | (3n²+3n+2)/2 | 1, 4, 10, 19, 31, 46 |
+| **4** | **square** | **2n² + 2n + 1** | 1, 5, 13, 25, 41, 61 |
+| 5 | pentagon | (5n²+5n+2)/2 | 1, 6, 16, 31, 51, 76 |
+| **6** | **hexagon** | **3n² + 3n + 1** | 1, 7, 19, 37, 61, 91 |
+
+**Our curve is the centered square numbers. The cuban curve is the centered hexagonal numbers.** The polygon reading was there from the start.
+
+### But there is no pentagonal lattice
+
+§1 backed the k=4 and k=6 curves with rings — `Z[i]` and `Z[ω]`, square and triangular lattices. That backing **cannot** extend to five, by a theorem:
+
+> **Crystallographic restriction.** A two-dimensional lattice admits only 2-, 3-, 4- or 6-fold rotational symmetry. Five-fold symmetry is impossible.
+
+This is why Penrose tilings and quasicrystals were startling: genuine 5-fold symmetry that is provably *not* a lattice. So k=4 and k=6 get `Z[i]` and `Z[ω]`; k=5 and k=7 get nothing.
+
+### The theorems do not care
+
+Theorems A and B never needed a lattice — only the membership shape. Completing the square for **every** centered polygon at once:
+
+    8p = 4k·n² + 4k·n + 8
+    k(2n+1)² = 4k·n² + 4k·n + k
+    8p + (k − 8) = k(2n+1)²          ← α = 8, β = k−8, γ = k
+
+So `β/γ = (k−8)/k`, and Theorem B is a table lookup:
+
+| k | shape | β/γ | even-d pal. | found <3×10⁸ |
+|---|---|---|---|---|
+| 3 | triangle | 2 | impossible | **0** ✓ |
+| 4 | **square, ours** | 10 | impossible | **0** ✓ |
+| 5 | **pentagon** | 6 | impossible | **0** ✓ |
+| 6 | hexagon, cuban | 7 | impossible | **0** ✓ |
+| 7 | heptagon | 3 | possible | 22, 1331 |
+| 8 | octagon | 0 | possible | none, see below |
+| 9 | nonagon | 5 | possible | 55, 5995, 617716 |
+| 10 | decagon | 9 | possible | 11, 104401, … |
+
+Eight curves; the k=4 row reproduces our proven `β/γ ≡ 10` and k=6 the cuban `7`.
+
+> **The pentagon has a curve but no lattice, and Theorem B applies to it regardless.**
+> That is strong evidence the theorems are about the arithmetic shape `αp + β = γa²`, not about geometry. The lattices of §1 were scaffolding — genuine, but not load-bearing.
+
+### The octagon: permitted ≠ guaranteed
+
+k=8 gives `β = 0`, so the membership collapses to `p = (2n+1)²` — **the centered octagonal numbers are exactly the odd squares.**
+
+Theorem B permits even-digit palindromes there, yet a search to **10¹²** finds none. There is no contradiction: Theorem B is a **necessary** condition, never a sufficient one. It removes possibilities; it cannot conjure objects.
+
+The famous even-digit palindromic square is `698896 = 836²` — and 836 is *even*, so it is not on this curve.
+
+A useful reminder for reading the other "possible" rows: they mean *not forbidden*, nothing more.
+
+### Prime palindromes across the polygons
+
+| k | prime palindromes below 3×10⁸ |
+|---|---|
+| 3 | 98689 |
+| **4 (ours)** | **5, 181, 313, 3187813** |
+| 5 | 181 |
+| 6 | 7, 919 |
+| 10 | 11, 101, 151, 1598951 |
+
+`181` sits on both the pentagon curve and ours.
+
+---
+
 ## 9. What this does and does not give us
 
 **Does:** a real generalization. The mod-11 result is a property of *conics with a decimal-reversal condition*, not of our curve. Any future curve can be classified instantly.
