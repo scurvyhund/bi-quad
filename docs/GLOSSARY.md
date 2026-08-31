@@ -184,6 +184,91 @@ An even-digit palindrome can lie on the curve **only if `β/γ` is a square mod 
 
 ---
 
+## Lattice — the full definition
+
+Used constantly in `curve_geometry.md`, `curve_families.md` and `curve_lattices.md`, so it is worth pinning down properly.
+
+### What it is
+
+A **lattice** is the set of *all* whole-number combinations of two independent direction vectors `u` and `v`:
+
+    L = { a·u + b·v  :  a, b whole numbers }
+
+Three consequences, and they are the whole content of the word:
+
+1. **Infinite and regular.** It goes on forever in every direction, and it looks identical from every one of its points. Shift the whole lattice by any of its own vectors and you get the lattice back.
+2. **Discrete.** There is a smallest non-zero distance between points. A lattice is not a continuum — you cannot get arbitrarily close to a point without landing on it.
+3. **Not a shape.** A lattice is a *set of points*, not a grid drawing, and not a curve. The lines people draw between lattice points are a visual aid only.
+
+### The three used in this project
+
+Each is the natural home of a number ring, and **the ring's norm form is exactly the squared distance from the origin** — verified for every point within radius 6:
+
+| lattice | ring | basis `u`, `v` | norm form | nearest neighbours |
+|---|---|---|---|---|
+| square | `Z[i]` | (1,0), (0,1) | x² + y² | **4** at distance 1 |
+| triangular | `Z[ω]` | (1,0), (½, √3/2) | x² + xy + y² | **6** at distance 1 |
+| rectangular | `Z[√−2]` | (1,0), (0, √2) | x² + 2y² | **2** at distance 1 |
+
+The nearest-neighbour count *is* the rotational symmetry — 4-fold, 6-fold, 2-fold. That is the number the crystallographic restriction constrains.
+
+### The basis is not unique
+
+`(1,0), (0,1)` and `(1,0), (1,1)` generate **the same** square lattice — verified. Any two bases related by an integer matrix of determinant ±1 describe the same point set. So "the basis" is a *description*, and the lattice is the thing described. Do not read meaning into a particular choice.
+
+### What is *not* a lattice
+
+- **A Penrose tiling / quasicrystal.** It has genuine 5-fold symmetry, which no lattice can have (see *crystallographic restriction*). This is exactly why the centered **pentagon** curve has no lattice behind it.
+- **The curve itself.** Our curve is a *sequence of points on a ray*, picked out of a lattice. The lattice is the ambient set; the curve is a thin selection from it.
+- **The set of primes.** No regularity, no basis.
+
+### Why it matters here
+
+Every curve in the family is the same construction:
+
+> the lattice points lying on a fixed ray, at squared distance `p` from the origin.
+
+The **quadratic form** chooses *which lattice*; the **linear condition** chooses *which ray*. Both are geometric. Primality and digit reversal are not — see `curve_lattices.md`.
+
+⚠ **Not the order-theory sense.** In algebra "lattice" also means a partially ordered set with meets and joins. Unrelated. Everything in this project means the geometric sense above.
+
+---
+
+## Number-theory vocabulary
+
+Terms borrowed from outside the project. Defined here so no one has to guess.
+
+**Gaussian integers, `Z[i]`** — complex numbers `x + yi` with x, y whole. Their **norm** (squared size) is `x² + y²` — our quadratic form. Geometrically a **square lattice**.
+
+**Eisenstein integers, `Z[ω]`** — same idea with `ω` a cube root of 1 instead of `i`. Norm `x² + xy + y²`. Geometrically a **triangular lattice**. Named for Gotthold **Eisenstein** (1823–1852) — *not* Einstein.
+
+**norm form** — the polynomial giving the squared distance from the origin in a ring's natural lattice. Every curve family in this project comes from one.
+
+**quadratic residue** — a number that *is* a square modulo something. Mod 11 the residues are `{0,1,3,4,5,9}`; the **non-residues** are `{2,6,7,8,10}`. Theorem B is exactly the question "is `β/γ` a residue mod 11?"
+
+**modular inverse** `γ⁻¹` — the number with `γ·γ⁻¹ ≡ 1`. Mod 11, `3⁻¹ = 4` because `3×4 = 12 ≡ 1`. It is how you "divide" in modular arithmetic.
+
+**Fermat's two-square theorem** — every prime `p ≡ 1 (mod 4)` is a sum of two squares in **exactly one** way. Our curve primes are those whose unique representation happens to be *consecutive*.
+
+**conic / paraboloid** — `z = x² + y²` is a paraboloid (a bowl). Cutting it with a plane gives a **conic**; that cut is our curve. Not a cone (`z² = x² + y²`, a funnel) and not a sphere (bounded).
+
+**crystallographic restriction** — a 2-D lattice can only have 2-, 3-, 4-, or 6-fold rotational symmetry. **5-fold is impossible**, which is why the centered *pentagon* curve has no lattice behind it, and why Penrose tilings were a surprise.
+
+**falsification test** — checking a theorem where it predicts something *should* exist, not only where it forbids. A rule that only ever predicts absences can look correct by accident. Used on `Z[√−2]` and the `11 | k` curves.
+
+**Landau's problems / Conjecture F** — the open question of whether infinitely many primes have a given quadratic shape. Our curve's infinitude sits here. Unproven.
+
+### OEIS sequences
+
+| id | sequence |
+|---|---|
+| **A027862** | primes of the form `n² + (n+1)²` — **our curve** |
+| **A002407** | cuban primes, `3n²+3n+1 = (n+1)³ − n³` |
+| A005891 | centered pentagonal numbers |
+| A001844 | centered square numbers (our curve, primes or not) |
+
+---
+
 ## Ruled out — do not revisit
 
 **MITM** — splitting `n = a·10^t + b`. No √-speedup; the cross-term couples the middle digits.

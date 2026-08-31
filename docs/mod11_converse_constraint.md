@@ -23,6 +23,10 @@ which tested obstructions on `p` alone and found none.
 
 ## Definitions
 
+*Local summary only — the canonical glossary is [`GLOSSARY.md`](GLOSSARY.md),
+which also carries the generalized Theorems A and B from `curve_families.md`.*
+
+
 A **converse pair** is `p` together with `q = rev(p)` where *both* lie on the curve.
 
 The curve membership test, which is the move the whole proof depends on:

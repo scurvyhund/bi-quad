@@ -242,4 +242,49 @@ rm -f hunt_d*.ckpt        # stale ckpt makes the next run resume, not restart
  - hunt.c skip-value opt (2026-06-29): n%10 in {1,3,6,8} -> p ends in 5
    (composite); skipped before any GMP work via VALID_NMOD[] table. Saves
    ~40% of iterations (~35% wall-clock). Validated d=5..19 vs landscape.
+
+--- 17. CURVE FAMILIES / GEOMETRY (2026-08-30) ------------------------------
+# Verify every claim in the geometry + curve-family docs. Both are
+# standalone (no shared code with the C engines), so agreement is
+# evidence, not a common bug. Sub-second; run after editing either doc.
+python3 docs/nearby_curves.py            # 7 checks, the k-family
+python3 docs/nearby_curves.py --census   # + the slow 1e9 emirp census
+python3 docs/curve_families.py           # 8 checks, Theorems A and B
+
+# Classify a NEW curve by hand -- Theorem B is a table lookup:
+#   1. complete the square to reach  alpha*p + beta = gamma*a^2
+#   2. beta/gamma mod 11 in {0,1,3,4,5,9} ? -> even-digit palindromes
+#      are POSSIBLE (not guaranteed).  Otherwise IMPOSSIBLE.
+python3 -c "
+SQ={s*s%11 for s in range(11)}
+al,be,ga = 2,-1,1          # edit these; ours is 2p-1 = a^2
+inv=lambda z: pow(z%11,-1,11)
+tgt=(2*be*inv(ga))%11
+print('allowed p mod 11:',
+      sorted({(inv(al)*(ga*x-be))%11 for x in SQ for y in SQ
+              if (x+y)%11==tgt}))
+print('even-d palindrome:',
+      'possible' if (be*inv(ga))%11 in SQ else 'IMPOSSIBLE')"
+
+# Regenerate 80-col hardcopy, and confirm a doc did not get WIDER than
+# it was at HEAD (a new table is the usual culprit):
+./render_print.sh
+git show HEAD:docs/FOO.md > /tmp/old.md
+pandoc /tmp/old.md -f gfm -t plain --columns=80 --wrap=auto -o /tmp/old.txt
+echo "was $(awk 'length>80' /tmp/old.txt | wc -l)"
+echo "now $(awk 'length>80' docs/doc_txt/FOO.txt | wc -l)"
+
+
+--- 18. DOC HYGIENE - CATCH DEFINITION DRIFT --------------------------------
+# Before adding a glossary/definitions file, check one does not already
+# exist under another name.  (2026-08-30: a second glossary got created
+# because the existing one was a SECTION, not a file.)
+grep -rIln -iE '^#+ *(glossary|definitions|terminology|notation)' docs/ *.md
+
+# Scrub: terms used in the docs but absent from the glossary.
+for t in Eisenstein Gaussian "norm form" "quadratic residue" paraboloid
+do
+  [ "$(grep -ic "$t" docs/GLOSSARY.md)" -eq 0 ] && echo "MISSING $t"
+done
+
 ==============================================================================
