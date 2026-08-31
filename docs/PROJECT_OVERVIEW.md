@@ -61,31 +61,16 @@ primality-testing."
 
 ---
 
-## 2. Glossary (every term we use)
+## 2. Glossary
 
-| Term | Precise meaning |
-|---|---|
-| **`n`, `m`** | The index integers. `p` comes from `n`; `q` comes from `m`. |
-| **`p`** | `p = 2n² + 2n + 1` ( = `n² + (n+1)²` ). The number we test. |
-| **`q`** | `q = rev(p)`, the digit-reversal of `p`. For a hit, `q` must *also* equal `2m²+2m+1`. |
-| **emirp** | A prime that becomes a **different** prime when its digits are reversed (not a palindrome). |
-| **bi-quadratic emirp** | Our target: `p` satisfying all four conditions in §1. Also called a *converse prime pair* `(p, rev(p))`. |
-| **`d`** | Digit-length of `p` (the "size class" we test one at a time). |
-| **`k`** (depth) | How many **leading and trailing** digits we constrain. The modulus is `mod = 10^k`. Bigger `k` = stronger filter = more work. |
-| **residue `r`** | A class `mod 10^k`. Concretely `r = n mod 10^k` — the **last `k` digits of `n`**. The search loops `r` over `0 … 10^k − 1`. |
-| **ending** | The last `k` digits of `p`, i.e. `(2r²+2r+1) mod 10^k` — fixed by `r`. |
-| **valid ending** | An ending that is (a) **achievable** by some `n`, and (b) **prime-eligible** — last digit ∉ {0,5} (else divisible by 5 → composite → never prime). ≈ 5.42% of all `10^k` residues. |
-| **valid_firsts** | The set of achievable first-`k`-digit patterns = `reverse_k(valid endings)`. Used to check `p`'s leading digits. |
-| **composite-5 filter** | Dropping endings whose last digit is 0 or 5. Half of all achievable endings end in 5; without this filter they masquerade as survivors and hide real obstructions. |
-| **Hensel lifting** (`solve_residues`) | Given a target ending mod `10^k`, find which residues solve `2m²+2m+1 ≡ target` by lifting solutions mod 10 → mod 100 → … → mod `10^k`. This is how the `q`-side is checked. |
-| **survivor** | A residue `r` for which a **real** `(n, m)` pair passes *all* the first/last-digit constraints. A digit-level-feasible candidate. |
-| **obstruction** | `survivors = 0` for a `(d, k)`. A genuine **proof**: no `d`-digit bi-quadratic emirp can exist. |
-| **range** | `n_max − n_min`: how many `n` produce a `d`-digit `p`. |
-| **mod** | `10^k`. |
-| **`range/mod`** | Average number of `n`-values per residue class. The single most important quantity — it decides which regime we're in. `range/mod ≈ 2.16 × 10^((d−1)/2 − k)`. |
-| **cliff** | The `d` (for a given `k`) where `range/mod` crosses ~1.5, i.e. **`d ≈ 2k+1`**. *Below* the cliff: ≤1 `n` per residue → check is exact & cheap. *Above*: many `n` per residue → over-dense regime. |
-| **converged count** | For a fixed `d`, the survivor count **stabilizes** once `k` is large enough that `d` sits at/below `k`'s cliff (`k ≳ d/2`). That stable value is the **true** candidate count for length `d`. The real obstruction landscape lives on this *converged diagonal*. |
-| **saturation** ⚠️ | *Retracted concept.* The theoretical max survivor count is `3·mod/5`. An old bug made counts falsely hit this ceiling and stop the search early. **It is NOT a real phenomenon** — see §4. |
+Moved. The single canonical glossary is **[`GLOSSARY.md`](GLOSSARY.md)** —
+every symbol, every term, plus Theorems A and B and the two meanings of `k`.
+
+It was split across this section and `GLOSSARY.md` until 2026-08-30; two
+glossaries drift, so there is now one. Nothing was lost — the sieve terms
+that lived here (`valid_firsts`, Hensel lifting, the composite-5 filter,
+`range/mod`, converged count, and the retracted "saturation") all moved
+across intact.
 
 ---
 

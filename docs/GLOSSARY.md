@@ -103,6 +103,18 @@ Past the cliff the old interval method **over-counts** and is slow. Fixed in 22a
 **div-5 filter / `VALID_NMOD`** — skips `n` values whose `p` is divisible by 5.
 ⚠ **Lossy**: it drops div-5 *composites*, so survivor and palindrome counts are undercounts. Emirp results are unaffected. See `skip_optimization.md`.
 
+**valid_firsts** — the achievable first-`k`-digit patterns, = `reverse_k(valid endings)`. Used to test `p`'s leading digits.
+
+**composite-5 filter** — dropping endings whose last digit is 0 or 5. Half of all achievable endings end in 5; without this they masquerade as survivors and hide real obstructions.
+
+**Hensel lifting** (`solve_residues`) — given a target ending mod `10^k`, find which residues solve `2m²+2m+1 ≡ target`, by lifting solutions mod 10 → mod 100 → … → mod `10^k`. This is how the `q` side is checked.
+
+**range/mod** — average number of `n`-values per residue class, `≈ 2.16 × 10^((d−1)/2 − k)`. The single most important quantity: it decides which regime the search is in.
+
+**converged count** — for fixed `d`, the survivor count stabilizes once `k` is large enough that `d` sits at or below `k`'s cliff (`k ≳ d/2`). That stable value is the true candidate count for length `d`. The real obstruction landscape lives on this converged diagonal.
+
+**saturation** ⚠️ **retracted** — the theoretical maximum survivor count is `3·mod/5`. An old bug made counts falsely hit that ceiling and stop the search early. **Not a real phenomenon.** Kept here only so the word is recognised in old logs.
+
 **mod-110 wheel** — fuses the div-5 skip with the mod-11 even-d constraint. `110 = lcm(10,11)`, and since `gcd(10,11) = 1`, CRT guarantees `j ↦ (j mod 10, j mod 11)` is a bijection on ℤ/110. ~1.53× at even d.
 
 ---
@@ -125,6 +137,40 @@ Ours: **no even-digit palindrome lies on the curve at all.**
 **mod 9 (why it is too weak)** — `10 ≡ 1 (mod 9)`, so reversal preserves the digit sum and `q ≡ p (mod 9)` always. It cannot distinguish reversal from any other digit permutation.
 
 **frontier formula** — `log₁₀(n_max) = (d − 0.30103) / 2`. See `density_heuristics.md`.
+
+---
+
+## Theorems A and B
+
+Stated and proven in `curve_families.md` §4. They apply to **any** curve whose membership test can be written
+
+    α·p + β = γ·a²          (a linear in n)
+
+| curve | α | β | γ | a |
+|---|---|---|---|---|
+| ours | 2 | −1 | 1 | 2n+1 |
+| k-family | 2 | −k² | 1 | 2n+k |
+| cuban | 4 | −1 | 3 | 2n+1 |
+| Z[√−2] | 3 | −2 | 1 | 3n+2 |
+| centered k-gon | 8 | k−8 | k | 2n+1 |
+
+**Theorem A — the even-d constraint.** For a converse pair at even d:
+
+    a² + b² ≡ 2β/γ   (mod 11)
+
+Since only `{0,1,3,4,5,9}` are squares mod 11, this pins `p mod 11` to a short list. For our curve it gives `{3,5,6,8}` — 7 of 11 classes eliminated.
+
+**Theorem B — the palindrome corollary.** A palindrome is `b = a`, so:
+
+    a² ≡ β/γ   (mod 11)
+
+An even-digit palindrome can lie on the curve **only if `β/γ` is a square mod 11**. For our curve `β/γ = −1 ≡ 10`, a non-residue, so **no even-digit palindrome lies on our curve at all**.
+
+⚠ **Theorem B is necessary, not sufficient.** "Possible" means *not forbidden*. The centered octagon (k=8) permits even-digit palindromes and has none below 10¹².
+
+⚠ **Both bind even d only.** At odd d the argument collapses to `a² ≡ b²`, which eliminates almost nothing — and both known objects, the d=5 emirp and the d=7 palindrome, live at odd d.
+
+**α, β, γ** — the membership coefficients above. Not to be confused with `a`, `b`, which are the per-point square roots.
 
 ---
 
