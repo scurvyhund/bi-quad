@@ -1,0 +1,407 @@
+<title>Three Lattices, One Construction</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#f5f7f9; --surface:#ffffff; --ink:#16202b; --muted:#68757f;
+  --rule:#dde3e8; --rule-soft:#eaeef2;
+  --sq:#1f6f9e; --tri:#a76b16; --rect:#6f5596;
+  --lattice-dot:#aab6c0; --ring:#c9d3db;
+  --accent:var(--sq);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0e151d; --surface:#151f29; --ink:#e4ebf1; --muted:#8d9aa6;
+    --rule:#25323e; --rule-soft:#1c2732;
+    --sq:#57addb; --tri:#dda44a; --rect:#a289c8;
+    --lattice-dot:#465562; --ring:#31414f;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0e151d; --surface:#151f29; --ink:#e4ebf1; --muted:#8d9aa6;
+  --rule:#25323e; --rule-soft:#1c2732;
+  --sq:#57addb; --tri:#dda44a; --rect:#a289c8;
+  --lattice-dot:#465562; --ring:#31414f;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  font-size:16px; line-height:1.6; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 96px}
+.col{max-width:64ch}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.1rem,5vw,3.2rem);font-weight:600;line-height:1.05;letter-spacing:-.015em}
+h2{font-size:clamp(1.4rem,2.6vw,1.9rem);font-weight:600;line-height:1.15;margin-bottom:.5rem}
+h3{font-size:1.05rem;font-weight:600;margin-bottom:.25rem}
+p{margin:0 0 1rem}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 .6rem
+}
+header{padding:72px 0 40px;border-bottom:1px solid var(--rule)}
+.lede{font-size:1.12rem;color:var(--muted);max-width:62ch;margin-top:1.1rem}
+section{padding:56px 0;border-bottom:1px solid var(--rule-soft)}
+section:last-of-type{border-bottom:0}
+code,.mono{font-family:"IBM Plex Mono",monospace;font-size:.92em}
+code{background:var(--rule-soft);padding:.1em .35em;border-radius:3px}
+.fig{margin:32px 0 12px;overflow-x:auto}
+.fig svg{display:block;margin:0 auto;max-width:100%;height:auto}
+figcaption{
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;color:var(--muted);
+  max-width:70ch;margin:14px auto 0;line-height:1.55
+}
+.trio{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:28px;margin-top:8px}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:20px}
+.card .tag{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.1em;
+  text-transform:uppercase;display:inline-flex;align-items:center;gap:7px;margin-bottom:.5rem
+}
+.swatch{width:9px;height:9px;border-radius:2px;display:inline-block}
+.c-sq{color:var(--sq)} .c-tri{color:var(--tri)} .c-rect{color:var(--rect)}
+.b-sq{background:var(--sq)} .b-tri{background:var(--tri)} .b-rect{background:var(--rect)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;margin:20px 0}
+th,td{text-align:left;padding:9px 14px 9px 0;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+th{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.1em;
+   text-transform:uppercase;color:var(--muted);font-weight:500}
+td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+.note{
+  border-left:2px solid var(--accent);padding:2px 0 2px 18px;margin:26px 0;
+  color:var(--muted);max-width:62ch
+}
+.note strong{color:var(--ink)}
+.kicker{color:var(--ink);font-weight:600}
+/* diagram element classes */
+.lat-dot{fill:var(--lattice-dot)}
+.ring{fill:none;stroke:var(--ring);stroke-width:1}
+.axis{stroke:var(--rule);stroke-width:1}
+.ray{stroke-width:1.6;fill:none;stroke-dasharray:5 4;opacity:.85}
+.hit{stroke:var(--surface);stroke-width:1.5}
+.lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--muted)}
+.lbl-b{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:500}
+.wire{fill:none;stroke:var(--ring);stroke-width:1}
+.wire-strong{fill:none;stroke:var(--muted);stroke-width:1.2}
+.cut{fill:none;stroke:var(--sq);stroke-width:2.2}
+.plane{fill:var(--sq);opacity:.09}
+.plane-edge{fill:none;stroke:var(--sq);stroke-width:1;opacity:.5}
+footer{padding:44px 0 0;color:var(--muted);font-size:.86rem}
+@media (prefers-reduced-motion:no-preference){
+  .fade{animation:f .5s ease both}
+  @keyframes f{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+</style>
+
+<div class="wrap">
+
+<header class="fade">
+  <p class="eyebrow">bi-quad · geometry note · 2026-08-30</p>
+  <h1>Three Lattices,<br>One Construction</h1>
+  <p class="lede">
+    Our curve, the cuban curve, and the <span class="mono">Z[√−2]</span> curve look like three
+    different formulas. Geometrically they are one idea repeated in three
+    different lattices: <strong class="kicker">the lattice points that sit on a ray, at squared
+    distance p from the origin.</strong>
+  </p>
+</header>
+
+<section>
+  <p class="eyebrow">First, a correction</p>
+  <h2>Not a sphere, not a cone — a paraboloid</h2>
+  <div class="col">
+    <p>
+      There is a real 3-D surface here, and it is worth being exact about which one,
+      because the three candidates behave very differently.
+    </p>
+  </div>
+
+  <div class="tw">
+  <table>
+    <tr><th>surface</th><th>equation</th><th>what it is</th></tr>
+    <tr><td class="num">sphere</td><td class="num">x² + y² + z² = r²</td>
+        <td>closed, bounded. Nothing here is bounded — p runs to infinity.</td></tr>
+    <tr><td class="num">cone</td><td class="num">z² = x² + y²</td>
+        <td>z appears <em>squared</em>. Straight sides, a sharp apex.</td></tr>
+    <tr><td class="num"><strong>paraboloid</strong></td><td class="num"><strong>z = x² + y²</strong></td>
+        <td><strong>ours.</strong> z appears to the first power, so the sides curve
+            upward. A bowl, not a funnel.</td></tr>
+  </table>
+  </div>
+
+  <div class="col">
+    <p>
+      The whole curve is one slice of that bowl. Put <code>z = p</code> and the surface
+      <code>z = x² + y²</code> is every pair whose squares sum to p. Now cut it with the
+      vertical plane <code>y = x + 1</code> — the "consecutive" condition. The cut is a
+      parabola, and its equation is exactly our curve.
+    </p>
+  </div>
+
+  <figure class="fig" id="fig-parab"></figure>
+  <figcaption>
+    The bowl <span class="mono">z = x² + y²</span>, cut by the vertical plane
+    <span class="mono">y = x + 1</span>. The cut edge is the parabola
+    <span class="mono">p = 2n² + 2n + 1</span>. Dots mark integer n, giving
+    p = 1, 5, 13, 25. Horizontal rings are level sets
+    <span class="mono">z = p</span> — the circles of the next section.
+  </figcaption>
+
+  <div class="note">
+    <strong>"Conic section" is literal here.</strong> A conic is what you get when a plane
+    cuts a quadric surface. Our curve is a plane cutting a paraboloid. That is not an
+    analogy — it is the definition, and it is why the curve has genus 0 and no group law.
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">The construction</p>
+  <h2>Every form is a circle in its own lattice</h2>
+  <div class="col">
+    <p>
+      Look down on that bowl from above and the level sets are circles. A curve point is a
+      <em>lattice</em> point sitting exactly on one, and on the ray
+      <code>y = x + 1</code>.
+    </p>
+    <p>
+      The three curves differ only in <strong>which lattice</strong> you count on. Each
+      quadratic form is the squared distance in its own ring's natural lattice —
+      verified below to 13 places for every point within radius 6.
+    </p>
+  </div>
+
+  <div class="fig" id="fig-lattices"></div>
+  <figcaption>
+    Grey dots are lattice points; faint rings are circles of radius <span class="mono">√p</span>;
+    the dashed ray is the "consecutive" condition <span class="mono">y = x + 1</span>.
+    Filled dots are curve points — where the ray lands exactly on a lattice point.
+    Same construction, three lattices.
+  </figcaption>
+
+  <div class="trio">
+    <div class="card">
+      <span class="tag c-sq"><i class="swatch b-sq"></i>Z[i] · square</span>
+      <h3>x² + y²</h3>
+      <p class="mono" style="margin:.2rem 0 .6rem">p = 2n² + 2n + 1</p>
+      <p style="margin:0;color:var(--muted);font-size:.92rem">
+        Gaussian integers. The lattice is the ordinary square grid, so the level sets are
+        true circles. Ours. <span class="mono">1, 5, 13, 25, 41, 61</span>
+      </p>
+    </div>
+    <div class="card">
+      <span class="tag c-tri"><i class="swatch b-tri"></i>Z[ω] · triangular</span>
+      <h3>x² + xy + y²</h3>
+      <p class="mono" style="margin:.2rem 0 .6rem">p = 3n² + 3n + 1</p>
+      <p style="margin:0;color:var(--muted);font-size:.92rem">
+        Eisenstein integers. Hexagonal packing. This curve is also
+        <span class="mono">(n+1)³ − n³</span> — the cuban primes.
+        <span class="mono">1, 7, 19, 37, 61, 91</span>
+      </p>
+    </div>
+    <div class="card">
+      <span class="tag c-rect"><i class="swatch b-rect"></i>Z[√−2] · rectangular</span>
+      <h3>x² + 2y²</h3>
+      <p class="mono" style="margin:.2rem 0 .6rem">p = 3n² + 4n + 2</p>
+      <p style="margin:0;color:var(--muted);font-size:.92rem">
+        A grid stretched by <span class="mono">√2</span> vertically. Level sets are circles
+        in that stretched metric.
+        <span class="mono">2, 9, 22, 41, 66, 97</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Why they look like ellipses if you draw them on graph paper.</strong>
+    Plot <span class="mono">x² + xy + y² = p</span> against ordinary square axes and you get an
+    ellipse with axis ratio <span class="mono">√3</span>. That ellipse is an artefact of
+    forcing a triangular lattice onto square paper. In its own lattice it is a circle.
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">The two dials</p>
+  <h2>What each constraint does to the geometry</h2>
+  <div class="col">
+    <p>
+      A curve here is a quadratic form plus a linear condition. Both are geometric, and each
+      does one visible thing. The other two conditions in this project do nothing visible at
+      all — which is the whole point.
+    </p>
+  </div>
+
+  <div class="tw">
+  <table>
+    <tr><th>constraint</th><th>effect on the picture</th><th>geometric?</th></tr>
+    <tr>
+      <td class="num">quadratic form</td>
+      <td>picks <strong>which lattice</strong> you count on — square, triangular, rectangular</td>
+      <td>yes</td>
+    </tr>
+    <tr>
+      <td class="num">linear condition</td>
+      <td>picks <strong>which ray</strong> through the lattice — <span class="mono">y = x+1</span>,
+          <span class="mono">y = x+k</span></td>
+      <td>yes</td>
+    </tr>
+    <tr>
+      <td class="num">primality</td>
+      <td>thins the surviving points, following no visible pattern. Nothing in the picture
+          distinguishes a prime hit from a composite one</td>
+      <td><strong>no</strong></td>
+    </tr>
+    <tr>
+      <td class="num">digit reversal</td>
+      <td>none whatsoever. <span class="mono">rev(12641) = 14621</span> is invisible to
+          distance, angle, or lattice</td>
+      <td><strong>no</strong></td>
+    </tr>
+  </table>
+  </div>
+
+  <div class="col">
+    <p>
+      That table is the answer to "does the geometry constrain the math." The geometry hands
+      you the curve for free — it is a plane cutting a bowl, and every question about the
+      curve <em>as a curve</em> is answered. Then two conditions arrive from outside the
+      geometry entirely and supply all of the difficulty.
+    </p>
+  </div>
+
+  <div class="note">
+    <strong>Which retro-explains three dead ends.</strong> MITM, two-ended digit-DP, and the
+    50-modulus congruence sweep all attacked structure. But the structure is the part that was
+    never hard. Attacks aimed at the curve will keep failing, because the curve is not where
+    the problem lives.
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">The one place they touch</p>
+  <h2>Where base 10 reaches the algebra</h2>
+  <div class="col">
+    <p>
+      Digit reversal has exactly one algebraic handle, and it exists because
+      <code>10 ≡ −1 (mod 11)</code>. Powers of ten then alternate
+      <span class="mono">+1, −1, +1, −1</span>, and reversing a d-digit number becomes a
+      single sign flip:
+    </p>
+    <p class="mono" style="color:var(--accent)">rev(p) ≡ (−1)<sup>d−1</sup> · p&nbsp;&nbsp;(mod 11)</p>
+    <p>
+      At even d that is <code>p + q ≡ 0</code>, which is strong enough to eliminate 7 of the
+      11 residue classes and to rule out even-digit palindromes on most of these curves. At
+      odd d it collapses to <code>a² ≡ b²</code> and says almost nothing.
+    </p>
+    <p>
+      Both objects we actually care about — the emirp
+      <span class="mono">12641 ↔ 14621</span> at d = 5, the palindrome
+      <span class="mono">3187813</span> at d = 7 — sit at odd d, on the toothless side.
+    </p>
+  </div>
+</section>
+
+<footer>
+  Diagrams generated from computed coordinates, not drawn by hand. Companion documents:
+  <span class="mono">curve_geometry.md</span>, <span class="mono">nearby_curves.md</span>,
+  <span class="mono">curve_families.md</span>. Claims verified by
+  <span class="mono">curve_families.py</span>.
+</footer>
+</div>
+
+<script>
+const SVGNS="http://www.w3.org/2000/svg";
+function el(n,a){const e=document.createElementNS(SVGNS,n);for(const k in a)e.setAttribute(k,a[k]);return e;}
+
+/* ---------- Figure 1: paraboloid z = x^2+y^2 cut by y = x+1 ---------- */
+(function(){
+  const W=900,H=470,cx=W*0.47,cy=H*0.80,s=27,zs=1.55;
+  const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:"img",
+    "aria-label":"Paraboloid z = x squared plus y squared, cut by the vertical plane y = x + 1"});
+  const C=Math.cos(Math.PI/7), S=Math.sin(Math.PI/7);
+  const P=(x,y,z)=>[cx+(x-y)*s*C, cy-(x+y)*s*S-z*zs];
+  const path=pts=>pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
+
+  // level rings z = r^2
+  [1,2,3,4,5,6].forEach(r=>{
+    const pts=[];for(let t=0;t<=64;t++){const a=t/64*2*Math.PI;pts.push(P(r*Math.cos(a),r*Math.sin(a),r*r));}
+    svg.appendChild(el("path",{d:path(pts)+"Z",class:"ring"}));
+  });
+  // meridian ribs
+  [0,Math.PI/2,Math.PI,3*Math.PI/2].forEach(a=>{
+    const pts=[];for(let i=0;i<=40;i++){const r=i/40*6;pts.push(P(r*Math.cos(a),r*Math.sin(a),r*r));}
+    svg.appendChild(el("path",{d:path(pts),class:"wire"}));
+  });
+  // the cutting plane y = x + 1, drawn as a quad
+  const t0=-4.2,t1=3.2,zTop=42;
+  const quad=[P(t0,t0+1,0),P(t1,t1+1,0),P(t1,t1+1,zTop),P(t0,t0+1,zTop)];
+  svg.appendChild(el("path",{d:path(quad)+"Z",class:"plane"}));
+  svg.appendChild(el("path",{d:path(quad)+"Z",class:"plane-edge"}));
+  // the cut: z = 2t^2+2t+1
+  const cut=[];for(let i=0;i<=120;i++){const t=t0+(t1-t0)*i/120;cut.push(P(t,t+1,2*t*t+2*t+1));}
+  svg.appendChild(el("path",{d:path(cut),class:"cut"}));
+  // integer n dots
+  [0,1,2,3].forEach(n=>{
+    const p=P(n,n+1,2*n*n+2*n+1);
+    svg.appendChild(el("circle",{cx:p[0],cy:p[1],r:4.2,fill:"var(--sq)",class:"hit"}));
+    const lb=el("text",{x:p[0]+9,y:p[1]+3,class:"lbl-b",fill:"var(--sq)"});
+    lb.textContent=(2*n*n+2*n+1); svg.appendChild(lb);
+  });
+  const cap=el("text",{x:cx+150,y:60,class:"lbl-b",fill:"var(--sq)"});
+  cap.textContent="plane y = x + 1"; svg.appendChild(cap);
+  const cap2=el("text",{x:40,y:H-24,class:"lbl"});
+  cap2.textContent="bowl  z = x² + y²   (rings are level sets z = p)"; svg.appendChild(cap2);
+  document.getElementById("fig-parab").appendChild(svg);
+})();
+
+/* ---------- Figure 2: the three lattices ---------- */
+(function(){
+  const S3=Math.sqrt(3),S2=Math.sqrt(2);
+  const LATS=[
+    {name:"Z[i] · square",       col:"var(--sq)",  poly:"2n²+2n+1",
+     emb:(a,b)=>[a,b],            form:(a,b)=>a*a+b*b},
+    {name:"Z[ω] · triangular",   col:"var(--tri)", poly:"3n²+3n+1",
+     emb:(a,b)=>[a+b/2,b*S3/2],   form:(a,b)=>a*a+a*b+b*b},
+    {name:"Z[√−2] · rectangular",col:"var(--rect)",poly:"3n²+4n+2",
+     emb:(a,b)=>[a,b*S2],         form:(a,b)=>a*a+2*b*b},
+  ];
+  const W=340,H=340,cx=W*0.30,cy=H*0.74,s=30,R=5;
+  const box=document.createElement("div");
+  box.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px";
+  LATS.forEach(L=>{
+    const svg=el("svg",{viewBox:`0 0 ${W} ${H}`,width:W,height:H,role:"img",
+      "aria-label":L.name+" lattice with circles of radius root p and the ray y = x + 1"});
+    const X=(x)=>cx+x*s, Y=(y)=>cy-y*s;
+    // axes
+    svg.appendChild(el("line",{x1:X(-1.6),y1:Y(0),x2:X(8.2),y2:Y(0),class:"axis"}));
+    svg.appendChild(el("line",{x1:X(0),y1:Y(-1.2),x2:X(0),y2:Y(8.6),class:"axis"}));
+    // circles at the curve radii
+    for(let n=0;n<=4;n++){
+      const r=Math.sqrt(L.form(n,n+1));
+      svg.appendChild(el("circle",{cx:X(0),cy:Y(0),r:r*s,class:"ring"}));
+    }
+    // lattice points
+    for(let a=-3;a<=9;a++)for(let b=-2;b<=9;b++){
+      const [ex,ey]=L.emb(a,b);
+      if(ex<-1.7||ex>8.4||ey<-1.3||ey>8.8) continue;
+      svg.appendChild(el("circle",{cx:X(ex),cy:Y(ey),r:1.9,class:"lat-dot"}));
+    }
+    // the ray through (n, n+1)
+    const p0=L.emb(0,1), p1=L.emb(5.4,6.4);
+    svg.appendChild(el("line",{x1:X(p0[0]),y1:Y(p0[1]),x2:X(p1[0]),y2:Y(p1[1]),
+      class:"ray",stroke:L.col}));
+    // curve points
+    for(let n=0;n<=4;n++){
+      const [ex,ey]=L.emb(n,n+1);
+      if(ex>8.4||ey>8.8) continue;
+      svg.appendChild(el("circle",{cx:X(ex),cy:Y(ey),r:4.6,fill:L.col,class:"hit"}));
+      const t=el("text",{x:X(ex)+8,y:Y(ey)-6,class:"lbl-b",fill:L.col});
+      t.textContent=L.form(n,n+1); svg.appendChild(t);
+    }
+    const nm=el("text",{x:14,y:24,class:"lbl-b",fill:L.col}); nm.textContent=L.name;
+    svg.appendChild(nm);
+    const pl=el("text",{x:14,y:40,class:"lbl"}); pl.textContent=L.poly; svg.appendChild(pl);
+    const d=document.createElement("div"); d.className="fig"; d.style.margin="0";
+    d.appendChild(svg); box.appendChild(d);
+  });
+  document.getElementById("fig-lattices").appendChild(box);
+})();
+</script>
