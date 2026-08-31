@@ -7,6 +7,44 @@ Until now the definitions lived scattered across ~20 documents; the fullest sing
 
 ---
 
+## Symbols — the formula variables
+
+Every variable that appears in a formula anywhere in this project.
+Where two engines use a symbol differently, both rows are given.
+
+| sym | meaning | example |
+|---|---|---|
+| `n` | curve index of `p`; `p = n²+(n+1)²` | 12641 → n=79 |
+| `m` | curve index of `q = rev(p)` | 14621 → m=85 |
+| `p` | the curve value under test | 12641 |
+| `q` | `rev(p)`, the digit reversal | 14621 |
+| `a` | `2n+1`, so `a² = 2p−1` | n=79 → a=159 |
+| `b` | `2m+1`, so `b² = 2q−1` | m=85 → b=171 |
+| `d` | decimal digits of `p` | 12641 → d=5 |
+| `k` **sieve** | digits pinned at each end | k=10 → mod 10¹⁰ |
+| `k` **family** | the gap in `n²+(n+k)²` | k=5 → `37 = 1²+6²` |
+| `mod` | sieve modulus, `10^k` | k=6 → 1000000 |
+| `range` | n-values giving a d-digit `p` | see *the cliff* |
+| `r` | residue loop var, `0 ≤ r < mod` | `r % 100000000` |
+| `e` | an *ending*, `p mod 10^k` | last k digits |
+| `t` | split point in abandoned MITM | `n = a·10^t + b` |
+
+### Words used as if defined, but never were
+
+**residue** — a value mod something. In `mod_obstruct.c` it means one candidate `r` in `[0, mod)`, standing for *all* n with `n ≡ r (mod 10^k)`. "Checking 10¹⁰ residues" = testing every such class once.
+
+**residue class** — the whole set `{ r, r+mod, r+2·mod, … }`. The sieve's leverage: one test decides a whole class. This is also why `mod_obstruct` survivors are classes, not points — see *survivor*.
+
+**allowed / excluded residues** — in the mod-11 work, which of `0..10` a curve value may occupy. Even d allows only `p mod 11 ∈ {3,5,6,8}`; the other 7 are excluded.
+
+**saturated** — a d at which *every* residue survives, so the sieve has proved nothing. The opposite of an obstruction. Marked `sat` in the tables; `OBS` marks an obstruction.
+
+**range < mod** — the validity condition: at most one n-value per residue. Once `range ≥ mod` a residue holds 2+ n-values and the old interval method over-counted. See *the cliff*.
+
+**ending** — the last `k` digits of `p`, i.e. `p mod 10^k`. *Valid* endings are the achievable ones not ending in 0 or 5.
+
+---
+
 ## The object
 
 **the curve** — `p = 2n² + 2n + 1 = n² + (n+1)²`.
