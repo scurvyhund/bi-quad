@@ -3,7 +3,7 @@
 Written 2026-08-30, prompted by a good question: *"I picture elliptic curves as orbits of planets on a flat plane. Our curve sitting on its absolutely private curve — is that a good picture?"*
 
 Short answer: the instinct is right that there's a private geometric object here, but the borrowed image comes from the wrong family of curves.
-The correct picture is sharper, and it explains why three years of structural attacks failed.
+The correct picture is sharper, and it explains why the structural attacks of 2026-06-04 all failed.
 
 ---
 
