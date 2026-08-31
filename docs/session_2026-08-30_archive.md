@@ -130,7 +130,15 @@ The `d2base_dev` "unresolved drift" claim from earlier in the session was also w
 2. **`gh` holds `delete_repo`** on the account token; narrowing requires revoke + re-auth.
 3. **GitLab `d2base_dev`** force-push toggle may still be on from the history rewrite.
 4. **Expected-count table for d=3…27** — asked for, then correctly walked back: a density heuristic gives *expected counts*, not predictions, and must not be allowed to masquerade as a theorem. Still worth doing, clearly labelled.
-5. **A second bridge at odd d** — the real prize. §3 of `curve_families.md` argues 11 is the only modulus in which reversal is algebraic, so any new result must come from somewhere other than a modulus.
+5. **Mirror the raw transcript** — deferred 2026-08-30. It is currently
+   local only, at `~/programming/c/conversion/_archive/transcripts/`
+   (1.7 MB gz). It must NOT go into a public repo: it contains Jim's
+   full name, email, and a personal note about his age, work and
+   finances. It carries no credentials (scanned). Destination should be
+   a **private** repo — either a new `session-archives`, or alongside
+   `claude_cmdln_gold` / `python_gold`, both of which are private on all
+   three hosts.
+6. **A second bridge at odd d** — the real prize. §3 of `curve_families.md` argues 11 is the only modulus in which reversal is algebraic, so any new result must come from somewhere other than a modulus.
 
 ---
 
