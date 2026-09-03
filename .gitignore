@@ -63,3 +63,20 @@ docs/doc_txt/
 # Personal correspondence — contains name/email, must not reach the
 # public mirrors (GitLab / GitHub / Codeberg)
 PrimeCurios.txt
+
+# --- Credentials — MUST NEVER reach the public mirrors ---
+# Was untracked but NOT ignored: a `git add -A` would have committed
+# it and pushed a live token to GitLab / GitHub / Codeberg.
+gitlab-token.txt
+*token*.txt
+
+# --- palsplit / palbrute binaries and lock (sources ARE tracked) ---
+palsplit
+palbrute
+palcurve
+palsplit_g2
+palsplit_g1000
+palbrute.lock
+
+# --- Python bytecode ---
+__pycache__/
