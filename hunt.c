@@ -31,7 +31,7 @@
 #include <omp.h>
 #include <gmp.h>
 
-#include "curve_gmp.h"   /* on_curve -- the curve-membership test */
+#include "curve_gmp.h"   /* on_curve, compute_n_bounds */
 
 #define NUM_THREADS  8
 #define BLOCK_SIZE   5000000000L    /* 5 B iters per checkpoint block */
@@ -54,37 +54,6 @@ static const int VALID_NMOD[10] = {1,0,1,0,1,1,0,1,0,1};
  * is dropped, and no even-d palindrome exists to drop. Independent of
  * VALID_NMOD since gcd(10,11) = 1. */
 static const int VALID_NMOD11[11] = {0,1,0,1,1,1,1,1,0,1,0};
-
-/* n_min, n_max for d-digit p = 2n^2+2n+1 */
-static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
-   mpz_t target, sq, check, lo;
-   mpz_inits(target, sq, check, lo, NULL);
-
-   mpz_ui_pow_ui(target, 10, d - 1);
-   mpz_mul_ui(target, target, 2);
-   mpz_sub_ui(target, target, 1);
-   mpz_sqrt(sq, target);
-   mpz_sub_ui(sq, sq, 1);
-   mpz_fdiv_q_ui(n_min, sq, 2);
-   mpz_add_ui(n_min, n_min, 1);
-
-   mpz_ui_pow_ui(lo, 10, d - 1);
-   mpz_mul(check, n_min, n_min);
-   mpz_mul_ui(check, check, 2);
-   mpz_addmul_ui(check, n_min, 2);
-   mpz_add_ui(check, check, 1);
-   if (mpz_cmp(check, lo) < 0)
-      mpz_add_ui(n_min, n_min, 1);
-
-   mpz_ui_pow_ui(target, 10, d);
-   mpz_mul_ui(target, target, 2);
-   mpz_sub_ui(target, target, 1);
-   mpz_sqrt(sq, target);
-   mpz_sub_ui(sq, sq, 1);
-   mpz_fdiv_q_ui(n_max, sq, 2);
-
-   mpz_clears(target, sq, check, lo, NULL);
-}
 
 /* Atomic checkpoint write: write to .tmp then rename over target. */
 static void write_ckpt(const char *path, long blk_end,

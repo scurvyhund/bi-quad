@@ -44,6 +44,8 @@
 #include <omp.h>
 #include <gmp.h>
 
+#include "curve_gmp.h"   /* compute_n_bounds */
+
 #define DEFAULT_MAX_D  50
 #define DEFAULT_MAX_K   6
 #define NUM_THREADS     8
@@ -137,47 +139,6 @@ static bool sorted_has_value_in_range(const long *arr, long len,
 }
 
 // Compute n_min, n_max for d-digit numbers of the form 2n²+2n+1. 
-static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
-   mpz_t target, sq;
-   mpz_init(target);
-   mpz_init(sq);
-
-   // n_min: solve 2n²+2n+1 >= 10^(d-1) 
-   mpz_ui_pow_ui(target, 10, d - 1);
-   mpz_mul_ui(target, target, 2);
-   mpz_sub_ui(target, target, 1);
-   mpz_sqrt(sq, target);
-   mpz_sub_ui(sq, sq, 1);
-   mpz_fdiv_q_ui(n_min, sq, 2);
-   mpz_add_ui(n_min, n_min, 1);
-
-   // Verify n_min produces d digits (guards against sqrt rounding) 
-   mpz_t check, lo_bound;
-   mpz_init(check);
-   mpz_init(lo_bound);
-   mpz_ui_pow_ui(lo_bound, 10, d - 1);
-   mpz_mul(check, n_min, n_min);
-   mpz_mul_ui(check, check, 2);
-   mpz_addmul_ui(check, n_min, 2);
-   mpz_add_ui(check, check, 1);
-   
-   if (mpz_cmp(check, lo_bound) < 0)
-      mpz_add_ui(n_min, n_min, 1);
-   
-   mpz_clear(check);
-   mpz_clear(lo_bound);
-
-   // n_max: solve 2n²+2n+1 < 10^d 
-   mpz_ui_pow_ui(target, 10, d);
-   mpz_mul_ui(target, target, 2);
-   mpz_sub_ui(target, target, 1);
-   mpz_sqrt(sq, target);
-   mpz_sub_ui(sq, sq, 1);
-   mpz_fdiv_q_ui(n_max, sq, 2);
-
-   mpz_clear(target);
-   mpz_clear(sq);
-}
 
 /* 
  * Compute first-k-digit prefix of p = 2n²+2n+1 for given n.

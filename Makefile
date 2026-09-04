@@ -18,10 +18,10 @@ TESTS    = test_curve test_curve_gmp
 
 all: $(TARGET)
 
-$(TARGET): mod_obstruct.c
+$(TARGET): mod_obstruct.c curve_gmp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
 
-mod_debug: mod_obstruct.c
+mod_debug: mod_obstruct.c curve_gmp.h
 	$(CC) $(DBG) $(CFLAGS) -o $@ $< $(LDLIBS)
 test: $(TARGET)
 	./$(TARGET) 30 5

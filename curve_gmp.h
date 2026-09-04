@@ -74,4 +74,81 @@ static inline void reverse_str(const char *src, char *dst, int len) {
    dst[len] = '\0';
 }
 
+/* p = 2n^2 + 2n + 1, on mpz. */
+static inline void curve_mpz(mpz_t p, const mpz_t n) {
+   mpz_mul(p, n, n);
+   mpz_mul_ui(p, p, 2);
+   mpz_addmul_ui(p, n, 2);
+   mpz_add_ui(p, p, 1);
+}
+
+/* The n-range whose curve values have exactly d decimal digits:
+ * n_min = least n with curve(n) >= 10^(d-1),
+ * n_max = greatest n with curve(n) <  10^d.
+ *
+ * SELF-CORRECTING.  The sqrt only SEEDS the search; the bounds are
+ * then walked to their true edges by evaluating curve() directly, so
+ * the answer does not depend on the seed being right.  This costs
+ * nothing -- it is called once per digit-length, never in a hot loop.
+ *
+ * The three copies this replaces (hunt.c, mod_obstruct.c and its
+ * _bkup) instead computed n_min = floor((sqrt(2*10^(d-1) - 1) - 1)/2)
+ * + 1 and defended it with a comment reading "guards against sqrt
+ * rounding".  There is no sqrt rounding to guard against: mpz_sqrt is
+ * exact integer arithmetic.  Measured over d = 1..400 that guard
+ * fired zero times, and the two live copies agreed with each other at
+ * every d -- so this change is behaviour-preserving everywhere except
+ * d = 1, where the unconditional "+1" pushed n_min to 1 and silently
+ * dropped n = 0 (p = 1, which is genuinely on the curve).
+ *
+ * That precise failure has bitten this project before: check_d7.c
+ * records an n_min hardcoded to 710 behind a guard that could never
+ * fire, which dropped the true first 7-digit n = 707 and its two
+ * successors.  Walking to the edge removes the whole class. */
+static inline void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
+   mpz_t lo, hi, p, t;
+   mpz_inits(lo, hi, p, t, NULL);
+   mpz_ui_pow_ui(lo, 10, (unsigned long)(d - 1));
+   mpz_ui_pow_ui(hi, 10, (unsigned long)d);
+
+   /* seed n ~ sqrt(p/2), deliberately biased low, then walk up */
+   mpz_mul_ui(t, lo, 2);
+   mpz_sqrt(t, t);
+   mpz_fdiv_q_ui(n_min, t, 2);
+   if (mpz_cmp_ui(n_min, 2) > 0) mpz_sub_ui(n_min, n_min, 2);
+   else mpz_set_ui(n_min, 0);
+   for (;;) {
+      curve_mpz(p, n_min);
+      if (mpz_cmp(p, lo) >= 0) break;
+      mpz_add_ui(n_min, n_min, 1);
+   }
+   for (;;) {                      /* and back down to the true edge */
+      if (mpz_sgn(n_min) == 0) break;
+      mpz_sub_ui(t, n_min, 1);
+      curve_mpz(p, t);
+      if (mpz_cmp(p, lo) < 0) break;
+      mpz_set(n_min, t);
+   }
+
+   /* seed biased high, then walk down */
+   mpz_mul_ui(t, hi, 2);
+   mpz_sqrt(t, t);
+   mpz_fdiv_q_ui(n_max, t, 2);
+   mpz_add_ui(n_max, n_max, 2);
+   for (;;) {
+      curve_mpz(p, n_max);
+      if (mpz_cmp(p, hi) < 0) break;
+      if (mpz_sgn(n_max) == 0) break;
+      mpz_sub_ui(n_max, n_max, 1);
+   }
+   for (;;) {
+      mpz_add_ui(t, n_max, 1);
+      curve_mpz(p, t);
+      if (mpz_cmp(p, hi) >= 0) break;
+      mpz_set(n_max, t);
+   }
+
+   mpz_clears(lo, hi, p, t, NULL);
+}
+
 #endif /* BQ_CURVE_GMP_H */

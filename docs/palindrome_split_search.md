@@ -310,9 +310,16 @@ isqrt cannot manufacture agreement between the two tools.
 
 The extraction was verified output-neutral: the full regression matrix
 (23 palsplit configs × 2 div-5 modes, 8 palcurve curves, palbrute at
-d = 13 and 15) is byte-identical to the pre-extraction binaries apart
-from timing jitter, and `docs/curve_palindromes.txt` regenerates
-identically — all 443 palindromes on all 13 curves. The boundaries were
+d = 13 and 15) matches the pre-extraction binaries exactly, and
+`docs/curve_palindromes.txt` regenerates identically — all 443
+palindromes on all 13 curves.
+
+*(Correction, same day: this was first reported as "byte-identical
+apart from timing jitter". `palbrute` prints from an OpenMP critical
+section, so its line ORDER varies run to run — three runs of one
+unmodified binary gave two distinct hashes. The harness now sorts that
+section, and the match is confirmed with `cmp`. The values and n were
+always identical; only the claim about byte-order was wrong.)* The boundaries were
 checked separately, since the matrix does not reach them: `palsplit` at
 d = 35 and d = 37 (the published frontier) and `palcurve` at its
 d = 33 cap. Valgrind is clean at the configs tested (`palbrute` d = 13,
@@ -418,10 +425,78 @@ checkpoint file is correctly deleted on clean completion each time.
 
 Valgrind clean on all five tools and both test binaries.
 
-**Still duplicated:** `compute_n_bounds` ×3 (`hunt.c`, `mod_obstruct.c`,
-`mod_obstruct_bkup.c`) — same algorithm, three spellings. Not touched
-here: `mod_obstruct` is the Makefile's default target and the project's
-workhorse, so it wants its own before/after capture.
+### `compute_n_bounds` — and a guard that was defending nothing
+
+The third duplication was `compute_n_bounds`, the function that turns a
+digit-length into the n-range to enumerate:
+
+    n_min = least    n with curve(n) >= 10^(d-1)
+    n_max = greatest n with curve(n) <  10^d
+
+It is the GMP twin of `n_at` in `curve.h`, and it is where the
+152,896,119,631,324 figure for the d = 29 sweep comes from. Three
+copies: `hunt.c`, `mod_obstruct.c`, and `mod_obstruct_bkup.c`.
+
+All three computed `n_min = floor((sqrt(2·10^(d-1) − 1) − 1)/2) + 1`
+and then defended it with a re-check commented as guarding "against
+sqrt rounding". **There is no sqrt rounding to guard against** —
+`mpz_sqrt` is exact integer arithmetic, not floating point. This is
+worth stating plainly because it looks like the `palsplit` band-edge
+bug of §4 and is not: there the root came from `sqrtl` on `long
+double`, where the error was real and the margin turned out to be
+~1.3×. Here the premise is simply false. Measured over d = 1…400 the
+guard fired **zero** times, and the two live copies agreed with each
+other at every d.
+
+The asymmetry was the tell: `n_min` got a guard, `n_max` never did. If
+the root could really be off, both would need one.
+
+**Replaced with a self-correcting walk** rather than deleted. The sqrt
+now only *seeds* the search; the bounds are then walked to their true
+edges by evaluating `curve()` directly, so the answer no longer depends
+on the seed at all. That is what `palbrute` and `palhunt_gmp` already
+do, and it costs nothing — the function is called once per
+digit-length, never in a hot loop.
+
+**One behaviour change, at d = 1.** The unconditional `+ 1` pushed
+`n_min` to 1, dropping `n = 0` → `p = 1`, which is genuinely on the
+curve (`curve(0) = 0² + 1² = 1`) and genuinely a palindrome. `hunt 1 1`
+now reports `range=2, survivors(raw)=1, palindromes=1` where it
+reported zeros, and prints `palindrome n=0 p=1`. Nothing downstream
+moves: 1 is not prime, `hunt` defaults to d = 13, and `mod_obstruct`
+starts at `d = k+1 ≥ 4` so it never sees d = 1 at all.
+
+That precise failure has bitten this project before. `check_d7.c`
+carries a note about an `n_min` hardcoded to 710 behind a guard that
+could never fire, which silently dropped the true first 7-digit
+`n = 707` and its two successors. Walking to the edge removes the whole
+class of error, which is why the guard was replaced rather than simply
+deleted.
+
+`test_curve_gmp.c` checks the invariant directly for d = 1…400 —
+`curve(n_min)` and `curve(n_max)` have exactly d digits, `curve(n_min−1)`
+falls short, `curve(n_max+1)` overshoots — rather than comparing
+against a second implementation of the same formula.
+
+**Verification.** `mod_obstruct` at `12 3` and `20 4`, fresh, resumed
+from a handcrafted checkpoint, and with explicit `min_k`/`min_d`:
+identical. `hunt` d = 2…15: identical. The only diff in the whole
+capture is the five d = 1 lines above.
+
+**A harness bug found while checking this.** `diff` is aliased to
+`diff -Ety` in this environment, and the alias is live in
+non-interactive shells. Side-by-side output has no `<`/`>` prefixes, so
+`diff | grep -c '^[<>]'` reports **zero changes for files that differ**.
+Three "identical" results in this session's earlier work were produced
+that way and had to be re-checked; two held, one turned out to be the
+`palbrute` ordering noted above. Use `cmp -s`, or `diff -q`, or
+`/usr/bin/diff` — never a grep over aliased `diff` output.
+
+**Still duplicated:** `mod_obstruct_bkup.c` keeps its own copies of
+`compute_n_bounds` and five residue helpers. It is a backup file, not a
+build target, and was deliberately left alone. `palhunt_gmp.c` and
+`palhunt_opt.c` still share `isqrt128`, `ipow10`, `curve`, `is_pal` and
+`to_mpz` between them.
 
 ---
 

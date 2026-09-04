@@ -153,6 +153,53 @@ int main(void) {
       mpz_clear(m2);
    }
 
+   /* compute_n_bounds: check the INVARIANT directly rather than
+    * against another implementation.  n_min must be the first index
+    * whose curve value has d digits and n_max the last, so the
+    * neighbours just outside must fall in the adjacent decades. */
+   printf("compute_n_bounds: edges are exact, d = 1..400\n");
+   {
+      mpz_t nmin, nmax, p, lo, hi, t;
+      mpz_inits(nmin, nmax, p, lo, hi, t, NULL);
+      for (int d = 1; d <= 400; d++) {
+         compute_n_bounds(d, nmin, nmax);
+         mpz_ui_pow_ui(lo, 10, (unsigned long)(d - 1));
+         mpz_ui_pow_ui(hi, 10, (unsigned long)d);
+
+         curve_mpz(p, nmin);
+         if (mpz_cmp(p, lo) < 0 || mpz_cmp(p, hi) >= 0) {
+            printf("  FAIL d=%d: curve(n_min) not d digits\n", d);
+            fails++;
+         }
+         if (mpz_sgn(nmin) > 0) {          /* n_min-1 must fall short */
+            mpz_sub_ui(t, nmin, 1);
+            curve_mpz(p, t);
+            if (mpz_cmp(p, lo) >= 0) {
+               printf("  FAIL d=%d: n_min is not the first\n", d);
+               fails++;
+            }
+         }
+         curve_mpz(p, nmax);
+         if (mpz_cmp(p, lo) < 0 || mpz_cmp(p, hi) >= 0) {
+            printf("  FAIL d=%d: curve(n_max) not d digits\n", d);
+            fails++;
+         }
+         mpz_add_ui(t, nmax, 1);           /* n_max+1 must overshoot */
+         curve_mpz(p, t);
+         if (mpz_cmp(p, hi) < 0) {
+            printf("  FAIL d=%d: n_max is not the last\n", d);
+            fails++;
+         }
+      }
+      /* d=1 is the case the old "+1" got wrong: curve(0) = 1 */
+      compute_n_bounds(1, nmin, nmax);
+      if (mpz_sgn(nmin) != 0) {
+         printf("  FAIL d=1: n_min should be 0 (curve(0) = 1)\n");
+         fails++;
+      }
+      mpz_clears(nmin, nmax, p, lo, hi, t, NULL);
+   }
+
    printf("reverse_str\n");
    {
       char out[32];
