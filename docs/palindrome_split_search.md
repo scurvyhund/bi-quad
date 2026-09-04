@@ -234,7 +234,15 @@ Values and n match in every case. **This is the first independent corroboration 
 
 Note d = 19: all three are div-5 (`5227371841481737225`, `5649436330336349465`, `5816694029204966185`), so production mode correctly reports 0. **The comparison is only meaningful with `--keep5` on.**
 
-Still outstanding: d = 29..37 have no brute corroboration. A full d = 29 sweep is 152,896,119,631,324 n-values, ~9.3 days at the measured rate — the two known palindromes sit at 1.96% and 10.33% of that range, so a partial run from the start gives both a positive control and a large must-be-empty region.
+Still outstanding: d = 29..37 have no brute corroboration. A full d = 29 sweep is 152,896,119,631,324 n-values, **~25 days** — the two known palindromes sit at 1.96% and 10.33% of that range, so a partial run from the start gives both a positive control and a large must-be-empty region. The 37.6% partial (n = 70710678118655..128166678118655) covering both is **~9.5 days**.
+
+*(Corrected 2026-09-03: this section first said ~9.3 days for the full sweep. That came from applying a rate measured at low d to d = 29, and `palbrute`'s throughput is strongly d-dependent — the per-n cost rises with the magnitude of p:*
+
+| d | 19 | 23 | 25 | 29 | 35 |
+|---|---|---|---|---|---|
+| M n/s | 255 | 99 | 103 | 72 | 68 |
+
+*Measured on 8 threads. The figure also decays under sustained load — the d = 29 cumulative average fell from 76 to 72 M n/s over 90 seconds as Tctl reached 92 °C, so the instantaneous steady-state rate is nearer 68. **Estimate any future run at the rate for its own d, not a rate carried over from a shorter one.** For reference, d = 25 is ~1.53×10^12 n-values, 4–6 hours.)*
 
 > **Therefore: 3187813 remains the largest prime palindrome on the curve through d = 37.**
 > The 1997 conjecture is now confirmed 30 digits past where it was first found, up from 20.
