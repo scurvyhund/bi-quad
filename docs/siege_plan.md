@@ -10,7 +10,12 @@ Status key: **[ ]** not started · **[~]** in progress · **[x]** done
 
 ## Tier 0 — must happen before anything is published
 
-**[~] 1. Finish the d = 25 brute** — running, ~2 h left.
+**[x] 1. d = 25 brute — DONE 2026-09-03.** `found=5
+checked=1528961196313 time=7184.1s` (2.0 h). All five values and indices
+match a prediction registered before the run reached them; full range
+swept; clean exit. `palbrute` is now a **validated instrument** at
+d = 25 against ground truth established three other ways, which was the
+whole point — it is the precondition for trusting it at d = 29.
 Fourth independent line at d = 25 (`hunt_noopt` + qs factorisations,
 `palsplit`, now `palbrute`). Its real job is a **positive control for
 `palbrute` itself** before that tool is trusted with a multi-day d = 29
@@ -38,10 +43,10 @@ optional hygiene, not incident response** — skipped deliberately.
 Optional follow-up: a pre-commit hook refusing `glpat-`/`ghp_`/`gho_`,
 which would also catch the file under a different name.
 
-**[ ] 4. Push.** Six commits local: `c76b726`, `20300fb`, `5952ed8`,
-`2d1948a`, `06a584d`, `5c08375`. Do (2) first.
+**[x] 4. Push — DONE 2026-09-03.** 11 commits, `8b6adac -> 1a7727a`,
+verified landed on origin / github / codeberg.
 
-**[ ] 5. `STATE_OF_THE_SEARCH.md` is stale** — still reads "Status
+**[x] 5. `STATE_OF_THE_SEARCH.md` — DONE 2026-09-03 (`1a7727a`).** Was — still reads "Status
 (2026-07-05) … Search complete", palindromes "through d = 27". Now
 contradicted by the d = 37 frontier. It is the capstone doc, so it
 wants Jim's hand, not a unilateral edit.
