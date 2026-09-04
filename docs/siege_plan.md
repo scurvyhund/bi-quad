@@ -28,10 +28,15 @@ chance of a hit, which is a real search, not a formality. Keep §2 and
 §3 unchanged; they are large-sample and stand.
 *Cost: an hour. Blocking for any push.*
 
-**[ ] 3. Rotate the GitLab token.** `gitlab-token.txt` was untracked
-*and* unignored — one `git add -A` from three public mirrors. Now
-covered by `.gitignore`, but whether it ever entered history before
-2026-09-03 cannot be determined from here.
+**[x] 3. GitLab token — CHECKED, never exposed. 2026-09-03.**
+`gitlab-token.txt` was untracked *and* unignored, so a `git add -A`
+would have committed it. It never happened: the literal token string
+appears in none of the 122 commits, the file was never tracked, and no
+token-shaped filename was ever added. It is now gitignored, and no
+untracked-and-unignored file remains in the tree. **Rotation is
+optional hygiene, not incident response** — skipped deliberately.
+Optional follow-up: a pre-commit hook refusing `glpat-`/`ghp_`/`gho_`,
+which would also catch the file under a different name.
 
 **[ ] 4. Push.** Six commits local: `c76b726`, `20300fb`, `5952ed8`,
 `2d1948a`, `06a584d`, `5c08375`. Do (2) first.

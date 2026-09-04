@@ -5,9 +5,12 @@
 > the search stands, what is *proven*, what is *believed*, and why it stops
 > where it stops.
 >
-> **Status (2026-07-05):** emirps brute-confirmed **through d = 27**; prime
-> palindromes brute-confirmed **through d = 27**. Both frontiers now coincide at
-> d = 27 — the earlier 26-vs-27 mismatch is closed. Search complete.
+> **Status (2026-09-03):** emirps brute-confirmed **through d = 27**
+> (unchanged since 2026-07-05). Prime palindromes now searched **through
+> d = 37**, with the multi-tool verified floor at **d = 25**. The two
+> objects no longer share a frontier — or a search cost. See §4: the
+> ~10^(d/2) wall still stands for emirps, and has been broken for
+> palindromes.
 
 ---
 
@@ -69,34 +72,56 @@ except the d = 5 emirp itself. True obstructions (no survivor of any kind): d =
 > prose was wrong, not the engines. Corrected 2026-06-05. The tools were
 > sound throughout.
 
-### Prime palindromes: four, through d = 27
+### Prime palindromes: four, through d = 37
 
-The **only** prime palindromes on the curve through **27 digits** are
-**5, 181, 313, 3187813** — all ≤ 7 digits. Confirmed by `palhunt_gmp` (every n,
-GMP-certified): `found = 0` for d = 8…27 (even d are trivially 0 — divisible by
-11 — so the genuine tests are the odd d = 9, 11, …, 27, all empty). d = 27
-cleared a range of 15,289,611,963,133 n-values in ~22.3 h. **Independently
-corroborated at d = 27 by the emirp brute `hunt.c`**, which flagged exactly 3
-palindromic curve-values there — all three factored composite by quadratic
-sieve, so `found = 0` now stands from two unrelated tools. The conjecture (Jim,
-since ~1997):
+The **only** prime palindromes on the curve through **37 digits** are
+**5, 181, 313, 3187813** — all ≤ 7 digits. Even d are trivially 0 (divisible by
+11), so the genuine tests are the odd d = 9, 11, …, 37, all empty.
+
+Through d = 27 this was established by `palhunt_gmp` (every n, GMP-certified),
+with d = 27 clearing 15,289,611,963,133 n-values in ~22.3 h, and independently
+corroborated by the emirp brute `hunt.c`, which flagged exactly 3 palindromic
+curve-values there — all three factored composite by quadratic sieve.
+
+From d = 29 to d = 37 the frontier was moved by `palsplit` (2026-09-03), which
+searches palindromes in **O(10^(d/4))** rather than O(10^(d/2)) — see §4. It
+reproduces every earlier ground-truth set exactly, fills in d = 17, 19 and 23
+(which had never been checked by anything), and reports the new digit-lengths
+as: d=29: 2 palindromes, d=31: 3, d=33: 1, d=35: 4, d=37: 0 — **all
+composite, every one with a Miller–Rabin witness, so compositeness is proven
+rather than probabilistic.** The whole sweep to d = 37 costs about 30 seconds;
+d = 27 alone takes 0.12 s against `palhunt_gmp`'s 22.3 h.
+
+The conjecture (Jim, since ~1997):
 
 > **3187813 is the largest prime palindrome on the curve.**
 
-Now confirmed 20 digits past where it was first found.
+Now confirmed 30 digits past where it was first found — but see §3 for how far
+that is *corroborated* as opposed to searched.
 
 ---
 
 ## 3. What is proven vs. what is believed (the honesty line)
 
-- **Brute-verified (two independent tools):** emirps and palindromes both to
-  d = 27 — `hunt.c` (`EMIRPS = 0`) and `palhunt_gmp` (`found = 0`). This is the
-  hard floor of the result.
-- **Rests on `cvpipe`'s own logs (not yet brute-verified):** anything beyond the
-  brute frontier. The fast pipeline ran further (a verified d = 24 run exists
-  and cross-checks the brute tools), but d = 27 is the brute-force ceiling for
-  both objects. The stopping point sits exactly at the brute-verified floor;
-  nothing is promoted beyond that.
+The frontier moved ten digits in 2026-09; the *verified floor* moved two. Those
+are different numbers and the distinction matters more than the headline.
+
+- **Emirps — brute-verified to d = 27.** `hunt.c` (`EMIRPS = 0`), every n,
+  GMP-exact. Unchanged.
+- **Palindromes — multi-tool verified to d = 25.** Four independent lines agree
+  on the complete palindrome set at d = 25: `hunt_noopt` (2026-07-06, with
+  quadratic-sieve factorisations as self-checking certificates), `palsplit`,
+  and an exhaustive `palbrute` sweep (2026-09-03). `palbrute` shares no logic
+  with `palsplit` — different palindrome predicate, different search strategy —
+  which is the point of it. d = 13…23 likewise agree between `palsplit` and
+  `palbrute`.
+- **Palindromes — d = 29…37 rests on `palsplit` alone.** Two independent split
+  widths `t` agree (correctness is t-independent, so this is a real
+  cross-check, not a repeat), and the compositeness of every candidate is
+  proven by MR witness. But no second *tool* has swept that range. A d = 29
+  brute is ~4 days and is the outstanding item.
+- **Rests on `cvpipe`'s own logs:** anything beyond the brute frontier on the
+  emirp side. A verified d = 24 run exists and cross-checks the brute tools.
 
 ---
 
@@ -105,9 +130,20 @@ Now confirmed 20 digits past where it was first found.
 Rigorously ruled out by measurement (see
 [`structural_attacks_2026-06-04.md`](structural_attacks_2026-06-04.md)):
 
-- **No faster search.** Meet-in-the-middle gives no √-speedup — the
+- **No faster EMIRP search.** Meet-in-the-middle gives no √-speedup — the
   digit-reversal of a quadratic entangles the middle digits irreducibly. A
-  two-ended DP is ~brute. Search is ~10^(d/2)-bound.
+  two-ended DP is ~brute. The emirp search is ~10^(d/2)-bound. Re-confirmed
+  2026-09-03: the head and tail of `p` are *independent* choices, so splitting
+  at width `t` costs `10^(2t) · 10^(d/2−2t) = 10^(d/2)` for **every** `t` —
+  the `t` cancels and there is nothing to optimise.
+- **This does NOT hold for palindromes, and no longer stands unqualified.**
+  A palindrome's head is *determined* by its tail, which is exactly the
+  independence the emirp case lacks. Enumerating `r = n mod 10^t` therefore
+  fixes both ends of `p` at once, giving **O(10^(d/4))** — balanced at
+  `t ≈ d/4`. This is `palsplit` (2026-09-03), and it moved the palindrome
+  frontier from d = 27 to d = 37 in about 30 seconds of compute. The claim
+  above was written when both objects shared one bound; they no longer do.
+  See [`palindrome_split_search.md`](palindrome_split_search.md).
 - **No congruence proof.** A sweep of 50 base-aligned / 2-power / 5-power moduli
   found **zero** obstructions: the real obstructions are **non-congruential**
   (sporadic). A non-existence theorem, if one exists, needs new mathematics.
@@ -133,25 +169,43 @@ A coin-flip density argument:
 The single extra primality condition (both ends prime *and* on-curve, vs. the
 palindrome's one end) is what tips emirps from divergent to convergent.
 
+`C′` has since been bounded and the model tested against 13 curves of the same
+family — see [`density_cross_curve.md`](density_cross_curve.md). For this curve
+`C′ ≈ 1.9–3.3`. The raw-palindrome density is confirmed across all 13 curves to
+4%, each curve's own last-digit signature predicting its own constant. Two
+things follow that bear on §6 and §7. The silence after 3187813 is
+**statistically ordinary** — 3 prime palindromes observed on this curve against
+4.5 predicted, while twelve siblings range from none at all (k=7, k=13) to
+d = 31 (k=19); whatever makes 3187813 interesting, it is not that this curve
+behaves unusually. And the reachable frontier is a **real bet**: d = 29…51
+carries a 44–64% chance of an actual hit.
+
 ---
 
-## 6. Why the search stops here
+## 6. Where each search stops, and why
 
-This is a **resource boundary, not a mathematical one.** Each additional digit
-is ~3.2× the compute of the last; the heuristic says the expected yield beyond
-the known results is ≈ 0 (emirps) and the palindrome conjecture has held 20
-digits deep. Burning weeks of CPU per digit for a near-certain null is not where
-the interest lives. So the final frontiers — now aligned at the same digit —
-are:
+Both boundaries are **resource boundaries, not mathematical ones** — but they
+are now different boundaries, for different reasons.
 
-- **Emirps: d = 27** (done) — then stop.
-- **Palindromes: d = 27** (done) — then stop.
+- **Emirps: d = 27.** Each additional digit is ~3.2× the compute of the last
+  and the search is ~10^(d/2)-bound with no known way around it (§4). The
+  heuristic expects a total of ≈ 1 emirp across all d, and we have it. Burning
+  weeks of CPU per digit for a near-certain null is not where the interest
+  lives. The d = 27 run was the deliberate gap-closing pass; the emirp side
+  stands there.
+- **Palindromes: d = 37, and this is no longer where the economics say stop.**
+  `palsplit` cut the exponent in half, so d = 37 costs seconds rather than the
+  weeks the old bound implied. The current ceiling is **integer width, not
+  compute**: `p < 10^37` keeps `2p` inside a `u128`, and d = 37 is the last odd
+  d whose `n` fits an `int64_t`. A 256-bit hot loop reaches d ≈ 51, where §5
+  puts the odds of an actual hit at 25–40%.
 
-The emirp side was originally to stop at d = 26; the d = 27 run was the
-deliberate gap-closing pass so both objects share one honest frontier. The
-capstone rests on the brute-verified floor plus the convergent heuristic. No
-overclaim of a proof that doesn't exist; no pretense that the wall is anything
-but a wall.
+So the honest statement is no longer "search complete". It is: the emirp side
+is parked at a wall we cannot see past, and the palindrome side has a frontier
+that moved and a verified floor that has not yet caught up to it. The capstone
+rests on the multi-tool verified floor (§3) plus the heuristic. No overclaim of
+a proof that doesn't exist; no pretense that the emirp wall is anything but a
+wall.
 
 ---
 
@@ -167,17 +221,22 @@ reopens:**
   (The 2026 Zig re-tooling experiment,
   [`zig_experiment_2026-06-06.md`](zig_experiment_2026-06-06.md), is one small
   example of keeping the engine sharp.)
-- **What to rebuild:** `hunt.c` (emirps, the ground truth), `palhunt_gmp.c`
-  (palindromes past the 64-bit wall), `mod_obstruct.c` (the sieve). Build +
-  sanity steps are in [`runbook.txt`](runbook.txt). Sanity check first (d = 5
+- **What to rebuild:** `hunt.c` (emirps, the ground truth), `palsplit.c`
+  (palindromes, O(10^(d/4)) — supersedes `palhunt_gmp.c`), `palbrute.c` (the
+  independent palindrome cross-check), `mod_obstruct.c` (the sieve). The shared
+  primitives live in `curve.h` (u128 side) and `curve_gmp.h` (GMP side); run
+  `make tests` after touching either. Build + sanity steps are in
+  [`runbook.txt`](runbook.txt). Sanity check first (d = 5
   must report the emirp; d = 3/7 must report 181/313/3187813). Note: `hunt.c`
   contains a **~35% speedup** via the n mod 10 skip optimization (added
   2026-06-29) — see [`skip_optimization.md`](skip_optimization.md) for the math,
   full history (the same table existed in the 2010 original code and was lost in
   the GMP refactor), and the mixed-binary footnote for the d=27 run.
-- **Where to resume:** both frontiers at **d = 27**. Next genuine tests: the
-  next emirp digit is **d = 28**; the next genuine palindrome digit is
-  **d = 29** (d = 28 is even → trivially 0 by the ÷11 rule).
+- **Where to resume:** the frontiers have separated. Emirps sit at **d = 27**
+  and the next genuine test is **d = 28**. Palindromes are searched to
+  **d = 37**; the next genuine digit is **d = 39**, which needs a 256-bit hot
+  loop. The most valuable pending run is not at the frontier at all — it is a
+  **d = 29 brute** (~4 days) to bring the verified floor up behind `palsplit`.
 - **What's still open:** does a second bi-quadratic emirp exist at any d ≥ 28?
   Is 3187813 truly the last prime palindrome? Both are *unproven* — only
   unobserved.
