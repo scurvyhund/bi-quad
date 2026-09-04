@@ -78,6 +78,13 @@ palsplit_g2
 palsplit_g1000
 palbrute.lock
 test_curve
+test_curve_gmp
+check_d5
+check_d7
+check_d9
+check_survivors
+check_d21
+hunt
 
 # --- Python bytecode ---
 __pycache__/

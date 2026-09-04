@@ -11,37 +11,7 @@
 #include <string.h>
 #include <gmp.h>
 
-/* Reverse a decimal string */
-static void reverse_str(const char *src, char *dst, int len)
-{
-   for (int i = 0; i < len; i++)
-      dst[i] = src[len - 1 - i];
-   dst[len] = '\0';
-}
-
-/* Check if q = 2m²+2m+1 for some integer m >= 0.
- * Requires 2q-1 to be a perfect square, then m = (sqrt(2q-1) - 1) / 2. */
-static bool is_consec_sq(mpz_t q, mpz_t m_out)
-{
-   mpz_t disc;
-   mpz_init(disc);
-
-   mpz_mul_ui(disc, q, 2);
-   mpz_sub_ui(disc, disc, 1);
-
-   if (mpz_perfect_square_p(disc)) {
-      mpz_sqrt(disc, disc);
-      mpz_sub_ui(disc, disc, 1);
-      if (mpz_divisible_ui_p(disc, 2)) {
-         mpz_divexact_ui(m_out, disc, 2);
-         mpz_clear(disc);
-         return true;
-      }
-   }
-
-   mpz_clear(disc);
-   return false;
-}
+#include "curve_gmp.h"   /* on_curve / is_consec_sq, reverse_str */
 
 int main(void)
 {

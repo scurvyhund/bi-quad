@@ -1,12 +1,15 @@
 /* check_survivors.c — Enumerate all bi-quadratic emirp candidates
  * for a given digit count d.
  *
- * NOTE (2026-06-05): this counts NON-PALINDROME converse candidates — it skips
- * palindromes (p==rev(p)) at the strcmp below. That is the right metric for emirp
- * hunting, but it differs from hunt.c's "survivors(raw)", which ALSO counts the
- * palindromic case. e.g. d=13: this prints 2 (non-pal); hunt raw = 4 (= 2 + 2
- * palindromes). BOTH are correct. Only real limit: 64-bit `long` overflows at
- * d>=19 — use hunt.c (GMP) past there. See docs/session_2026-06-05_emirp_d5_correction.md.
+ * NOTE (2026-06-05): this counts NON-PALINDROME converse candidates
+ * — it skips palindromes (p==rev(p)) at the strcmp below. That is the
+ * right metric for emirp hunting, but it differs from hunt.c's
+ * "survivors(raw)", which ALSO counts the palindromic case. e.g.
+ * d=13: this prints 2 (non-pal); hunt raw = 4 (= 2 + 2 palindromes).
+ * BOTH are correct — the difference is definitional, not a
+ * disagreement. Only real limit: 64-bit `long` overflows at d>=19 —
+ * use hunt.c (GMP) past there.
+ * See docs/session_2026-06-05_emirp_d5_correction.md.
  *
  * Build: gcc -O2 -std=c99 -o check_survivors check_survivors.c -lgmp
  * Usage: ./check_survivors <d>
@@ -18,34 +21,7 @@
 #include <string.h>
 #include <gmp.h>
 
-static void reverse_str(const char *src, char *dst, int len)
-{
-   for (int i = 0; i < len; i++)
-      dst[i] = src[len - 1 - i];
-   dst[len] = '\0';
-}
-
-static bool is_consec_sq(mpz_t q, mpz_t m_out)
-{
-   mpz_t disc;
-   mpz_init(disc);
-
-   mpz_mul_ui(disc, q, 2);
-   mpz_sub_ui(disc, disc, 1);
-
-   if (mpz_perfect_square_p(disc)) {
-      mpz_sqrt(disc, disc);
-      mpz_sub_ui(disc, disc, 1);
-      if (mpz_divisible_ui_p(disc, 2)) {
-         mpz_divexact_ui(m_out, disc, 2);
-         mpz_clear(disc);
-         return true;
-      }
-   }
-
-   mpz_clear(disc);
-   return false;
-}
+#include "curve_gmp.h"   /* on_curve / is_consec_sq, reverse_str */
 
 int main(int argc, char *argv[])
 {

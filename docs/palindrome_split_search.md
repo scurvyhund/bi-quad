@@ -278,7 +278,7 @@ Values *and* n must match `pals_d13/15/21/25.txt` and `pals.txt` exactly. The wh
 
 ---
 
-## 10. Shared code — `curve.h`, and one deliberate duplication
+## 10. Shared code — `curve.h`, `curve_gmp.h`, and one deliberate duplication
 
 The three tools share their primitives through `curve.h`: the `u128`
 container, the pow10 table, `isqrt_u128`, `curve`/`curve_abc`, the band
@@ -333,6 +333,95 @@ It has been left at 33 and the comment corrected to say why: raising it
 is arithmetically free but would emit palcurve results past d = 31,
 where nothing corroborates them. That is a decision to take
 deliberately, not a limit to quietly relax.
+
+### `curve_gmp.h` — the curve-membership test
+
+The same problem existed on the emirp side, and worse. **The
+curve-membership test — the predicate deciding whether a number is on
+the curve at all — existed in five copies**: `is_consec_sq` in
+`check_d5`, `check_d7`, `check_d9` and `check_survivors` (byte-identical
+in all four, matching md5), and `on_curve` in `hunt.c`. All five are now
+`curve_gmp.h`.
+
+The two spellings were equivalent, in the way that matters and in a way
+worth recording: `is_consec_sq` tested the root's parity as "is `s−1`
+divisible by 2", `on_curve` as "is `s` odd" — the same test written the
+other way round — and they divided with `mpz_divexact_ui` versus
+`mpz_fdiv_q_ui`, which agree exactly when the dividend is even, as it is
+here.
+
+`on_curve` is canonical because it takes its scratch `mpz_t` from the
+caller: `hunt.c` calls it billions of times and an `mpz_init`/`mpz_clear`
+pair per call would be pure overhead in that loop. `is_consec_sq` is now
+a thin wrapper that allocates its own scratch, for the cold enumerators
+where that cost is irrelevant and a borrowed scratch would only be a
+trap.
+
+The header is kept separate from `curve.h` so `curve.h` stays GMP-free
+and its own unit test links without `-lgmp`.
+
+**Caller control flow was left byte-for-byte.** `check_d5` skips
+palindromes by `strcmp` before the leading-zero test; `check_d7` has no
+`strcmp` and tests `p == q` after `atol`. Those differences are
+published behaviour and were not harmonised while the shared functions
+were being pulled out.
+
+### What replaced the old evidence
+
+Before this, the only thing standing behind the membership test was the
+incidental agreement of `on_curve` and `is_consec_sq`. That was weak
+evidence — the two tools count different things by design (`hunt`'s raw
+count includes palindromes, `check_survivors`' does not; the difference
+is definitional, not a disagreement), so they were never really a
+cross-check — and unifying them removes it.
+
+`test_curve_gmp.c` replaces it with something stronger: `on_curve` is
+checked against the u128 path in `curve.h`, which **decides membership
+by a different route**. GMP asks `mpz_perfect_square_p` of `2q − 1`;
+`curve.h` takes `n_at(v)` and re-evaluates `curve(n) == v`. The two are
+not fully independent — `n_at` calls `isqrt_u128`, which `test_curve`
+validates separately — but the *decision* is independent, and the
+re-evaluation is what makes it sound: a wrong `n_at` fails
+`curve(n) != v` and rejects, so it cannot manufacture a false accept.
+Checked
+exhaustively for every value below 2×10⁶ (which visits the non-values
+between curve values, where a parity slip would show), at `n` around
+each power of ten to 10^18 with `v ± 1` required to be rejected, and —
+past where the u128 oracle can follow — against the defining identity
+`2q − 1 = (2m + 1)²` near 10²⁵.
+
+Run both test binaries with `make tests`.
+
+### Verification
+
+`check_d5`, `check_d7`, `check_d9`, `check_survivors` at d = 5…13, and
+`hunt` at d = 5…15 are **byte-identical** before and after, including
+the known `12641 ↔ 14621` converse pair as a positive control. Two
+traps had to be closed for that comparison to mean anything: `hunt`
+resumes from `hunt_d*.ckpt`, so a baseline run would otherwise leave
+checkpoints that make the second run start mid-range; and `hunt` prints
+from inside an OpenMP region, so its line order is thread-scheduling
+dependent. The harness wipes checkpoints on both sides and sorts
+`hunt`'s output, and was confirmed to reproduce itself across three
+consecutive baseline runs before being trusted.
+
+**The checkpoint path was verified separately**, because the d ≤ 15
+sweep never reaches it: `BLOCK_SIZE` is 5×10⁹ and the largest range
+there is ~2.7×10⁷, so `write_ckpt` and the resume branch were both
+dead code in the comparison above — the same gap that still stands open
+for `palbrute`'s d = 29 run. Rebuilt both versions with `BLOCK_SIZE`
+temporarily at 10⁵ (not committed) and compared at d = 13 across three
+scenarios: a full run writing 15 checkpoints, a resume from a
+handcrafted checkpoint at i = 700000, and a checkpoint past the end of
+the range, which must be ignored. Byte-identical in all three, and the
+checkpoint file is correctly deleted on clean completion each time.
+
+Valgrind clean on all five tools and both test binaries.
+
+**Still duplicated:** `compute_n_bounds` ×3 (`hunt.c`, `mod_obstruct.c`,
+`mod_obstruct_bkup.c`) — same algorithm, three spellings. Not touched
+here: `mod_obstruct` is the Makefile's default target and the project's
+workhorse, so it wants its own before/after capture.
 
 ---
 

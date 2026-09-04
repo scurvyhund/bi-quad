@@ -31,6 +31,8 @@
 #include <omp.h>
 #include <gmp.h>
 
+#include "curve_gmp.h"   /* on_curve -- the curve-membership test */
+
 #define NUM_THREADS  8
 #define BLOCK_SIZE   5000000000L    /* 5 B iters per checkpoint block */
 
@@ -82,19 +84,6 @@ static void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
    mpz_fdiv_q_ui(n_max, sq, 2);
 
    mpz_clears(target, sq, check, lo, NULL);
-}
-
-/* If val = 2m^2+2m+1 for integer m>=0, store m in m and return true. */
-static bool on_curve(const mpz_t val, mpz_t m, mpz_t s) {
-   mpz_mul_ui(s, val, 2);
-   mpz_sub_ui(s, s, 1);
-   if (mpz_sgn(s) < 0) return false;
-   if (!mpz_perfect_square_p(s)) return false;
-   mpz_sqrt(s, s);
-   if (mpz_even_p(s)) return false;
-   mpz_sub_ui(s, s, 1);
-   mpz_fdiv_q_ui(m, s, 2);
-   return true;
 }
 
 /* Atomic checkpoint write: write to .tmp then rename over target. */

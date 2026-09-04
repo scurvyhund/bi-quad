@@ -11,8 +11,10 @@ LDLIBS   = -lgmp
 
 TARGET   = mod_obstruct
 PALS     = palsplit palcurve palbrute
+CHECKS   = check_d5 check_d7 check_d9 check_survivors
+TESTS    = test_curve test_curve_gmp
 
-.PHONY: all pals test testcurve clean
+.PHONY: all pals checks test tests clean
 
 all: $(TARGET)
 
@@ -30,12 +32,25 @@ pals: $(PALS)
 $(PALS): %: %.c curve.h
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS) -lm
 
-# unit tests for curve.h -- run this after ANY edit to curve.h
+# --- GMP emirp tools (share curve_gmp.h) ---
+checks: $(CHECKS) hunt
+
+$(CHECKS): %: %.c curve_gmp.h
+	$(CC) -O2 -std=c99 -Wall -Wextra -o $@ $< $(LDLIBS)
+
+hunt: hunt.c curve_gmp.h
+	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+
+# --- unit tests: run after ANY edit to curve.h / curve_gmp.h ---
 test_curve: test_curve.c curve.h
 	$(CC) -O2 -std=c99 -Wall -Wextra -o $@ $< -lm
 
-testcurve: test_curve
+test_curve_gmp: test_curve_gmp.c curve.h curve_gmp.h
+	$(CC) -O2 -std=c99 -Wall -Wextra -o $@ $< $(LDLIBS) -lm
+
+tests: $(TESTS)
 	./test_curve
+	./test_curve_gmp
 
 clean:
-	rm -f $(TARGET) $(PALS) test_curve	
+	rm -f $(TARGET) $(PALS) $(CHECKS) hunt $(TESTS)	
