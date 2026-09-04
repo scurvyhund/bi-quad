@@ -55,59 +55,38 @@ wants Jim's hand, not a unilateral edit.
 
 ## Tier 1 — cheap, and they sharpen the weakest numbers
 
-**[ ] 5a. Skip the provably-empty 59% of every brute range. NEW, and
-the biggest single win on this list.**
-A palindrome needs first digit == last digit; curve values end ONLY in
-1, 3, 5; therefore a palindrome can only occur where `p` *starts* with
-1, 3 or 5. The other 59% of the n-range cannot contain one and can be
-skipped outright — three range checks, ~10 lines in `palbrute.c`.
+**[x] 5a+5b. Leading-digit zones + the long-double fix. DONE
+2026-09-03.** One edit, and the correctness half is the point.
 
-    d = 25 / 29 / 37   searchable 41.4%   speedup 2.41x
-    full d=29    24.6 days  ->  10.2 days
-    the partial   9.2 days  ->   3.8 days
+A palindrome needs first digit == last; curve values end ONLY in 1, 3,
+5; so a palindrome can only occur where `p` *starts* with 1, 3 or 5.
+`palbrute` now computes those three n-ranges with exact u128 bounds and
+never visits the other 59%. Inside a zone the leading digit is known,
+so the buggy `(int)((long double)p / topld)` filter is gone entirely —
+that is (5b), and it is the real payoff: it silently dropped candidates
+at d = 37.
 
-**Exact, not lossy** — unlike `hunt`'s `VALID_NMOD` skip
-(`skip_optimization.md`), which destroys counts by dropping div-5
-palindromes. This drops only `n` that cannot yield a palindrome at all;
-every palindrome survives, div-5 included.
+**The speed gain is ~1.15x, not the 2.41x first claimed.** That figure
+came from "we visit 41.4% of n, so 2.41x", which assumes uniform cost
+per n. It is not: the dominant cost is `is_pal_rev()`, the full digit
+reversal, which runs whenever first==last — and that count is
+unchanged (0.1409 of the range before, 0.1412 after). The zones skip
+59% of the *cheap* work and none of the expensive work. Measured at
+d = 19: 4.54s old, 3.95s new.
 
-Found by asking why `palbrute`'s throughput jumped 6x mid-run: it is
-the leading digit of `p` crossing from 1 to 2, where `first == last`
-becomes impossible. The mod-10 structure of the curve is legible in the
-wall-clock of a program that was never told about it.
+What the zones do buy, besides correctness, is the ability to run **one
+zone in isolation**.
 
-*Do NOT rebuild the binary under the running d=25 job. Apply after it
-finishes, with a before/after showing all five hits still found.*
-*Cost: an hour. Payoff: makes item 13 a weekend instead of a fortnight.*
+Also added: **atomic checkpointing** (`palbrute_d<NN>.ckpt`, tmp+rename,
+auto-resume), which `palbrute` never had — its header claimed it, but
+only stderr progress was ever persisted. Verified by `kill -9` mid-sweep
+at d = 19: resumed from the checkpoint, identical hits and identical
+`visited` count.
 
-**[ ] 5b. FIX the long-double leading-digit filter — same change as
-(5a), and it is a correctness bug, not just a speedup.**
-`palbrute.c` and both `palhunt_gmp.c` / `palhunt_opt.c` compute the
-leading digit as `(int)((long double)p / topld)`, commented "fast exact
-leading digit". It is **not exact**: a 64-bit mantissa cannot hold `p`
-past ~d=19, and the quotient rounds. Demonstrated failure at d = 37:
-
-    n = 1732050807568877293
-    p = 5999999999999999999809846168119770285
-    exact leading digit 5, last digit 5   -> MUST be tested
-    computed leading digit 6              -> SILENTLY SKIPPED
-
-Same failure mode as the `palsplit` band edge (see
-`palindrome_split_search.md` §4): a `long double` where exactness is
-required, producing a miss indistinguishable from a clean negative.
-
-**Blast radius: no published result is affected.** 8.8M values
-straddling every decade boundary at d = 13..35 gave zero disagreements;
-the single failure is at d = 37. `palhunt_gmp` only ever ran to d = 27.
-`palsplit`'s d = 37 result is clean — it extracts digits with exact
-u128 `digit_at()`, not this trick. But `palbrute` at d = 37 **would**
-lose candidates, so this must be fixed before the tool is pointed past
-d = 35.
-
-The fix and (5a) are the same edit: search only the exact u128 n-ranges
-where `p` starts with 1, 3 or 5, and the leading-digit filter disappears
-entirely. Correctness and 2.41x from one change.
-*Found by asking what a NULL result from the d=25 run would have meant.*
+Verified: d = 13/15/17/19 identical across the pre-change binary, the
+new zones, and `--all`; all 44 known k=1 palindromes (d = 2..37) fall
+inside the zones; `p mod 10 ∈ {1,3,5}` confirmed exhaustively; Valgrind
+clean with 9 checkpoints written during the run.
 
 **[ ] 6. Raise `palcurve`'s `MAX_D` from 33 to 37.**
 The cap is conservative: the real u128 limit on `4·A·p` binds at d ≤ 37
@@ -159,14 +138,25 @@ residue class rather than digit position) breaks it.
 
 ## Tier 3 — expensive, decide deliberately
 
-**[ ] 13. d = 29 partial brute — ~9.5 days, or ~3.8 days after (5a).**
-`n = 70710678118655..128166678118655`, 37.6% of the full sweep, covering
-both known palindromes (at 1.96% and 10.33%) plus a large
-must-be-empty region. **This is the real corroboration gap**: d = 29…37
-rests on `palsplit` alone. Valgrind the checkpoint path at the d = 29
-config first (the d = 25 pre-flight covered the path, not that config).
-*Full d = 29 is ~25 days — corrected from the "9.3 days" that assumed a
-low-d rate.*
+**[ ] 13. d = 29, the LEAD-1 ZONE — ~4.7 days.**
+`./palbrute 29` now splits into three zones; the lead-1 zone is 19.2%
+of the full range and **contains both known d = 29 palindromes** (at
+1.94% and 10.33%), giving positive controls plus a large must-be-empty
+region. The claim it earns is clean: *every d = 29 palindrome beginning
+with 1 has been independently confirmed.* **This is the real
+corroboration gap** — d = 29…37 rests on `palsplit` alone.
+
+Costs, corrected against the measured d = 25 run (1.529e12 n in 7184 s
+= 213 M n/s average):
+
+    lead-1 zone only   ~4.7 days   (72 M n/s measured IN that zone)
+    all three zones    ~9 days
+    full sweep        ~11 days
+
+*An earlier note said 25 days for the full sweep and 3.8 for a partial.
+Both were wrong: the 25 applied the slow lead-1 rate to the whole
+range, and the 3.8 applied the global 41.4% zone fraction to a slice
+that is mostly lead-1.*
 
 **[ ] 14. 256-bit `palsplit` to reach d = 41…51.**
 Current ceiling is integer width, not algorithm: `p < 10^37` keeps `2p`
