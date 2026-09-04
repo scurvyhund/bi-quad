@@ -117,6 +117,19 @@ emirp uniqueness (Problem 1) is exactly what the heuristic predicts.
 Neither is settled. A convergent expectation does not forbid a second
 emirp; a divergent one does not produce a fifth palindrome on demand.
 
+**C′ has since been calibrated, and the model tested on 13 curves** —
+see [`density_cross_curve.md`](density_cross_curve.md). For this curve
+C′ ≈ 1.9 (fitted, d ≥ 15) to 2.8 (unfitted). Three findings bear
+directly on the above: the raw-palindrome density is confirmed across
+all 13 curves to 4%; the model is decisively rejected below d ≈ 11,
+where 69% of all known prime palindromes lie, so C′/d needs a
+digit-length floor; and the silence on this curve after 3187813 has
+probability 0.22 — statistically ordinary, not distinctive. The
+practical consequence is that the d = 29..37 sweep had an expected
+yield of 0.28, and reaching the d ≈ 51 ceiling adds 0.29 more:
+**the palindrome conjecture is not decidable by search at any
+reachable d.**
+
 ---
 
 ## What has been ruled out
