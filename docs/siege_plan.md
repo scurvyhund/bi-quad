@@ -45,6 +45,31 @@ wants Jim's hand, not a unilateral edit.
 
 ## Tier 1 — cheap, and they sharpen the weakest numbers
 
+**[ ] 5a. Skip the provably-empty 59% of every brute range. NEW, and
+the biggest single win on this list.**
+A palindrome needs first digit == last digit; curve values end ONLY in
+1, 3, 5; therefore a palindrome can only occur where `p` *starts* with
+1, 3 or 5. The other 59% of the n-range cannot contain one and can be
+skipped outright — three range checks, ~10 lines in `palbrute.c`.
+
+    d = 25 / 29 / 37   searchable 41.4%   speedup 2.41x
+    full d=29    24.6 days  ->  10.2 days
+    the partial   9.2 days  ->   3.8 days
+
+**Exact, not lossy** — unlike `hunt`'s `VALID_NMOD` skip
+(`skip_optimization.md`), which destroys counts by dropping div-5
+palindromes. This drops only `n` that cannot yield a palindrome at all;
+every palindrome survives, div-5 included.
+
+Found by asking why `palbrute`'s throughput jumped 6x mid-run: it is
+the leading digit of `p` crossing from 1 to 2, where `first == last`
+becomes impossible. The mod-10 structure of the curve is legible in the
+wall-clock of a program that was never told about it.
+
+*Do NOT rebuild the binary under the running d=25 job. Apply after it
+finishes, with a before/after showing all five hits still found.*
+*Cost: an hour. Payoff: makes item 13 a weekend instead of a fortnight.*
+
 **[ ] 6. Raise `palcurve`'s `MAX_D` from 33 to 37.**
 The cap is conservative: the real u128 limit on `4·A·p` binds at d ≤ 37
 for A ≤ 3, verified exact at the top of every d from 30 to 37. Six more
@@ -95,7 +120,7 @@ residue class rather than digit position) breaks it.
 
 ## Tier 3 — expensive, decide deliberately
 
-**[ ] 13. d = 29 partial brute — ~9.5 days.**
+**[ ] 13. d = 29 partial brute — ~9.5 days, or ~3.8 days after (5a).**
 `n = 70710678118655..128166678118655`, 37.6% of the full sweep, covering
 both known palindromes (at 1.96% and 10.33%) plus a large
 must-be-empty region. **This is the real corroboration gap**: d = 29…37
