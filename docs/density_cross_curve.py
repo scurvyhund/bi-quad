@@ -170,8 +170,16 @@ def main():
           " predicted %.0f, observed %d" % (fp, fo))
 
     # ---- 3. prime palindromes ------------------------------------
-    print("\n\n3. PRIME PALINDROMES -- chi-square vs digit-length floor\n")
-    print("   %-12s %7s %9s %9s" % ("d range", "primes", "chi2/12df", "k=1"))
+    #
+    # The per-curve chi-square is INVALID here and is reported only to
+    # show why: with 13 curves and at most 30 primes, every expected
+    # cell count is below 5, and past d = 15 every one is below 1.  The
+    # apparent "improving fit" as the floor rises is the test losing
+    # power, not the model gaining accuracy.  The pooled test below is
+    # the one that means anything.
+    print("\n\n3a. PER-CURVE chi-square -- REPORTED ONLY TO BE DISMISSED\n")
+    print("   %-10s %7s %9s %-28s" %
+          ("d range", "primes", "chi2/12df", "cells with E<5 / E<1"))
     for dmin in (5, 11, 15):
         odd = [d for d in range(dmin, DMAX_DATA + 1) if d % 2]
         S = sum(1.0 / d for d in odd)
@@ -179,21 +187,62 @@ def main():
                * M[c['name']]['hl'] for c in curves]
         obs = [count(c['vals'], dmin, DMAX_DATA, 1, True) for c in curves]
         scale = sum(obs) / (sum(raw) * S)
-        chi = sum((o - r * scale * S) ** 2 / (r * scale * S)
-                  for r, o in zip(raw, obs))
-        i = [c['name'] for c in curves].index('k=1')
-        print("   d >= %-8d %7d %9.1f   pred %.2f obs %d  P(0)=%.2f"
-              % (dmin, sum(obs), chi, raw[i] * scale * S, obs[i],
-                 math.exp(-raw[i] * scale * S)))
-        if dmin == 15:
-            cprime_k1 = raw[i] * scale
-    print("\n   calibrated C' for k=1 (our curve) = %.2f" % cprime_k1)
-    for lo, hi in ((29, 37), (39, 51)):
-        s = sum(1.0 / d for d in range(lo, hi + 1, 2))
-        e = cprime_k1 * s
-        print("   expected prime palindromes, k=1, d=%d..%d : %.2f"
-              "   P(find one) = %.0f%%" % (lo, hi, e,
-                                           100 * (1 - math.exp(-e))))
+        exp = [r * scale * S for r in raw]
+        chi = sum((o - e) ** 2 / e for e, o in zip(exp, obs))
+        print("   d >= %-5d %7d %9.1f   %d/13 and %d/13   -> INVALID"
+              % (dmin, sum(obs), chi,
+                 sum(1 for e in exp if e < 5),
+                 sum(1 for e in exp if e < 1)))
+
+    # ---- 3b. the valid test: pool the curves, bin the digit-lengths
+    print("\n\n3b. POOLED test of the 1/d law -- all 13 curves together\n")
+    cnt = Counter()
+    for c in curves:
+        for v, pr in c['vals']:
+            if pr and len(str(v)) % 2:
+                cnt[len(str(v))] += 1
+    ds = [d for d in range(3, DMAX_DATA + 1, 2)]
+    S = sum(1.0 / d for d in ds)
+    N = sum(cnt[d] for d in ds)
+    bins = [(3, 3), (5, 5), (7, 7), (9, 9), (11, 13), (15, 19), (21, 31)]
+    print("   %-9s %6s %9s" % ("d", "obs", "model 1/d"))
+    chi = 0.0
+    emin = 1e9
+    for lo, hi in bins:
+        o = sum(cnt[d] for d in range(lo, hi + 1, 2))
+        e = N * sum(1.0 / d for d in range(lo, hi + 1, 2)) / S
+        chi += (o - e) ** 2 / e
+        emin = min(emin, e)
+        print("   d=%-2d-%-4d %6d %9.1f" % (lo, hi, o, e))
+    print("\n   chi2 = %.2f on %d df   (all cells E >= %.1f -- VALID)"
+          % (chi, len(bins) - 2, emin))
+
+    # ---- 3c. C' for our curve, as a RANGE
+    tot_w = sum(M[c['name']]['e_odd'] * (1 - M[c['name']]['dead5'])
+                * M[c['name']]['hl'] for c in curves)
+    w1 = (M['k=1']['e_odd'] * (1 - M['k=1']['dead5']) * M['k=1']['hl'])
+    c_pooled = (N / S) * w1 / tot_w
+    odd15 = [d for d in range(15, DMAX_DATA + 1) if d % 2]
+    S15 = sum(1.0 / d for d in odd15)
+    raw = [M[c['name']]['e_odd'] * (1 - M[c['name']]['dead5'])
+           * M[c['name']]['hl'] for c in curves]
+    obs15 = [count(c['vals'], 15, DMAX_DATA, 1, True) for c in curves]
+    c_d15 = (sum(obs15) / (sum(raw) * S15)) * w1
+    lo_c, hi_c = sorted((c_d15, c_pooled))
+    print("\n\n3c. C' for k=1 (our curve)\n")
+    print("   pooled over all 13 curves : %.2f" % c_pooled)
+    print("   fitted on d >= 15 alone   : %.2f   (7 primes -- weak)" % c_d15)
+    print("   => quote as a RANGE       : %.1f - %.1f" % (lo_c, hi_c))
+    print("\n   %-22s %14s %14s" % ("search range", "E (C'=%.1f)" % lo_c,
+                                     "E (C'=%.1f)" % hi_c))
+    for a, b in ((29, 37), (39, 51), (29, 51)):
+        ss = sum(1.0 / d for d in range(a, b + 1, 2))
+        print("   d = %-2d .. %-12d %8.2f -> %2.0f%% %8.2f -> %2.0f%%"
+              % (a, b, lo_c * ss, 100 * (1 - math.exp(-lo_c * ss)),
+                 hi_c * ss, 100 * (1 - math.exp(-hi_c * ss))))
+    print("\n   NOTE: the d=21-31 bin runs LOW (3 observed vs 7.0). If")
+    print("   that deficit is real rather than Poisson noise (P<=3 ~ 0.08)")
+    print("   then C' falls at high d and these odds are optimistic.")
 
 
 if __name__ == "__main__":

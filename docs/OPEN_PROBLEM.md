@@ -117,18 +117,23 @@ emirp uniqueness (Problem 1) is exactly what the heuristic predicts.
 Neither is settled. A convergent expectation does not forbid a second
 emirp; a divergent one does not produce a fifth palindrome on demand.
 
-**C′ has since been calibrated, and the model tested on 13 curves** —
-see [`density_cross_curve.md`](density_cross_curve.md). For this curve
-C′ ≈ 1.9 (fitted, d ≥ 15) to 2.8 (unfitted). Three findings bear
-directly on the above: the raw-palindrome density is confirmed across
-all 13 curves to 4%; the model is decisively rejected below d ≈ 11,
-where 69% of all known prime palindromes lie, so C′/d needs a
-digit-length floor; and the silence on this curve after 3187813 has
-probability 0.22 — statistically ordinary, not distinctive. The
-practical consequence is that the d = 29..37 sweep had an expected
-yield of 0.28, and reaching the d ≈ 51 ceiling adds 0.29 more:
-**the palindrome conjecture is not decidable by search at any
-reachable d.**
+**The model has since been tested on 13 curves** — see
+[`density_cross_curve.md`](density_cross_curve.md). Three results bear
+on the above. The *raw* palindrome density is confirmed across all 13
+curves to 4%, with each curve's own last-digit signature predicting its
+own constant. The even-d prediction fails on exactly the eleven curves
+Theorem B forbids — 77 predicted, 0 observed — which is the strongest
+confirmation of that theorem so far. And the 1/d shape for primes
+survives a pooled test (χ² = 3.95 on 5 df), though the per-curve
+constants cannot be tested: there are at most 30 primes across 13
+curves, so every expected cell count is below 5.
+
+For this curve C′ ≈ 1.9–3.3, a factor-of-two spread. That makes the
+d = 29..37 sweep an expected yield of 0.28–0.50 (so the null result
+there is weak evidence), and the reachable d ≈ 51 ceiling a 25–40%
+chance of an actual hit. The silence after 3187813 is statistically
+ordinary — 3 observed against 4.5 predicted on this curve, and twelve
+siblings range from none at all (k=7, k=13) to d = 31 (k=19).
 
 ---
 

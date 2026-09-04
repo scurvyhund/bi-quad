@@ -17,7 +17,7 @@ Fourth independent line at d = 25 (`hunt_noopt` + qs factorisations,
 run. Watch for all five values with matching `n`, including the div-5
 one at 57.7%.
 
-**[ ] 2. Fix `density_cross_curve.md` §4–§5.**
+**[x] 2. Fix `density_cross_curve.md` §4–§5.** DONE 2026-09-03.
 The per-curve χ² is invalid — every cell has expected count < 5, and at
 d ≥ 15 every cell is < 1, so the "good fit" there was the test losing
 power, not the model gaining accuracy. Replace with the **pooled**
