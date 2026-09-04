@@ -172,6 +172,91 @@ residue class rather than digit position) breaks it.
 
 ---
 
+## Tier 2b — the 256-bit extension (the road to d = 51, and past it)
+
+The current ceiling is **integer width, not algorithm**: `p < 10^37`
+keeps `2p` inside a u128, and d = 37 is the last odd d whose `n` fits an
+`int64_t`. Going wider is what unlocks §5's 25-40% chance of an actual
+hit — the strongest argument on this list for spending real compute.
+
+**The tooling already mostly exists**, in `~/programming/c/lock256/dev/
+dev256.c` (see also `bigint-mul/`, `conversion/`). Written for embedded
+work, deliberately without a bigint library — which turns out to be
+exactly right here. GMP solves *arbitrary* precision with heap-allocated
+limbs and a call per operation; we need *exactly* 256 bits, known at
+compile time, staying in registers through ~10^13 inner-loop iterations.
+For the hot loop a fixed-width type is not a workaround for GMP, it is
+strictly better than GMP.
+
+    struct u256 { u64 lo; u64 mid; u128 hi; };
+    mul256b()        -- 4 partial products, carries threaded manually
+    u256_to_string() -- limb-wise long division by 10
+
+`mul256b` covers `curve(n) = 2n^2+2n+1`; `u256_to_string`'s ÷10 is the
+digit extraction `is_pal_fast` needs past d = 37.
+
+**[ ] 20. `isqrt256` — the crux.** The u128 recipe (long double seed →
+Newton → exact correction) needs `v/x`, a full **u256 ÷ u256** division,
+which is the one primitive `dev256.c` lacks — its ÷10 is a small-divisor
+case and much easier. The alternative avoids division entirely: the
+classic bit-by-bit integer sqrt, two bits of input per iteration,
+
+    rem = (rem << 2) | next two bits
+    if (rem >= 2*root+1) { rem -= 2*root+1; root += 1; }
+    root <<= 1
+
+shifts, compares, add/sub — nothing else. **Exact by construction**, so
+there is no seed to be wrong about and no correction loop, which matters
+because the band edge is exactly where the u128 version went wrong
+(`palindrome_split_search.md` §4).
+
+Cost concern, to be **measured not predicted**: 128 iterations per call,
+and `palsplit` calls the band edge twice per outer residue — ~2×10^13
+calls at d = 51 with t ≈ 13. Whether that dominates is an empirical
+question. Build the correct version first, with a test that checks
+`r² ≤ v < (r+1)²` by comparison rather than by squaring (the way
+`test_curve.c` does for u128). Then measure. Then optimise if needed.
+
+**[ ] 21. Comba (product-scanning) multiply, and `mul512`.**
+`mul256b` uses **operand scanning** — walk the rows of the schoolbook
+grid, propagate carries as you go. At 2×2 limbs the carries are
+trackable by hand, which is what its WARNING block documents. At 8×8
+limbs there are 64 partial products and overlapping carry chains; that
+difficulty is what stopped the extension to 512 bits, and stopping was
+the right call.
+
+**Product scanning fixes the shape.** Walk the *columns* instead: for
+output limb k, accumulate every `x[i]*y[k-i]`, emit one word, carry the
+rest.
+
+    u128 acc = 0;  u64 ovf = 0;
+    for (k = 0; k < 2*N; k++) {
+       for (i = max(0,k-(N-1)); i <= min(k,N-1); i++) {
+          u128 p = (u128)x[i] * y[k-i];
+          acc += p;
+          if (acc < p) ovf++;        /* the ONLY carry rule */
+       }
+       r[k] = (u64)acc;
+       acc  = (acc >> 64) | ((u128)ovf << 64);
+       ovf  = 0;
+    }
+
+The carry bookkeeping is two lines and **identical for every column**,
+so going 256 → 512 → 1024 changes the loop bounds and nothing else. The
+hard part stops growing with the width.
+
+Two cautions. `acc < p` detects the wrap because unsigned overflow is
+*defined* to wrap — one of the few places the project's signed-by-default
+rule must be deliberately inverted, and it wants a comment saying so at
+the declaration. And this is written from the standard algorithm: before
+trusting it, check it against `mul256b` on millions of random inputs, the
+way `test_palpred.c` checked the fast predicate.
+
+A Comba `mul512` would put **d ≈ 70** in reach — past where §5 puts the
+expectation of a hit at 1.
+
+---
+
 ## Tier 3 — expensive, decide deliberately
 
 **[ ] 13. d = 29, COMPLETE (all three zones) — ~33-59 h.**
