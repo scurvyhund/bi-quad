@@ -10,8 +10,9 @@ CFLAGS   = -O3 -march=znver2 -mtune=znver2 -std=c99 -Wall -Wextra -fopenmp
 LDLIBS   = -lgmp
 
 TARGET   = mod_obstruct
+PALS     = palsplit palcurve palbrute
 
-.PHONY: all test clean
+.PHONY: all pals test testcurve clean
 
 all: $(TARGET)
 
@@ -23,5 +24,18 @@ mod_debug: mod_obstruct.c
 test: $(TARGET)
 	./$(TARGET) 30 5
 
+# --- palindrome tools (share curve.h; header-only, no link step) ---
+pals: $(PALS)
+
+$(PALS): %: %.c curve.h
+	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS) -lm
+
+# unit tests for curve.h -- run this after ANY edit to curve.h
+test_curve: test_curve.c curve.h
+	$(CC) -O2 -std=c99 -Wall -Wextra -o $@ $< -lm
+
+testcurve: test_curve
+	./test_curve
+
 clean:
-	rm -f $(TARGET)	
+	rm -f $(TARGET) $(PALS) test_curve	

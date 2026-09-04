@@ -50,99 +50,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
-#include <float.h>
 #include <omp.h>
 #include <gmp.h>
 
+#include "curve.h"      /* u128, curve, curve_mod, n_at, digit_at,
+                         * is_pal_d, rev_digits, u128_str, bq_pow10 */
+
 #define NUM_THREADS   8
-#define MAX_D         37        /* p < 10^37 keeps 2p inside u128 */
+#define MAX_D         BQ_MAX_D  /* p < 10^37 keeps 2p inside u128 */
 #define MAX_T         13
 #define MAX_HITS      256
 #define CKPT_MASK     0x3FFFFFF /* checkpoint every ~67.1M residues */
 #define BAND_GUARD    1000      /* see docs/palindrome_split_search.md */
 
-/* The band edge is computed EXACTLY (isqrt_u128); long double is only
- * a Newton seed, so mantissa width is not load-bearing.  An earlier
- * version estimated the edge in long double and needed an 80-bit
- * mantissa to be safe -- see docs/palindrome_split_search.md sec. 4. */
-
-/* unsigned only for the fixed-width decimal container: no arithmetic
- * here can go negative, and we need the full 128-bit range. */
-typedef unsigned __int128 u128;
-
-static u128 pow10u[MAX_D + 2];
-
-static void init_pow10(void) {
-   pow10u[0] = 1;
-   for (int i = 1; i <= MAX_D + 1; i++) {
-      pow10u[i] = pow10u[i - 1] * 10;
-   }
-}
-
-static inline u128 curve(int64_t n) {
-   u128 v = (u128)n;
-   return 2 * v * v + 2 * v + 1;
-}
-
-static inline int64_t curve_mod(int64_t r, int64_t m) {
-   u128 v = (u128)r;
-   return (int64_t)((2 * v * v + 2 * v + 1) % (u128)m);
-}
-
-static inline int digit_at(u128 p, int i) {
-   return (int)((p / pow10u[i]) % 10);
-}
-
-static int is_pal(u128 p, int d) {
-   for (int i = 0; i < d / 2; i++) {
-      if (digit_at(p, i) != digit_at(p, d - 1 - i)) return 0;
-   }
-   return 1;
-}
-
-/* Exact integer sqrt of a u128.  Seeded from long double, then Newton,
- * then a final exact adjustment -- so the result is exact regardless of
- * how good the seed was.  Comparisons use division, never x*x, which
- * would overflow near the top of the range.  This removes floating
- * point from the band edge entirely: the band is exact, not estimated. */
-static inline u128 isqrt_u128(u128 v) {
-   if (v == 0) return 0;
-   u128 x = (u128)sqrtl((long double)v);
-   if (x == 0) x = 1;
-   for (int i = 0; i < 6; i++) {
-      u128 y = (x + v / x) / 2;
-      if (y == x) break;
-      x = y;
-   }
-   while (x > 1 && x > v / x) x--;
-   while (x + 1 <= v / (x + 1)) x++;
-   return x;
-}
-
-static inline int64_t rev_digits(int64_t v, int t) {
-   int64_t h = 0;
-   for (int i = 0; i < t; i++) {
-      h = h * 10 + v % 10;
-      v /= 10;
-   }
-   return h;
-}
-
-static void u128_str(u128 v, char *buf) {
-   char tmp[44];
-   int i = 0;
-   if (v == 0) {
-      strcpy(buf, "0");
-      return;
-   }
-   while (v > 0) {
-      tmp[i++] = (char)('0' + (int)(v % 10));
-      v /= 10;
-   }
-   for (int j = 0; j < i; j++) buf[j] = tmp[i - 1 - j];
-   buf[i] = '\0';
-}
+/* The band edge is computed EXACTLY (isqrt_u128 inside n_at); long
+ * double is only a Newton seed, so mantissa width is not load-bearing.
+ * An earlier version estimated the edge in long double and needed an
+ * 80-bit mantissa to be safe -- see palindrome_split_search.md sec. 4. */
 
 int main(int argc, char *argv[]) {
    if (argc < 2) {
@@ -173,8 +97,8 @@ int main(int argc, char *argv[]) {
    init_pow10();
    omp_set_num_threads(NUM_THREADS);
 
-   int64_t mod = (int64_t)pow10u[t];
-   u128 step = pow10u[d - t];
+   int64_t mod = (int64_t)bq_pow10[t];
+   u128 step = bq_pow10[d - t];
 
    u128 hit_p[MAX_HITS];
    int64_t hit_n[MAX_HITS];
@@ -206,20 +130,18 @@ int main(int argc, char *argv[]) {
       /* exact: high < 10^t and step = 10^(d-t), so plo < 10^d */
       u128 plo = (u128)high * step;
       u128 phi = plo + step;
-      int64_t nlo = (int64_t)((isqrt_u128(2 * plo - 1) - 1) / 2)
-                    - BAND_GUARD;
-      int64_t nhi = (int64_t)((isqrt_u128(2 * phi - 1) - 1) / 2)
-                    + BAND_GUARD;
+      int64_t nlo = n_at(plo) - BAND_GUARD;
+      int64_t nhi = n_at(phi) + BAND_GUARD;
       if (nlo < 0) nlo = 0;
 
       int64_t delta = ((r - nlo) % mod + mod) % mod;
 
       for (int64_t n = nlo + delta; n <= nhi; n += mod) {
          u128 p = curve(n);
-         if (p < pow10u[d - 1] || p >= pow10u[d]) continue;
+         if (p < bq_pow10[d - 1] || p >= bq_pow10[d]) continue;
          if (2 * t < d && digit_at(p, t) != digit_at(p, d - 1 - t))
             continue;
-         if (!is_pal(p, d)) continue;
+         if (!is_pal_d(p, d)) continue;
 #pragma omp critical
          {
             int dup = 0;
@@ -259,7 +181,7 @@ int main(int argc, char *argv[]) {
    mpz_t z;
    mpz_init(z);
    for (int i = 0; i < nhits; i++) {
-      char buf[44];
+      char buf[BQ_STRLEN];
       u128_str(hit_p[i], buf);
       mpz_set_str(z, buf, 10);
       int pr = mpz_probab_prime_p(z, 40);

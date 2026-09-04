@@ -37,96 +37,29 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
 #include <omp.h>
 #include <gmp.h>
 
+#include "curve.h"      /* u128, curve_abc, curve_abc_mod, m_at,
+                         * digit_at, is_pal_d, rev_digits, u128_str */
+
 #define NUM_THREADS   8
-#define MAX_D         33     /* 4*A*p must stay inside u128 for A<=3 */
+/* Tool-specific cap, NOT the pow10 table extent (BQ_MAX_D = 37).
+ * The hard constraint is that 4*A*p inside m_at stay in a u128; for
+ * A <= 3 that binds only at p < 2.83e37, i.e. d <= 37.  33 is a
+ * CONSERVATIVE cap with ~4 digits of unused headroom, kept because no
+ * palcurve result past d = 31 has ever been generated or checked.
+ * m_at was measured exact at the top of every d from 30 to 37 for
+ * A = 1,2,3 (test_curve.c covers the d = 33 edge).  Raising this is
+ * safe arithmetically but puts out numbers nothing corroborates --
+ * treat it as a deliberate decision, not a free win. */
+#define MAX_D         33
 #define MAX_T         13
 #define MAX_HITS      512
 #define BAND_GUARD    1000
 
-/* unsigned only as a fixed-width decimal container -- see palsplit.c */
-typedef unsigned __int128 u128;
-
-static u128 pow10u[MAX_D + 2];
-
-static void init_pow10(void) {
-   pow10u[0] = 1;
-   for (int i = 1; i <= MAX_D + 1; i++) pow10u[i] = pow10u[i - 1] * 10;
-}
-
-static inline u128 isqrt_u128(u128 v) {
-   if (v == 0) return 0;
-   u128 x = (u128)sqrtl((long double)v);
-   if (x == 0) x = 1;
-   for (int i = 0; i < 6; i++) {
-      u128 y = (x + v / x) / 2;
-      if (y == x) break;
-      x = y;
-   }
-   while (x > 1 && x > v / x) x--;
-   while (x + 1 <= v / (x + 1)) x++;
-   return x;
-}
-
+/* the curve under search, p = g_a*m^2 + g_b*m + g_c */
 static int64_t g_a, g_b, g_c;
-
-static inline u128 curve(int64_t m) {
-   u128 v = (u128)m;
-   return (u128)g_a * v * v + (u128)g_b * v + (u128)g_c;
-}
-
-static inline int64_t curve_mod(int64_t r, int64_t md) {
-   u128 v = (u128)r;
-   u128 p = (u128)g_a * v * v + (u128)g_b * v + (u128)g_c;
-   return (int64_t)(p % (u128)md);
-}
-
-/* smallest m with curve(m) >= target, via the quadratic formula:
- *   A m^2 + B m + C = P  ->  m = (-B + sqrt(B^2 - 4AC + 4AP)) / 2A
- * All terms stay non-negative: 4AP dominates the constant offset. */
-static inline int64_t m_at(u128 p) {
-   u128 disc = 4 * (u128)g_a * p + (u128)(g_b * g_b);
-   u128 sub  = 4 * (u128)g_a * (u128)g_c;
-   disc = (disc > sub) ? disc - sub : 0;
-   u128 s = isqrt_u128(disc);
-   if (s < (u128)g_b) return 0;
-   return (int64_t)((s - (u128)g_b) / (2 * (u128)g_a));
-}
-
-static inline int digit_at(u128 p, int i) {
-   return (int)((p / pow10u[i]) % 10);
-}
-
-static int is_pal(u128 p, int d) {
-   for (int i = 0; i < d / 2; i++) {
-      if (digit_at(p, i) != digit_at(p, d - 1 - i)) return 0;
-   }
-   return 1;
-}
-
-static inline int64_t rev_digits(int64_t v, int t) {
-   int64_t h = 0;
-   for (int i = 0; i < t; i++) {
-      h = h * 10 + v % 10;
-      v /= 10;
-   }
-   return h;
-}
-
-static void u128_str(u128 v, char *buf) {
-   char tmp[44];
-   int i = 0;
-   if (v == 0) { strcpy(buf, "0"); return; }
-   while (v > 0) {
-      tmp[i++] = (char)('0' + (int)(v % 10));
-      v /= 10;
-   }
-   for (int j = 0; j < i; j++) buf[j] = tmp[i - 1 - j];
-   buf[i] = '\0';
-}
 
 int main(int argc, char *argv[]) {
    if (argc < 5) {
@@ -162,8 +95,8 @@ int main(int argc, char *argv[]) {
    init_pow10();
    omp_set_num_threads(NUM_THREADS);
 
-   int64_t mod = (int64_t)pow10u[t];
-   u128 step = pow10u[d - t];
+   int64_t mod = (int64_t)bq_pow10[t];
+   u128 step = bq_pow10[d - t];
 
    u128 hit_p[MAX_HITS];
    int64_t hit_m[MAX_HITS];
@@ -171,24 +104,24 @@ int main(int argc, char *argv[]) {
 
 #pragma omp parallel for schedule(dynamic, 4096)
    for (int64_t r = 0; r < mod; r++) {
-      int64_t low = curve_mod(r, mod);
+      int64_t low = curve_abc_mod(r, mod, g_a, g_b, g_c);
       if (!keep5 && low % 5 == 0) continue;
       if (low % 10 == 0) continue;
       int64_t high = rev_digits(low, t);
 
       u128 plo = (u128)high * step;
       u128 phi = plo + step;
-      int64_t mlo = m_at(plo) - BAND_GUARD;
-      int64_t mhi = m_at(phi) + BAND_GUARD;
+      int64_t mlo = m_at(plo, g_a, g_b, g_c) - BAND_GUARD;
+      int64_t mhi = m_at(phi, g_a, g_b, g_c) + BAND_GUARD;
       if (mlo < 0) mlo = 0;
 
       int64_t delta = ((r - mlo) % mod + mod) % mod;
       for (int64_t m = mlo + delta; m <= mhi; m += mod) {
-         u128 p = curve(m);
-         if (p < pow10u[d - 1] || p >= pow10u[d]) continue;
+         u128 p = curve_abc(m, g_a, g_b, g_c);
+         if (p < bq_pow10[d - 1] || p >= bq_pow10[d]) continue;
          if (2 * t < d && digit_at(p, t) != digit_at(p, d - 1 - t))
             continue;
-         if (!is_pal(p, d)) continue;
+         if (!is_pal_d(p, d)) continue;
 #pragma omp critical
          {
             int dup = 0;
@@ -223,7 +156,7 @@ int main(int argc, char *argv[]) {
    mpz_t z;
    mpz_init(z);
    for (int i = 0; i < nhits; i++) {
-      char buf[44];
+      char buf[BQ_STRLEN];
       u128_str(hit_p[i], buf);
       mpz_set_str(z, buf, 10);
       printf("%s  m=%lld  %s\n", buf, (long long)hit_m[i],

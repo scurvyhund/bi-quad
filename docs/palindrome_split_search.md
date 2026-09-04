@@ -273,7 +273,66 @@ Same role as the `mod_obstruct` k=6 sanity check. After any rebuild:
 Values *and* n must match `pals_d13/15/21/25.txt` and `pals.txt` exactly. The whole suite takes under a second. Two rules that are not optional:
 
 1. **Every result past d = 27 must be run at two different t.** Correctness is t-independent, so the two runs share an answer while partitioning the search completely differently. A disagreement means a bug, not a tie to break.
-2. **`MAX_HITS` overflow is fatal, by design** — the tool aborts with a nonzero exit rather than silently truncating. Exhaustiveness is the entire value of the tool; a truncated list that looks complete is the worst failure it could have.
+2. **After any edit to `curve.h`, run `make testcurve` first.** It checks `isqrt_u128` at exact squares and their neighbours, at every `2·10^d − 1` the band edge actually feeds it, and at the top of the u128 range; it checks `n_at`/`m_at` invert the curve exactly over the first 10^5 values; and it checks the split identity itself (high t digits == reverse of low t digits) against every palindrome under n = 3×10^5. A band-edge off-by-one is a *silent* miss, so this runs before the regression, not after.
+3. **`MAX_HITS` overflow is fatal, by design** — the tool aborts with a nonzero exit rather than silently truncating. Exhaustiveness is the entire value of the tool; a truncated list that looks complete is the worst failure it could have.
+
+---
+
+## 10. Shared code — `curve.h`, and one deliberate duplication
+
+The three tools share their primitives through `curve.h`: the `u128`
+container, the pow10 table, `isqrt_u128`, `curve`/`curve_abc`, the band
+inverses `n_at`/`m_at`, `digit_at`, `is_pal_d`, `rev_digits` and
+`u128_str`. Before this, `isqrt_u128` existed in five copies across the
+palindrome tools — five chances for the band-edge fix of §4 to be
+applied to four of them.
+
+**It is header-only, which departs from the project rule of factoring
+shared logic into a `.h`/`.c` pair.** `curve`, `curve_mod`, `digit_at`
+and `isqrt_u128` are called tens of millions of times in the innermost
+loop; moving them to a separate translation unit would cost the
+inlining the O(10^(d/4)) result depends on. The deviation is confined
+to this header.
+
+**`palbrute` keeps its own palindrome predicate, on purpose.**
+`palsplit` tests palindromicity with the digit-indexed `is_pal_d`;
+`palbrute` reverses the whole integer. Two independent implementations
+of the same mathematical test is the entire content of the d = 13…23
+corroboration above. Unifying them would leave a check that only proves
+one function agrees with itself. `curve()` itself *is* shared, and must
+be — if the two tools disagreed about the curve they would be
+corroborating nothing.
+
+`isqrt_u128` is shared despite being load-bearing for the band, because
+`palbrute` uses it only to seed its n-window and then corrects the seed
+against `curve()` directly (`while (curve(nmin) < lo) nmin++`). A wrong
+isqrt cannot manufacture agreement between the two tools.
+
+The extraction was verified output-neutral: the full regression matrix
+(23 palsplit configs × 2 div-5 modes, 8 palcurve curves, palbrute at
+d = 13 and 15) is byte-identical to the pre-extraction binaries apart
+from timing jitter, and `docs/curve_palindromes.txt` regenerates
+identically — all 443 palindromes on all 13 curves. The boundaries were
+checked separately, since the matrix does not reach them: `palsplit` at
+d = 35 and d = 37 (the published frontier) and `palcurve` at its
+d = 33 cap. Valgrind is clean at the configs tested (`palbrute` d = 13,
+`palsplit` d = 17, `palcurve` d = 17, `test_curve`), single-threaded —
+**this does not discharge the pre-run Valgrind on the multi-day d = 29
+sweep**, whose checkpoint path only fires past 134M iterations and was
+never entered here.
+
+### A limit that turned out not to be one
+
+`palcurve`'s `MAX_D = 33` was documented as the point where `4·A·p`
+stops fitting a u128. Measuring it says otherwise: for A ≤ 3 that
+product binds only at `p < 2.83×10^37`, i.e. **d ≤ 37**, and `m_at` was
+verified exact at the top of every d from 30 to 37 for A = 1, 2, 3.
+The cap has about four digits of unused headroom.
+
+It has been left at 33 and the comment corrected to say why: raising it
+is arithmetically free but would emit palcurve results past d = 31,
+where nothing corroborates them. That is a decision to take
+deliberately, not a limit to quietly relax.
 
 ---
 

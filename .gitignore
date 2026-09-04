@@ -77,6 +77,7 @@ palcurve
 palsplit_g2
 palsplit_g1000
 palbrute.lock
+test_curve
 
 # --- Python bytecode ---
 __pycache__/

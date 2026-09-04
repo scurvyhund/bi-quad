@@ -41,67 +41,32 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/file.h>
 #include <omp.h>
 #include <gmp.h>
 
+#include "curve.h"      /* u128, curve, n_at, ipow10, u128_str */
+
 #define NUM_THREADS   8
-#define MAX_D         37
-#define CKPT_STRIDE   100000000LL
+#define MAX_D         BQ_MAX_D
 
-/* unsigned only as a fixed-width decimal container -- see palsplit.c */
-typedef unsigned __int128 u128;
-
-static u128 ipow10(int e) {
-   u128 r = 1;
-   while (e-- > 0) r *= 10;
-   return r;
-}
-
-static u128 isqrt_u128(u128 v) {
-   if (v == 0) return 0;
-   u128 x = (u128)sqrtl((long double)v);
-   if (x == 0) x = 1;
-   for (int i = 0; i < 6; i++) {
-      u128 y = (x + v / x) / 2;
-      if (y == x) break;
-      x = y;
-   }
-   while (x > 1 && x > v / x) x--;
-   while (x + 1 <= v / (x + 1)) x++;
-   return x;
-}
-
-static inline u128 curve(int64_t n) {
-   u128 v = (u128)n;
-   return 2 * v * v + 2 * v + 1;
-}
-
-static int is_pal(u128 x) {
+/* DELIBERATE DUPLICATION -- do not replace this with is_pal_d() from
+ * curve.h.  palbrute exists to cross-check palsplit, and palsplit's
+ * predicate is the digit-indexed is_pal_d().  This one reverses the
+ * whole integer instead: a different implementation of the same
+ * mathematical test, sharing no code with the thing it checks.  Unify
+ * the two and the d=13..23 corroboration becomes worthless -- it would
+ * only prove that one function agrees with itself.
+ * See docs/palindrome_split_search.md. */
+static int is_pal_rev(u128 x) {
    u128 r = 0, t = x;
    while (t) {
       r = r * 10 + t % 10;
       t /= 10;
    }
    return r == x;
-}
-
-static void u128_str(u128 v, char *buf) {
-   char tmp[44];
-   int i = 0;
-   if (v == 0) {
-      strcpy(buf, "0");
-      return;
-   }
-   while (v > 0) {
-      tmp[i++] = (char)('0' + (int)(v % 10));
-      v /= 10;
-   }
-   for (int j = 0; j < i; j++) buf[j] = tmp[i - 1 - j];
-   buf[i] = '\0';
 }
 
 int main(int argc, char *argv[]) {
@@ -129,10 +94,10 @@ int main(int argc, char *argv[]) {
    u128 lo = ipow10(d - 1);
    u128 hi = ipow10(d);
 
-   int64_t nmin = (int64_t)((isqrt_u128(2 * lo - 1) - 1) / 2);
+   int64_t nmin = n_at(lo);
    while (curve(nmin) < lo) nmin++;
    while (nmin > 0 && curve(nmin - 1) >= lo) nmin--;
-   int64_t nmax = (int64_t)((isqrt_u128(2 * hi - 1) - 1) / 2);
+   int64_t nmax = n_at(hi);
    while (curve(nmax) >= hi) nmax--;
    while (curve(nmax + 1) < hi) nmax++;
 
@@ -185,9 +150,9 @@ int main(int argc, char *argv[]) {
          int last = (int)(p % 10);
          int first = (int)((long double)p / topld);
          if (first != last) continue;
-         if (!is_pal(p)) continue;
+         if (!is_pal_rev(p)) continue;
 
-         char buf[44];
+         char buf[BQ_STRLEN];
          u128_str(p, buf);
          mpz_set_str(z, buf, 10);
          int pr = mpz_probab_prime_p(z, 40);
