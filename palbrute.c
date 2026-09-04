@@ -117,6 +117,50 @@ static int is_pal_rev(u128 x) {
    return r == x;
 }
 
+/* Same test, but exiting on the first mismatched digit pair.
+ *
+ * is_pal_rev above reverses ALL d digits every time, with no early
+ * exit -- at d=29 that is 29 u128 divmod pairs on every call, and it
+ * is called ~11.7 trillion times in a lead-1 sweep.  It dominates the
+ * run completely.
+ *
+ * Inside a zone the OUTERMOST digit pair is already known to match
+ * (that is how we got here), so the next pair matches with
+ * probability 1/10 and this returns after ~1.11 comparisons on
+ * average.  It also splits once into two 64-bit halves, so the inner
+ * work is 64-bit divmod rather than u128.
+ *
+ * h = d/2 pairs to check; for odd d the middle digit needs no test.
+ * Both 10^h and 10^(d-h) fit a uint64 for d <= 37.
+ *
+ * is_pal_rev is KEPT as the reference: it is the deliberately dumb
+ * predicate that makes palbrute an independent cross-check of
+ * palsplit, and --verify runs both on every candidate and aborts on
+ * any disagreement. */
+/* The uint64_t casts below hold only while 10^ceil(d/2) fits a
+ * uint64: at d=37 that is 10^19 = 1.0e19 against UINT64_MAX =
+ * 1.84e19.  Raising BQ_MAX_D to 39 would make 10^20 truncate
+ * SILENTLY -- the same shape of bug as the long double filter this
+ * function replaced.  Fail the build instead. */
+#if BQ_MAX_D > 37
+#error "is_pal_fast: 10^ceil(d/2) exceeds uint64 for BQ_MAX_D > 37"
+#endif
+
+static int is_pal_fast(u128 x, int d) {
+   int h = d / 2;
+   if (h == 0) return 1;
+   uint64_t lo = (uint64_t)(x % bq_pow10[h]);
+   uint64_t hi = (uint64_t)(x / bq_pow10[d - h]);
+   uint64_t t = (uint64_t)bq_pow10[h - 1];
+   for (int i = 0; i < h; i++) {
+      if (lo % 10 != hi / t) return 0;
+      lo /= 10;
+      hi %= t;
+      t /= 10;
+   }
+   return 1;
+}
+
 /* least n with curve(n) >= target.  Seeded by n_at, then walked to the
  * true edge, so the result does not depend on the seed being right. */
 static int64_t first_n_at_least(u128 target) {
@@ -145,16 +189,20 @@ static void write_ckpt(const char *path, int zi, int64_t nnext,
 
 int main(int argc, char *argv[]) {
    if (argc < 2) {
-      fprintf(stderr, "usage: %s <d> [n_start] [n_end] [--all]\n",
+      fprintf(stderr,
+              "usage: %s <d> [n_start] [n_end] [--all|--verify|--slow]\n",
               argv[0]);
       return 1;
    }
    int d = atoi(argv[1]);
    int all = 0;
+   int verify = 0;
    int64_t argn[2];
    int nargn = 0;
    for (int i = 2; i < argc; i++) {
       if (strcmp(argv[i], "--all") == 0) all = 1;
+      else if (strcmp(argv[i], "--verify") == 0) verify = 1;
+      else if (strcmp(argv[i], "--slow") == 0) verify = 2;
       else if (nargn < 2) argn[nargn++] = strtoll(argv[i], NULL, 10);
    }
    if (d < 1 || d > MAX_D) {
@@ -285,7 +333,21 @@ int main(int argc, char *argv[]) {
                } else {
                   if (last != (int)(p / bq_pow10[d - 1])) continue;
                }
-               if (!is_pal_rev(p)) continue;
+               if (verify == 2) {
+                  if (!is_pal_rev(p)) continue;
+               } else if (verify == 1) {
+                  int f = is_pal_fast(p, d), r = is_pal_rev(p);
+                  if (f != r) {
+                     char bb[BQ_STRLEN];
+                     u128_str(p, bb);
+                     fprintf(stderr, "FATAL: predicates disagree on %s"
+                             " (fast=%d rev=%d)\n", bb, f, r);
+                     exit(3);
+                  }
+                  if (!f) continue;
+               } else {
+                  if (!is_pal_fast(p, d)) continue;
+               }
 
                char buf[BQ_STRLEN];
                u128_str(p, buf);

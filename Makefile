@@ -12,7 +12,7 @@ LDLIBS   = -lgmp
 TARGET   = mod_obstruct
 PALS     = palsplit palcurve palbrute
 CHECKS   = check_d5 check_d7 check_d9 check_survivors
-TESTS    = test_curve test_curve_gmp
+TESTS    = test_curve test_curve_gmp test_palpred
 
 .PHONY: all pals checks test tests clean
 
@@ -48,9 +48,13 @@ test_curve: test_curve.c curve.h
 test_curve_gmp: test_curve_gmp.c curve.h curve_gmp.h
 	$(CC) -O2 -std=c99 -Wall -Wextra -o $@ $< $(LDLIBS) -lm
 
+test_palpred: test_palpred.c curve.h
+	$(CC) -O2 -std=c99 -Wall -Wextra -o $@ $< -lm
+
 tests: $(TESTS)
 	./test_curve
 	./test_curve_gmp
+	./test_palpred
 
 clean:
 	rm -f $(TARGET) $(PALS) $(CHECKS) hunt $(TESTS)	

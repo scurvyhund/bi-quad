@@ -88,6 +88,42 @@ new zones, and `--all`; all 44 known k=1 palindromes (d = 2..37) fall
 inside the zones; `p mod 10 ∈ {1,3,5}` confirmed exhaustively; Valgrind
 clean with 9 checkpoints written during the run.
 
+**[x] 5c. Early-exit palindrome predicate — 7.65x. DONE 2026-09-03.**
+Jim spotted this the moment the function was on screen. `is_pal_rev`
+reversed all d digits with **no early exit**, on every call — at d=29
+that is 29 u128 divmod pairs, ~11.7 trillion times in a lead-1 sweep.
+It dominated the run completely, which is also why the zones (5a) only
+bought 1.15%.
+
+Inside a zone the outermost digit pair is already known to match, so
+the next pair fails 9 times in 10. `is_pal_fast` splits once into two
+64-bit halves and compares pairs from the outside in, returning on the
+first mismatch: ~1.11 comparisons instead of 29, in 64-bit rather than
+u128 arithmetic.
+
+    full d=25 sweep   7184.1s -> 938.8s     7.65x, same five palindromes
+    d=29 in-zone rate 72 M n/s -> 526 M n/s 7.3x
+
+Soundness — `is_pal_fast` has a NARROWER CONTRACT than the predicate it
+replaces: it requires `d` to be the true digit count of `x`, where
+`is_pal_rev` works on anything. Inside palbrute that is guaranteed by
+the zone bounds. `is_pal_rev` is therefore KEPT as the reference, and
+`--verify` runs both on every candidate and `exit(3)`s on disagreement.
+
+Verified: `test_palpred.c` — 2.6M values at every d from 1 to 37,
+driving genuine palindromes, one-digit corruptions and uniform random
+(random curve values are almost never palindromes, so a data-only test
+would never exercise the YES path); `--verify` clean at d = 13, 15, 17,
+19, 21, 23 with counts 2/4/1/3/5/1; d = 25 reproduces the five from the
+2026-09-03 run exactly, against a list registered before the run
+reached them. A `#error` fires if `BQ_MAX_D` ever exceeds 37, where the
+uint64 casts would silently truncate.
+
+**Revised d=29 cost:** lead-1 zone ~16-27 h, **all three zones
+~33-59 h** — so the COMPLETE d=29 is now cheaper than the partial was
+this morning. Do the complete one; the claim becomes "d=29 exhaustively
+brute-verified" rather than "the lead-1 part of it".
+
 **[ ] 6. Raise `palcurve`'s `MAX_D` from 33 to 37.**
 The cap is conservative: the real u128 limit on `4·A·p` binds at d ≤ 37
 for A ≤ 3, verified exact at the top of every d from 30 to 37. Six more
@@ -138,7 +174,7 @@ residue class rather than digit position) breaks it.
 
 ## Tier 3 — expensive, decide deliberately
 
-**[ ] 13. d = 29, the LEAD-1 ZONE — ~4.7 days.**
+**[ ] 13. d = 29, COMPLETE (all three zones) — ~33-59 h.**
 `./palbrute 29` now splits into three zones; the lead-1 zone is 19.2%
 of the full range and **contains both known d = 29 palindromes** (at
 1.94% and 10.33%), giving positive controls plus a large must-be-empty
