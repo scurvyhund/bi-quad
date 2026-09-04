@@ -70,6 +70,35 @@ wall-clock of a program that was never told about it.
 finishes, with a before/after showing all five hits still found.*
 *Cost: an hour. Payoff: makes item 13 a weekend instead of a fortnight.*
 
+**[ ] 5b. FIX the long-double leading-digit filter — same change as
+(5a), and it is a correctness bug, not just a speedup.**
+`palbrute.c` and both `palhunt_gmp.c` / `palhunt_opt.c` compute the
+leading digit as `(int)((long double)p / topld)`, commented "fast exact
+leading digit". It is **not exact**: a 64-bit mantissa cannot hold `p`
+past ~d=19, and the quotient rounds. Demonstrated failure at d = 37:
+
+    n = 1732050807568877293
+    p = 5999999999999999999809846168119770285
+    exact leading digit 5, last digit 5   -> MUST be tested
+    computed leading digit 6              -> SILENTLY SKIPPED
+
+Same failure mode as the `palsplit` band edge (see
+`palindrome_split_search.md` §4): a `long double` where exactness is
+required, producing a miss indistinguishable from a clean negative.
+
+**Blast radius: no published result is affected.** 8.8M values
+straddling every decade boundary at d = 13..35 gave zero disagreements;
+the single failure is at d = 37. `palhunt_gmp` only ever ran to d = 27.
+`palsplit`'s d = 37 result is clean — it extracts digits with exact
+u128 `digit_at()`, not this trick. But `palbrute` at d = 37 **would**
+lose candidates, so this must be fixed before the tool is pointed past
+d = 35.
+
+The fix and (5a) are the same edit: search only the exact u128 n-ranges
+where `p` starts with 1, 3 or 5, and the leading-digit filter disappears
+entirely. Correctness and 2.41x from one change.
+*Found by asking what a NULL result from the d=25 run would have meant.*
+
 **[ ] 6. Raise `palcurve`'s `MAX_D` from 33 to 37.**
 The cap is conservative: the real u128 limit on `4·A·p` binds at d ≤ 37
 for A ≤ 3, verified exact at the top of every d from 30 to 37. Six more
