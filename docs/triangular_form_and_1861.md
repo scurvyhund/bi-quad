@@ -25,14 +25,14 @@ becomes a glance.
 
 The project's numbers in triangular form:
 
-| n | Tₙ | p = 4Tₙ + 1 | |
-|---|---|---|---|
-| 4 | 10 | 41 | |
-| 30 | 465 | 1861 | the descent prime, §2 |
-| 40 | 820 | 3281 | = 17 × 193, composite |
-| 79 | 3160 | 12641 | the emirp |
-| 85 | 3655 | 14621 | its reversal |
-| 1262 | 796953 | 3187813 | the 4th prime palindrome |
+|    n |     Tₙ | p = 4Tₙ + 1 | note                     |
+| ---: | -----: | ----------: | ------------------------ |
+|    4 |     10 |          41 |                          |
+|   30 |    465 |        1861 | the descent prime, §2    |
+|   40 |    820 |        3281 | = 17 × 193, composite    |
+|   79 |   3160 |       12641 | the emirp                |
+|   85 |   3655 |       14621 | its reversal             |
+| 1262 | 796953 |     3187813 | the 4th prime palindrome |
 
 The bi-quadratic emirp reads more cleanly here than in its usual form:
 
@@ -153,16 +153,16 @@ them out **two** ways:
 Now compare across the project's numbers (`*` marks a consecutive pair,
 i.e. the value lies on our curve):
 
-| value | prime | # reps | representations |
-|---|---|---|---|
-| 41 | yes | 1 | 4²+5² * |
-| 1861 | yes | 1 | 30²+31² * |
-| 12641 | yes | 1 | 79²+80² * |
-| 14621 | yes | 1 | 85²+86² * |
-| 3187813 | yes | 1 | 1262²+1263² * |
-| 3281 | no | 2 | 16²+55², 40²+41² * |
-| 841 | no | 2 | 0²+29², 20²+21² * |
-| 1681 | no | 2 | 0²+41², 9²+40² — none consecutive |
+|   value | prime | # reps | representations                   |
+| ------: | ----- | -----: | --------------------------------- |
+|      41 | yes   |      1 | 4²+5² *                           |
+|    1861 | yes   |      1 | 30²+31² *                         |
+|   12641 | yes   |      1 | 79²+80² *                         |
+|   14621 | yes   |      1 | 85²+86² *                         |
+| 3187813 | yes   |      1 | 1262²+1263² *                     |
+|    3281 | no    |      2 | 16²+55², 40²+41² *                |
+|     841 | no    |      2 | 0²+29², 20²+21² *                 |
+|    1681 | no    |      2 | 0²+41², 9²+40² — none consecutive |
 
 **The uniqueness clause of Fermat's theorem applies to primes.** A prime
 `≡ 1 (mod 4)` has *exactly one* representation as a sum of two squares.
@@ -189,12 +189,12 @@ structural factor the whole density argument rests on.
 
 Both live in this project, doing opposite jobs.
 
-| | Newton's method | Fermat's descent |
-|---|---|---|
-| goal | compute an answer | prove no answer exists |
-| each step | a better approximation | a strictly smaller *solution* |
-| terminates because | close enough | ℕ cannot decrease forever |
-| the punchline | it converges | **it cannot continue** |
+|                    | Newton's method        | Fermat's descent              |
+| ------------------ | ---------------------- | ----------------------------- |
+| goal               | compute an answer      | prove no answer exists        |
+| each step          | a better approximation | a strictly smaller *solution* |
+| terminates because | close enough           | ℕ cannot decrease forever     |
+| the punchline      | it converges           | **it cannot continue**        |
 
 **Newton is in our code.** `curve.h`, `isqrt_u128()`:
 
