@@ -63,6 +63,7 @@ docs/doc_txt/
 # Personal correspondence — contains name/email, must not reach the
 # public mirrors (GitLab / GitHub / Codeberg)
 PrimeCurios.txt
+PrimePuzzles.txt
 
 # --- Credentials — MUST NEVER reach the public mirrors ---
 # Was untracked but NOT ignored: a `git add -A` would have committed
