@@ -23,8 +23,8 @@ by the optimized binary — see §9.)
 | `p` is **never** divisible by 11 → palindromes only at **odd** d | **PROVEN** |
 | `p` ends in one of `{01,13,21,41,61,81}`, else `…5` (div-5) | **PROVEN** |
 | a palindrome is the `m = n` (degenerate) case of an emirp | **PROVEN** |
-| only four prime palindromes: `5, 181, 313, 3187813` | **CONJECTURE** (brute d≤27) |
-| `3187813` is the largest prime palindrome on the curve | **CONJECTURE** (since 1997) |
+| only four prime palindromes: `5, 181, 313, 3187813` | **REFUTED 2026-09-04** — a fifth exists at d=59 |
+| `3187813` is the largest prime palindrome on the curve | **REFUTED 2026-09-04** (true only through d=37) |
 
 ---
 

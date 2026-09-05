@@ -65,8 +65,10 @@ digits read the same forwards and backwards. Four are known, all small:
 The largest, **3187813**, was conjectured (J., 1997) to be the *last* —
 the largest prime palindrome anywhere on the curve.
 
-> **Open question.** Is 3187813 the largest palindromic prime on
-> p = 2n² + 2n + 1 ?
+> ⚠ **ANSWERED — NO (2026-09-04).** A fifth term exists at 59 digits,
+> `n = 91732095351342012927350087594` (De Geest, 2026-04-24). Problem 2
+> below is therefore closed; **Problem 1, the emirp, remains open** and
+> is the live question. See [`session_2026-09-04_palindrome_conjecture_refuted.md`](session_2026-09-04_palindrome_conjecture_refuted.md).
 
 **Evidence.** No further palindromic prime on the curve has been found
 for 8 through 27 digits — direct search to 19 digits, extended to 27 by

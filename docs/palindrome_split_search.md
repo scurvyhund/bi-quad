@@ -245,7 +245,10 @@ Still outstanding: d = 29..37 have no brute corroboration. A full d = 29 sweep i
 *Measured on 8 threads. The figure also decays under sustained load — the d = 29 cumulative average fell from 76 to 72 M n/s over 90 seconds as Tctl reached 92 °C, so the instantaneous steady-state rate is nearer 68. **Estimate any future run at the rate for its own d, not a rate carried over from a shorter one.** For reference, d = 25 is ~1.53×10^12 n-values, 4–6 hours.)*
 
 > **Therefore: 3187813 remains the largest prime palindrome on the curve through d = 37.**
-> The 1997 conjecture is now confirmed 30 digits past where it was first found, up from 20.
+> That bounded statement STANDS. The unbounded 1997 conjecture does not:
+> a fifth prime palindrome exists at **d = 59** (De Geest, 2026-04-24).
+> Our search was correct; it did not reach far enough. See
+> [`session_2026-09-04_palindrome_conjecture_refuted.md`](session_2026-09-04_palindrome_conjecture_refuted.md).
 
 ---
 

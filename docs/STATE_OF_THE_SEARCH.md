@@ -5,6 +5,13 @@
 > the search stands, what is *proven*, what is *believed*, and why it stops
 > where it stops.
 >
+> ⚠ **Status (2026-09-04): the palindrome conjecture is REFUTED.** A
+> fifth prime palindrome exists at **d = 59** (De Geest, 2026-04-24).
+> §2's headline is struck; §3's bounded statements stand. The
+> palindrome frontier belongs to a GPU search and is not ours to
+> take; **the emirp is now the live question.** See
+> [`session_2026-09-04_palindrome_conjecture_refuted.md`](session_2026-09-04_palindrome_conjecture_refuted.md).
+>
 > **Status (2026-09-03):** emirps brute-confirmed **through d = 27**
 > (unchanged since 2026-07-05). Prime palindromes now searched **through
 > d = 37**, with the multi-tool verified floor at **d = 25**. The two
@@ -92,12 +99,16 @@ composite, every one with a Miller–Rabin witness, so compositeness is proven
 rather than probabilistic.** The whole sweep to d = 37 costs about 30 seconds;
 d = 27 alone takes 0.12 s against `palhunt_gmp`'s 22.3 h.
 
-The conjecture (Jim, since ~1997):
+The conjecture (Jim, since ~1997) was:
 
-> **3187813 is the largest prime palindrome on the curve.**
+> ~~**3187813 is the largest prime palindrome on the curve.**~~
 
-Now confirmed 30 digits past where it was first found — but see §3 for how far
-that is *corroborated* as opposed to searched.
+> ⚠ **REFUTED 2026-09-04.** A fifth prime palindrome exists at **59
+> digits**: `n = 91732095351342012927350087594`. Found by Patrick De
+> Geest 2026-04-24 with Robert Xiao's `cudapalin`; verified here
+> independently. The bounded form — *largest through d = 37* — still
+> stands; the unbounded claim does not. See
+> [`session_2026-09-04_palindrome_conjecture_refuted.md`](session_2026-09-04_palindrome_conjecture_refuted.md).
 
 ---
 

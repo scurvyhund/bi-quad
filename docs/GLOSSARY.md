@@ -78,7 +78,7 @@ The only one known on our curve: **12641 ↔ 14621** (d=5, n=79/85).
 **emirp** (general usage) — a prime whose digit reversal is a *different* prime. The bi-quadratic version additionally demands both lie on the curve.
 
 **prime palindrome (on the curve)** — the degenerate converse pair `m = n`, i.e. `p = rev(p)`.
-**Jim's conjecture:** `3187813` (d=7) is the largest. Held since 1997, confirmed to d=27.
+**Jim's conjecture:** `3187813` (d=7) is the largest. Held 1997–2026, **REFUTED 2026-09-04** — a fifth prime palindrome exists at d=59. True only in the bounded form, *largest through d=37*.
 
 **the unification** — the emirp sieve *is* the palindrome sieve: a palindrome is a survivor with `m = n`. A modular obstruction kills both. See `unification` notes and `mod11_converse_constraint.md`.
 
