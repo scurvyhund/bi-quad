@@ -76,6 +76,13 @@ Summing over all d: **Σ C/d² converges** (p-series, p=2).
 → A *finite* total number of emirps is expected across all integers.
 → Expected total ≈ 1 (consistent with exactly one known: 12641 ⟷ 14621).
 
+> **The structural factor is now MEASURED, not assumed (2026-09-04).**
+> The `10^(-d/2)` term predicts a survivor count constant in d; observed
+> counts are flat across 10^11 in range, corr = -0.028. See
+> [`survivor_density_calibration.md`](survivor_density_calibration.md),
+> which also corrects where the remaining probability sits: ~16% lies
+> above d = 27, not ~2%.
+
 ### Comparison
 
 | object        | expected count at d | sum over all d   |
