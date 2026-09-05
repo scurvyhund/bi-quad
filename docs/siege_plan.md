@@ -265,7 +265,9 @@ of the full range and **contains both known d = 29 palindromes** (at
 1.94% and 10.33%), giving positive controls plus a large must-be-empty
 region. The claim it earns is clean: *every d = 29 palindrome beginning
 with 1 has been independently confirmed.* **This is the real
-corroboration gap** — d = 29…37 rests on `palsplit` alone.
+corroboration gap** — d = 31…37 rests on `palsplit` alone. **d = 29 is
+now closed**: `palbrute 29` finished 2026-09-05 in 26.7 h with found=2,
+matching `palsplit` exactly. See STATE_OF_THE_SEARCH §3.
 
 Costs, corrected against the measured d = 25 run (1.529e12 n in 7184 s
 = 213 M n/s average):

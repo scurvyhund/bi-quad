@@ -14,7 +14,8 @@
 >
 > **Status (2026-09-03):** emirps brute-confirmed **through d = 27**
 > (unchanged since 2026-07-05). Prime palindromes now searched **through
-> d = 37**, with the multi-tool verified floor at **d = 25**. The two
+> d = 37**, with the multi-tool verified floor now at **d = 29**
+> (`palbrute` closed it 2026-09-05). The two
 > objects no longer share a frontier — or a search cost. See §4: the
 > ~10^(d/2) wall still stands for emirps, and has been broken for
 > palindromes.
@@ -119,18 +120,26 @@ are different numbers and the distinction matters more than the headline.
 
 - **Emirps — brute-verified to d = 27.** `hunt.c` (`EMIRPS = 0`), every n,
   GMP-exact. Unchanged.
-- **Palindromes — multi-tool verified to d = 25.** Four independent lines agree
+- **Palindromes — multi-tool verified to d = 29.** Four independent lines agree
   on the complete palindrome set at d = 25: `hunt_noopt` (2026-07-06, with
   quadratic-sieve factorisations as self-checking certificates), `palsplit`,
   and an exhaustive `palbrute` sweep (2026-09-03). `palbrute` shares no logic
   with `palsplit` — different palindrome predicate, different search strategy —
   which is the point of it. d = 13…23 likewise agree between `palsplit` and
   `palbrute`.
-- **Palindromes — d = 29…37 rests on `palsplit` alone.** Two independent split
-  widths `t` agree (correctness is t-independent, so this is a real
-  cross-check, not a repeat), and the compositeness of every candidate is
-  proven by MR witness. But no second *tool* has swept that range. A d = 29
-  brute is ~4 days and is the outstanding item.
+- **Palindromes — d = 29 now has a second tool; d = 31…37 still rests on
+  `palsplit` alone.** `palbrute 29` completed 2026-09-05 (26.7 h, 96091.6 s,
+  clean exit): `found=2  visited=63,327,388,727,965`, both composite —
+  `10856305724223132242750365801` (n=73675999227099) and
+  `14966412087720702778021466941` (n=86505526088570). That is exactly
+  `palsplit`'s count of 2, from a tool sharing no predicate and no search
+  strategy with it, so the div-5 counting convention is settled too: there
+  are no div-5 palindromes at d = 29 for the two conventions to differ over.
+  The floor is therefore contiguous to 29 — even `d` are structurally empty
+  (mod 11), and d = 27 was covered by `palhunt_gmp` and independently by
+  `hunt.c`. For d = 31…37, two independent split widths `t` agree
+  (correctness is t-independent, so a real cross-check) and every candidate's
+  compositeness is MR-proven, but no second *tool* has swept there.
 - **Rests on `cvpipe`'s own logs:** anything beyond the brute frontier on the
   emirp side. A verified d = 24 run exists and cross-checks the brute tools.
 
@@ -247,7 +256,9 @@ reopens:**
   and the next genuine test is **d = 28**. Palindromes are searched to
   **d = 37**; the next genuine digit is **d = 39**, which needs a 256-bit hot
   loop. The most valuable pending run is not at the frontier at all — it is a
-  **d = 29 brute** (~4 days) to bring the verified floor up behind `palsplit`.
+  **d = 31 brute** to continue bringing the verified floor up behind
+  `palsplit` — the d = 29 brute is DONE (2026-09-05, found=2, agreeing with
+  `palsplit` exactly).
 - **What's still open:** does a second bi-quadratic emirp exist at any d ≥ 28?
   Is 3187813 truly the last prime palindrome? Both are *unproven* — only
   unobserved.
