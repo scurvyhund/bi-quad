@@ -95,6 +95,39 @@ per residue (1-2 at the cliff) and do exact point checks.
 If regression fails (d=13 returns 322052 or "saturated") the binary
 is the old buggy version — do not proceed.
 
+## Prior Art — Check Before Claiming Anything Is New or Unsearched
+
+This field's real state of the art is not in the literature. It lives on
+a handful of personal sites maintained by specialists over decades, and
+it is routinely a decade ahead of anything citable.
+
+**Check these before claiming a result, a bound, or an open window:**
+
+- `primepuzzles.net` — Carlos Rivera. Puzzle 14 is our exact territory.
+- `worldofnumbers.com/sumsquare.htm` — Patrick De Geest's **indexed**
+  enumeration of palindromes on this curve.
+- OEIS **A027862** (our primes), **A050239** (palindromic ones),
+  **A001844**, **A002407** — and always the `LINKS` and `Cf.` blocks,
+  not just the DATA line.
+
+**Two failures on 2026-09-04, both avoidable:**
+
+1. The 1997 conjecture that `3187813` is the largest prime palindrome on
+   the curve had been **refuted four months earlier** — De Geest, Puzzle
+   14, 2026-04-24, a 59-digit example. We were preparing a Prime Curios
+   submission asserting it.
+2. A "gap" was inferred between two published bounds (Alekseyev's
+   `<10^47`, De Geest's `10^58`) and taken for unsearched territory. It
+   was not. `sumsquare.htm` carries **consecutive indices** through 69 —
+   and consecutive indices mean exhaustive enumeration.
+
+**Rules.** An OEIS comment or a paper abstract records a *milestone*, not
+coverage — never read one as a frontier. A numbered or indexed list on a
+specialist's page IS a coverage claim; read it. Weight "a specialist has
+worked this for 25 years" far above "I found no published bound." And
+before any outward submission, re-check the specific number: `1861` had
+six existing curios, two adjacent to what we were about to send.
+
 ## Ruled-Out Structural Attacks — Do Not Revisit
 
 Three approaches rigorously tested and eliminated (2026-06-04).
