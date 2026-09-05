@@ -1,0 +1,175 @@
+# The triangular form, 1861, and a note on Fermat's manners
+
+**2026-09-05.** Written from a tangent that started with Jim running
+`consec_sqrs`, idly reversing one of its outputs, and asking whether
+anything about it was interesting.
+
+Sections 1–3 are mathematics. Section 4 is charm, labelled as such.
+Section 5 is history, and it closes a loop.
+
+---
+
+## 1. The identity — every curve value is 4·Tₙ + 1
+
+    p = n² + (n+1)²  =  2n² + 2n + 1  =  2·n(n+1) + 1  =  4·Tₙ + 1
+
+where `Tₙ = n(n+1)/2` is the nth triangular number, and `n(n+1)` is the
+nth **pronic** (oblong) number. The step is trivial —
+`n(n+1) = 2Tₙ` — but the form is worth keeping, because it makes a
+property we had been asserting into something visible.
+
+**Every curve value is `4k + 1`, hence `≡ 1 (mod 4)`, by inspection.**
+That is exactly the Fermat two-square condition. The reason this curve
+sits *inside* the two-square theorem stops being a computation and
+becomes a glance.
+
+The project's numbers in triangular form:
+
+| n | Tₙ | p = 4Tₙ + 1 | |
+|---|---|---|---|
+| 4 | 10 | 41 | |
+| 30 | 465 | 1861 | the descent prime, §2 |
+| 40 | 820 | 3281 | = 17 × 193, composite |
+| 79 | 3160 | 12641 | the emirp |
+| 85 | 3655 | 14621 | its reversal |
+| 1262 | 796953 | 3187813 | the 4th prime palindrome |
+
+The bi-quadratic emirp reads more cleanly here than in its usual form:
+
+    4·T₇₉ + 1  ⟷  4·T₈₅ + 1
+
+Verified in `docs/curve_tools.py`.
+
+---
+
+## 2. 1861 — the descent prime
+
+    1861  = 30² + 31²  = 4·T₃₀ + 1     prime
+    rev(1861) = 1681   = 41²           NOT prime
+    41    = 4² + 5²    = 4·T₄ + 1      prime, and back on the curve
+
+Reverse, take the square root, and you land on a **smaller member of the
+same family**. Call it a **descent prime**: a prime `p = n² + (n+1)²`
+whose reversal is `q²` with `q` prime and itself a sum of two
+consecutive squares.
+
+**Exhaustively verified to 10¹⁴:**
+
+- `61` and `1861` are the ONLY curve primes whose reversal is any
+  perfect square (`rev(61) = 16 = 4²`).
+- `1861` is the only one whose root is prime — `4` is not.
+- Therefore `1861` is the only descent prime below 10¹⁴.
+
+**The name is a good label and a bad theorem.** Fermat's descent is a
+*proof technique*: from a solution construct a strictly smaller one,
+repeat, and contradict the well-ordering of ℕ. Here the shrinking step
+is **digit reversal**, which is base-10, not arithmetic. It takes one
+step and halts — `rev(41) = 14` is not a square — and nothing guarantees
+it could ever take another. Do not read the name as an instance of the
+technique.
+
+That gap is the project in miniature: the curve is pure arithmetic, the
+reversal is pure decimal, and structure on one side does not propagate
+to the other. `mod 11` remains one of the very few places the two
+actually talk.
+
+**This object is invisible to `hunt.c`.** The hunt classifies by whether
+`rev(p)` lands *on the curve*; `1681` does not. So `1861` never appears
+as a survivor, despite being the closest structural near-miss in the
+first 10¹⁴. A category our tooling is not built to see.
+
+---
+
+## 3. 1681 is a Pell witness
+
+Separately — and this is a fact about `1681`, not about `1861`:
+
+    1681 = 2·841 − 1       and     841 = 29² = 20² + 21²
+
+"`2p − 1` is a perfect square" **is** the on-curve test. So `1681` is
+literally the certificate that `841` lies on the curve. And `841` is
+both a perfect square and a curve value, which makes it a solution of
+
+    u² − 2s² = −1          (u,s) = (41,29)
+
+the **negative Pell equation**. Those solutions are the convergents of
+√2 — `(1,1), (7,5), (41,29), (239,169), …` — each about 34× the last in
+`s²`, so the family is exponentially sparse: only ~0.65 members per
+decade.
+
+That sparsity answers a related question before any search runs. Asked
+whether a curve prime exists whose reversal is *both* a perfect square
+*and* a sum of two consecutive squares, the expected count over all
+digit-lengths is `~3 × 10⁻⁴` — about 1 in 3,000. Checked empirically
+through 14 Pell terms to `5.8 × 10¹⁹`: none.
+
+So `1681` does double duty: reversal of one curve prime, and Pell
+witness for a different curve value that happens to be square.
+
+---
+
+## 4. 1640 = 40 × 41 — charm, not mathematics
+
+Fermat stated the two-square theorem in a letter of **1640**. And
+
+    1640 = 2³ × 5 × 41 = 40 × 41 = 2·T₄₀
+
+a **pronic number** — precisely the `n(n+1)` that generates
+`curve(40) = 2·1640 + 1 = 3281`. The year attached to the theorem is a
+*coordinate* on the tightest curve inside that theorem. The `41` is the
+same `41 = 4² + 5²` sitting at the root of `1861`.
+
+**Honestly weighted:** pronic numbers are not rare — about 40 of them
+below 1640, so a random four-digit number is pronic roughly 1 time in
+40. The `41` appearing is the same fact restated, not a second
+coincidence. And `3281 = 17 × 193` is composite, so nothing follows.
+
+This belongs in the docs as something pleasing, not as a result. Waiting
+a year would have bought nothing either: `1641 = 3 × 547`.
+
+---
+
+## 5. Newton descends, Fermat descends — differently
+
+Both live in this project, doing opposite jobs.
+
+| | Newton's method | Fermat's descent |
+|---|---|---|
+| goal | compute an answer | prove no answer exists |
+| each step | a better approximation | a strictly smaller *solution* |
+| terminates because | close enough | ℕ cannot decrease forever |
+| the punchline | it converges | **it cannot continue** |
+
+**Newton is in our code.** `curve.h`, `isqrt_u128()`:
+
+    u128 y = (x + v / x) / 2;
+
+six iterations, then exact integer adjustment.
+
+**Descent is in our foundations.** Fermat claimed the two-square theorem
+in 1640 and, characteristically, did not write down a proof. Euler
+finished it by infinite descent around 1747, having worked at it for
+some seven years — about a century after the claim.
+
+---
+
+## 6. The knot
+
+Fermat was a magistrate in Toulouse who did mathematics as an avocation,
+stated results without proofs, and enjoyed setting them as challenges to
+correspondents who did not always find it charming. In 1657 he threw one
+such challenge at the English mathematicians: solve `x² − N·y² = 1`.
+Brouncker and Wallis did. Euler, reading the exchange much later,
+attributed the equation to **John Pell** — who had essentially nothing
+to do with it.
+
+So the equation in §3, the one governing which of our curve values are
+perfect squares, is named after the wrong man **because of a challenge
+Fermat set to mathematicians he was busy exasperating**.
+
+A project named BigFermat, hunting primes on the tightest case of his
+two-square theorem, arriving at a misnamed equation by way of a
+four-digit prime reversing into the square of another prime on the same
+curve, in a year that factors as 40 × 41.
+
+He would have enjoyed that, and he would not have written down why.

@@ -29,6 +29,11 @@ So: no orbits, no group law, no mystery **in the curve itself.**
 
 ---
 
+> **See also** [`triangular_form_and_1861.md`](triangular_form_and_1861.md):
+> `p = 4·Tₙ + 1`, which makes `p ≡ 1 (mod 4)` visible on sight rather than
+> computed — plus the descent prime 1861 and why the Pell equation in this
+> project is named after the wrong man.
+
 ## 2. The picture that is actually true
 
 Start from the definition rather than the expansion:
