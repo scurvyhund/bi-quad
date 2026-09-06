@@ -202,6 +202,51 @@ Guarded by `#if defined(__x86_64__) && !defined(PALBRUTE_NO_ASM)`,
 with the original u128 arithmetic as the portable fallback. Both paths
 are built and validated.
 
+### What the change did and did not do (perf counters)
+
+Asked whether being this specific with GCC helps branch prediction or
+enables inlining. Measured at d=19, both binaries, 8 threads:
+
+| | old | new | change |
+|---|---|---|---|
+| cycles | 22.35 G | 16.83 G | -24.7% |
+| instructions | 58.88 G | 51.77 G | -12.1% |
+| branches | 5.41 G | 3.90 G | **-27.9%** |
+| branch-misses | 2.34 M | 2.20 M | -6% |
+| IPC | 2.63 | 3.08 | +17% |
+| mispredict rate | 0.043% | 0.056% | *worse* |
+
+**Inlining: unchanged.** `is_pal_fast` was already fully inlined in
+both binaries (no standalone symbol in either). GCC inlines it either
+way; the asm was irrelevant to that.
+
+**Misprediction: unchanged, rate slightly worse.** At 0.043% the
+predictor was already near-perfect, so there was nothing to win. The
+rate rose only because the denominator shrank.
+
+**What actually happened: 1.5 billion branches deleted.**
+`__udivti3` is not one instruction — it is a software routine with
+data-dependent branching (operand normalization, zero-word fast paths,
+a shift-subtract loop), executed 633 M times. One `divq` deletes that
+whole control-flow structure. Those branches were *well predicted*, so
+the saving is in **issue slots and instruction bandwidth**, not in
+misprediction penalties. IPC rose, so the loop got denser rather than
+stallier — helped also by removing a *call*, which is a scheduling
+barrier that clobbers caller-saved registers and stops the
+out-of-order engine overlapping successive iterations.
+
+**The mental-model correction:** inline asm generally makes the
+optimizer *worse*. An `asm` block is opaque — GCC cannot constant-fold
+through it, vectorize it, or prove anything about it. We did not help
+GCC optimize; we **overrode** it using a fact it could not derive.
+Specificity that genuinely helps GCC is `-march=znver2` (which
+instructions exist, what they cost). Inline asm is the opposite tool:
+for when the compiler is correct-but-conservative and you can prove
+more than it can.
+
+(d=19 wall time 1.14s -> 0.874s = 1.30x, another short-run boost-clock
+figure consistent with 1.24x at d=21 and well above 1.13x sustained.)
+
 ## 5. The connection to dev256
 
 The constraints `"a"` and `"d"` are RAX and RDX by name, and the
