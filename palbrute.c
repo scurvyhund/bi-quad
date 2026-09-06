@@ -146,11 +146,53 @@ static int is_pal_rev(u128 x) {
 #error "is_pal_fast: 10^ceil(d/2) exceeds uint64 for BQ_MAX_D > 37"
 #endif
 
+/* One 128/64 divide, via the hardware instruction GCC will not emit.
+ *
+ * The split above needs x / 10^h and x % 10^h.  Written as u128
+ * arithmetic, GCC cannot prove the quotient fits 64 bits, so it calls
+ * libgcc's generic __udivti3 -- measured at ~23 ns, which WAS the
+ * entire run: is_pal_fast early-exits after ~1.11 digit comparisons,
+ * so its entry split is the whole function.
+ *
+ * We can prove what GCC cannot.  x < 10^d and the divisor is 10^h
+ * with h = d/2, so the quotient is < 10^ceil(d/2) <= 10^19 < 2^64 for
+ * d <= 38.  That is the SAME bound the #if above already enforces at
+ * d <= 37, so no new constraint enters here -- but note the two are
+ * now coupled: divq raises #DE (a fault, not a wrong answer) if the
+ * quotient overflows, so the guard must never be relaxed.
+ *
+ * x86-64 DIV r64 takes the dividend in RDX:RAX -- the same register
+ * pair MUL r64 writes its product to.  The shift-and-cast below is
+ * how the u128 is handed over; it is the identical hi/lo idiom used
+ * throughout bigint-mul/u128-native/dev256.c, run in the opposite
+ * direction (that code assembles RDX:RAX, this takes it apart).
+ *
+ * Measured: is_pal_fast 24.4 -> 14.8 ns, full inner loop 10.5 -> 6.0
+ * ns per n (1.76x).  See docs/session_2026-09-05_palbrute_divq.md. */
+#if defined(__x86_64__) && !defined(PALBRUTE_NO_ASM)
+#define PALBRUTE_HAVE_DIVQ 1
+static inline void divq_u128(u128 x, uint64_t den, uint64_t *q,
+                             uint64_t *r) {
+   __asm__ ("divq %[den]"
+            : "=a" (*q), "=d" (*r)
+            : [den] "r" (den),
+              "a" ((uint64_t)x), "d" ((uint64_t)(x >> 64)));
+}
+#endif
+
 static int is_pal_fast(u128 x, int d) {
    int h = d / 2;
    if (h == 0) return 1;
+#ifdef PALBRUTE_HAVE_DIVQ
+   uint64_t quo, lo;
+   divq_u128(x, (uint64_t)bq_pow10[h], &quo, &lo);
+   /* d - 2h is 0 for even d and 1 for odd d, so the second step is a
+    * 64-bit divide by a compile-time-known 1 or 10 */
+   uint64_t hi = (d & 1) ? quo / 10 : quo;
+#else
    uint64_t lo = (uint64_t)(x % bq_pow10[h]);
    uint64_t hi = (uint64_t)(x / bq_pow10[d - h]);
+#endif
    uint64_t t = (uint64_t)bq_pow10[h - 1];
    for (int i = 0; i < h; i++) {
       if (lo % 10 != hi / t) return 0;
@@ -238,11 +280,20 @@ int main(int argc, char *argv[]) {
    }
 
    /* the searchable zones: p must start with LEAD[k] */
+   /* zlead[] is REQUIRED, not decoration: zones are stored compacted,
+    * so a zone's slot index is NOT its index into LEAD[] once any
+    * earlier zone comes up empty.  Deriving `want` from the slot index
+    * searched the surviving zones for the wrong leading digit and
+    * reported them clean -- silently.  Empty zones do occur: at d=1,
+    * and for ANY run given an explicit n_start/n_end that clips one
+    * out (splitting a d across machines, re-running a slice). */
    int64_t zlo[NZONE], zhi[NZONE];
+   int zlead[NZONE];
    int nz = 0;
    if (all) {
       zlo[0] = a;
       zhi[0] = b;
+      zlead[0] = -1;
       nz = 1;
    } else {
       for (int k = 0; k < NZONE; k++) {
@@ -253,6 +304,7 @@ int main(int argc, char *argv[]) {
          if (z0 > z1) continue;
          zlo[nz] = z0;
          zhi[nz] = z1;
+         zlead[nz] = LEAD[k];
          nz++;
       }
    }
@@ -298,7 +350,7 @@ int main(int argc, char *argv[]) {
       printf("zones (a curve palindrome must start with 1, 3 or 5):\n");
       for (int k = 0; k < nz; k++) {
          printf("  lead %d  n in [%lld, %lld]  %lld values\n",
-                LEAD[k], (long long)zlo[k], (long long)zhi[k],
+                zlead[k], (long long)zlo[k], (long long)zhi[k],
                 (long long)(zhi[k] - zlo[k] + 1));
       }
       printf("window=%lld  visiting=%lld (%.1f%%)  threads=%d\n",
@@ -311,7 +363,7 @@ int main(int argc, char *argv[]) {
    double t0 = omp_get_wtime();
 
    for (int k = start_z; k < nz; k++) {
-      int want = all ? -1 : LEAD[k];
+      int want = zlead[k];
       int64_t n0 = (k == start_z) ? start_n : zlo[k];
 
       for (int64_t blk = n0; blk <= zhi[k]; blk += BLOCK_SIZE) {
