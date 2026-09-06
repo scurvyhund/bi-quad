@@ -172,6 +172,21 @@ add commands worth re-running. Cross-project universals go to
 ~/claude_cmdln_gold/cmdline_gold.txt (or both); reusable Python
 scripts go to ~/programming/python_gold/ (curated, header + INDEX).
 
+## Glossary Convention
+
+When a commit introduces a term of art that is not already in
+docs/GLOSSARY.md, define it in THAT SAME COMMIT. A term of art is a
+coined name, an ordinary word given project-specific meaning, or an
+external source's label adopted as our own.
+
+This is a condition on the commit that coins the term, NOT a
+session-wrap sweep. Tie it to the moment the term is created, when
+the definition is clearest and cheapest to write. A session that
+coins nothing correctly does nothing — a standing "update the
+glossary each session" chore would be marched past enough empty
+sessions to become a rubber stamp, and hollow on the session that
+mattered.
+
 ## Communication Style
 
 - Separate PROVEN results from TREND/hypothesis explicitly.
