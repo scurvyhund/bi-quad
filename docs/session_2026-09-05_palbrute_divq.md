@@ -1,8 +1,10 @@
 # palbrute: the second cut at one hot loop
 
 **Date:** 2026-09-05
-**Outcome:** 1.76x on the palbrute inner loop, plus a silent
-correctness bug found during validation of the speedup.
+**Outcome:** 1.13x on the palbrute inner loop in production (1.76x
+single-threaded -- see section 4 for why those differ and which to
+believe), and, worth far more, a silent correctness bug found while
+validating the speedup.
 **Trigger:** "are you sure we've examined palbrute to the utmost and
 there is no further opt gain to be had?"
 
