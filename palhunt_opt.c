@@ -17,6 +17,31 @@
  * Build: gcc palhunt_opt.c -o palhunt_opt_c -O3 -march=znver2 -std=c99 -Wall -fopenmp -lgmp
  * Usage: ./palhunt_opt_c [min_d] [max_d]
  */
+/*
+ * STATUS 2026-09-05 — FROZEN.  DO NOT CONVERGE ONTO curve.h.
+ *
+ * This file is in NO Makefile target (not TARGET, PALS, CHECKS, TESTS,
+ * nor clean).  It predates curve.h: last touched 2026-06-23 by the
+ * mass re-indent c248dd9, while curve.h was created 2026-09-03 in
+ * 20300fb.  It therefore still carries its own ipow10 / isqrt128 /
+ * curve / is_pal / to_mpz, which have DIVERGED from the shared versions --
+ * curve.h seeds isqrt with sqrtl and refines by Newton, this file
+ * binary-searches; curve.h takes int64_t n, this file takes u128.
+ *
+ * That divergence is not a defect to clean up.  It is the C arm of the
+ * Zig-vs-C benchmark (docs/zig_experiment_2026-06-06.md); its numbers
+ * mean nothing unless the binary matches the source that was timed.
+ * Rewriting this onto the shared header would retroactively hollow out
+ * that corroboration: an independent check stops being independent the
+ * moment it shares an implementation with the thing it checks.  Same
+ * argument as leaving De Geest's transcribed table unedited --
+ * see docs/palindrome_split_search.md section 7.
+ *
+ * If you need these primitives in NEW code, include curve.h.  If you
+ * need to re-run this tool, rebuild from the Build line above and
+ * re-run its cross-check; do not "modernise" it first.
+ */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
