@@ -265,8 +265,10 @@ Counts agree at every digit-length we have searched:
 | SUSQ2 / A027572 | 2 | 4 | 1 | 3 | 5 | 1 | 5 | 3 | 2 | 4 | 4 | 4 | 0 |
 
 **13 of 13, including the three lengths (17, 19, 23) that previously had no corroboration at all, and the empty d = 37.**
-His table is transcribed at [`degeest_susq2.txt`](degeest_susq2.txt) (67 of 69 entries; indices 3 and 8 are short values written without the page's digit separators).
-All 67 were re-verified from first principles here: `n+1` correct, `p = n^2+(n+1)^2`, palindromic, digit-count as listed.
+His table is transcribed at [`degeest_susq2.txt`](degeest_susq2.txt) — **67 of 69 entries; indices 3 (`181`) and 8 (`3187813`) are absent.**
+Both are annotation-cell edge cases in his markup, not data he lacks. Entries 1-8 carry an extra cell that 9-69 do not, and the two that dropped each break the pattern differently: index 3's preceding cell reads `1 - 2` (a range, not an integer), and index 8 is labelled `Prime Curios!` rather than the `Prime!` that entries 2 and 4 use — a string appearing exactly twice on the page. (An earlier note here blamed missing digit separators; that is wrong. `3.187.813` is dotted like every other value, and `313` is separator-free yet transcribed fine.)
+Both values are independently verified on the curve and palindromic — `181 = 9^2+10^2`, `3187813 = 1262^2+1263^2` — but they are **deliberately not added back**. The file's evidential worth is that it shares no code, no method and no author with us; two rows we computed ourselves, one of them our own headline number, would make the control partly our own output. The count table above reconciles without them.
+All 67 transcribed entries were re-verified from first principles here: `n+1` correct, `p = n^2+(n+1)^2`, palindromic, digit-count as listed.
 
 **Two corrections to this document follow.**
 
