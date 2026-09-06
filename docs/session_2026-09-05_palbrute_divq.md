@@ -293,8 +293,10 @@ saturated and the ratio has stopped drifting.
 
 | measurement | conditions | result |
 |---|---|---|
-| d=19/d=21 full sweeps, old vs new binary | same d, 8 threads, run lasts seconds -- mostly at boost | 1.24x (d=21: 7.7s -> 6.2s) |
-| d=29 vs d=31 zone 0, steady state | 8 threads, hours of sustained load | 1.13x |
+| d=19/21 sweeps, old vs new | same d, seconds — mostly boost | 1.24x |
+| d=29 vs d=31 zone 0 | hours of sustained load | 1.13x |
+
+(d=21 was 7.7s old, 6.2s new. Both rows are 8 threads.)
 
 Same story from both: the advantage is real but shrinks under
 sustained load, because `divq` buys its win in instruction count and
