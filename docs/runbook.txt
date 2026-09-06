@@ -105,6 +105,32 @@ factor <p>                           # GNU factor: definitive (full facts)
 # CREDITS.md. (d=27: all 3 palindrome candidates in pals.txt composite
 # by qs, 2026-07-05.)
 
+# PROGRESS OF A RUNNING hunt: READ THE CHECKPOINT, NOT THE LOG.
+# hunt_d<NN>.ckpt = "<next_i> <survivors> <elig> <emirps> <pals>".
+# Field 1 is an OFFSET from n_min, NOT an n value, so it means nothing
+# until divided by the range for that d:
+d=24; i=$(cut -d' ' -f1 hunt_d${d}.ckpt)
+python3 - "$d" "$i" <<'EOF'
+import sys, math
+d, i = int(sys.argv[1]), int(sys.argv[2])
+f = lambda n: 2*n*n + 2*n + 1
+lo = math.isqrt(10**(d-1)//2); hi = math.isqrt(10**d//2)
+while f(lo) <  10**(d-1): lo += 1
+while f(hi) >= 10**d:     hi -= 1
+print("d=%d  %.2f%%  (i=%d of %d)" % (d, 100*i/(hi-lo+1), i, hi-lo+1))
+EOF
+# The ckpt is the ONLY live signal when a driver script pipes hunt
+# through a grep: scripts/resweep_tail.sh filters on
+# "range=|wall=|EMIRP", which does NOT match the per-block "d=NN ckpt"
+# heartbeat.  A d=27 leg is then silent in the log for ~6 DAYS while
+# running perfectly.  Do not read that silence as a stall.
+# Counters read 0 0 0 0 for most lengths and that is CORRECT -- see
+# section 16 and STATE_OF_THE_SEARCH.md before calling one a
+# regression; raw survivor counts are EXPECTED to be lower than the
+# pre-2026-07 logs (skip-opt drops div-5 candidates).
+# Is a chained run detached, and where is its output going?  Walk ppid
+# to init, and resolve the pipe inode: ~/claude_cmdln_gold section 19.
+
 --- 7. THROTTLE / STOP A JOB ------------------------------------------------
 nice -n 19 ./hunt 19 21              # start at lowest priority
 taskset -c 0-6 ./palhunt_gmp 27 27  # pin to 7 of 8 cores (runs cooler)
