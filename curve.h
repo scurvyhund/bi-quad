@@ -165,6 +165,7 @@ static inline int is_pal_d(u128 p, int d) {
  * palindrome ending in v must have */
 static inline int64_t rev_digits(int64_t v, int t) {
    int64_t h = 0;
+
    for (int i = 0; i < t; i++) {
       h = h * 10 + v % 10;
       v /= 10;
@@ -174,17 +175,23 @@ static inline int64_t rev_digits(int64_t v, int t) {
 
 /* decimal form of v into buf, which must hold BQ_STRLEN bytes */
 static inline void u128_str(u128 v, char *buf) {
+
    char tmp[BQ_STRLEN];
    int i = 0;
+
    if (v == 0) {
       strcpy(buf, "0");
       return;
    }
+
    while (v > 0) {
       tmp[i++] = (char)('0' + (int)(v % 10));
       v /= 10;
    }
-   for (int j = 0; j < i; j++) buf[j] = tmp[i - 1 - j];
+
+   for (int j = 0; j < i; j++)
+      buf[j] = tmp[i - 1 - j];
+
    buf[i] = '\0';
 }
 
