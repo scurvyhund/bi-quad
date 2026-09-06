@@ -79,6 +79,15 @@ palcurve
 palsplit_g2
 palsplit_g1000
 palbrute.lock
+
+# --- root-level run artifacts (nohup spew from detached runs).
+# logs/ is ignored above, but these land beside the binary. ---
+/palbrute_d*.err
+/palbrute_d*.out
+/palsplit_d*.err
+/palsplit_d*.out
+/hunt_d*.err
+/hunt_d*.out
 test_curve
 test_curve_gmp
 test_palpred
