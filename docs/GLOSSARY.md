@@ -92,6 +92,16 @@ The only one known on our curve: **12641 ↔ 14621** (d=5, n=79/85).
 
 This distinction is why the mod-11 assertion is unguarded in `hunt.c` but guarded by `d <= 2*k` in `mod_obstruct.c`.
 
+**`hunt.c`'s three counts** — ⚠ they are not interchangeable, and comparing the wrong pair across two runs looks exactly like a regression (2026-09-05):
+- **`survivors(raw)`** — converse pairs found. **LOSSY** in the optimised binary: the `n mod 10 ∈ {1,3,6,8}` skip drops div-5 values before they are counted.
+- **`prime-eligible`** — survivors not divisible by 5. **Not lossy** — the skipped values were all div-5 anyway, so this count is identical across optimised and pre-opt builds.
+- **`palindromes`** — the `m = n` subset, lossy in the same way as `survivors(raw)`.
+- **`EMIRPS`** — never lossy. A div-5 `p` is composite, so no emirp can be skipped, *by arithmetic*.
+
+Rule of thumb: compare **`prime-eligible` and `EMIRPS`** across builds; expect `survivors(raw)` and `palindromes` to differ by exactly the div-5 count. See `skip_optimization.md`.
+
+**positive control** — something a run is *known* to contain, reported by the same tool in the same mode as the real query. Its absence invalidates a `found=0`. `hunt 5 5` printing the 12641/14621 pair is the canonical one; `palbrute` printing composites serves the same purpose.
+
 **obstruction** — a digit-length `d` for which the sieve returns **zero** survivors, proving no emirp *and* no palindrome at that d.
 
 **valid endings / VE** — the set of achievable `p mod 10^k` values whose last digit is not 0 or 5.
@@ -137,6 +147,16 @@ Ours: **no even-digit palindrome lies on the curve at all.**
 **mod 9 (why it is too weak)** — `10 ≡ 1 (mod 9)`, so reversal preserves the digit sum and `q ≡ p (mod 9)` always. It cannot distinguish reversal from any other digit permutation.
 
 **frontier formula** — `log₁₀(n_max) = (d − 0.30103) / 2`. See `density_heuristics.md`.
+
+### External coverage — who has enumerated what (added 2026-09-05)
+
+⚠ Three of the relevant OEIS sequences differ by a single adjective. The consolidated table is under **OEIS sequences** in *Number-theory vocabulary* below — there is one table, not two.
+
+**SUSQ2** — De Geest's own label on `worldofnumbers.com/sumsquare.htm` for sums of squares of **two** consecutive integers, i.e. our curve. His page indexes the same objects as A027572 but goes **much further than the OEIS b-file**: consecutive indices 1..69, to d=59.
+
+**coverage claim** — a numbered or *consecutively indexed* list is an assertion of exhaustive enumeration, and must be read as one. An OEIS comment or paper abstract is a **milestone**, not coverage. Getting this backwards cost us twice on 2026-09-04. Marcus's "2 known emirps" is a milestone; De Geest's indices 1..69 are coverage.
+
+**the outside workers** — **Patrick De Geest** keeps the palindrome tables (SUSQ2, A027571/A027572); **Max Alekseyev** publishes the 2026 exhaustive bounds (`< 10^47` on A050239 and A134462); **Michel Marcus** contributed the emirp comment on A050239, Nov 30 2025. For an emirp bound the correspondents are Marcus and Alekseyev — **not** De Geest.
 
 ---
 
@@ -260,12 +280,26 @@ Terms borrowed from outside the project. Defined here so no one has to guess.
 
 ### OEIS sequences
 
-| id | sequence |
-|---|---|
-| **A027862** | primes of the form `n² + (n+1)²` — **our curve** |
-| **A002407** | cuban primes, `3n²+3n+1 = (n+1)³ − n³` |
-| A005891 | centered pentagonal numbers |
-| A001844 | centered square numbers (our curve, primes or not) |
+The single authoritative list. ⚠ A027571 / A027572 / A050239 differ by one
+adjective each — conflating them was a live risk on 2026-09-05.
+
+| id | sequence | enumerated |
+|---|---|---|
+| **A027862** | curve primes, `n² + (n+1)²` | 10000 terms |
+| A001844 | centered squares (curve, any) | — |
+| **A027571** | n-values giving palindromic `p` | 49 terms |
+| **A027572** | palindromic curve values, any | 49; `a(50)>10^40` |
+| **A050239** | palindromic curve **primes** | 4; none `<10^47` |
+| **A002407** | cuban primes, `(n+1)³ − n³` | — |
+| A005891 | centered pentagonal numbers | — |
+
+The **emirp** predicate has *no* sequence of its own — it exists only as
+Marcus's comment on A050239 (Nov 30 2025). Verified by term-search on
+`12641 14621`, which returns only A027862, A080856, A023271.
+
+De Geest's `sumsquare.htm` **[SUSQ2]** indexes the same objects as A027572
+but reaches **d = 59**, far past that b-file's 10^40. See *External coverage*
+under **Results and constraints**.
 
 ---
 
@@ -277,7 +311,11 @@ Terms borrowed from outside the project. Defined here so no one has to guess.
 
 **congruence obstruction** — 50 moduli, d ∈ [8,30]: **zero** obstructions. Real obstructions are non-congruential and sporadic.
 
-All three in `structural_attacks_2026-06-04.md`. Do not re-propose without a genuinely new idea.
+**reversal-axis change of variables** (2026-09-05) — pairing digits across the mirror, `s_i = a_i + a_(d−1−i)` and `t_i = a_i − a_(d−1−i)`, genuinely decouples the ends: `p+q` reads only `s`, `p−q` only `t`. It then dies — the recombination reconstructs `2p−1 = a²` exactly, so the map is invertible and carries no new constraint. A change of variables, not a reduction.
+
+> **The general form of the wall.** Reversal is an involution on digit *positions*; the curve condition is about *magnitude*. No purely positional re-coordinatisation can bridge that — so any idea of the shape "relabel the digits cleverly" is dead before it starts. An attack has to change what is asked of the **value**.
+
+All four in `structural_attacks_2026-06-04.md`. Do not re-propose without a genuinely new idea.
 
 ---
 
