@@ -27,6 +27,7 @@
 | **MITM** (split n) | faster search | `mitm_probe.c` | clean digit-separation only ~d/4 → **no √-speedup** |
 | **Two-ended DP** | faster search | `mitm_probeB.c` | midpoint ~10^(d/2) → **brute in disguise** |
 | **Congruence** | prove non-existence | `congru_probe.c` | **no obstruction, any modulus, any d** |
+| **Reversal-axis vars** (2026-09-05) | faster search | algebra only | decouples the ends, then **reconstructs `2p-1 = x²`** — no reduction |
 
 Common root cause: **digit-reversal of a quadratic is "anti-structural."**
 Reversal doesn't commute with arithmetic, so it defeats *both* algebraic (MITM)
@@ -145,6 +146,55 @@ needed k ~ d/2. **There is no fixed-M shortcut.**
 
 So a non-existence *theorem* via congruence does not exist. If one exists at
 all, it needs genuinely new mathematics, or the question is open.
+
+---
+
+## 3b. The reversal-axis change of variables (added 2026-09-05)
+
+> Not part of the 2026-06-04 sweep. Recorded here so the fourth road is
+> closed alongside the other three.
+
+**Idea.** Every earlier attack split the number *along* its digits and fought
+the reversal. Split it along the **reversal axis** instead. Pair each digit
+with its mirror:
+
+    s_i = a_i + a_(d-1-i)        t_i = a_i - a_(d-1-i)
+
+The coefficient patterns are then palindromic for the sum and antipalindromic
+for the difference, and the two ends genuinely decouple:
+
+    p + q  depends only on s
+    p - q  depends only on t
+
+That is a real separation, and it is the thing every previous attack failed to
+get. With `u = x - y` and `v = x + y` (where `x = 2n+1`, `y = 2m+1`), the pair
+condition becomes `u² + v² = A(s)` and `u·v = B(t)`, i.e.
+
+    A(s) + 2B(t) = square   and   A(s) - 2B(t) = square.
+
+Two square-conditions, each reading a *different* coordinate. It looks like the
+decoupling the MITM never had.
+
+**Why it dies.** Expand the recombination:
+
+    s_i·c_i + t_i·e_i  =  2·a_i·10^i + 2·a_(d-1-i)·10^(d-1-i)
+
+so `A(s) + 2B(t)` reconstructs `2p - 1 = x²` **exactly**. The map
+`a ↦ (s, t)` is invertible and information-preserving; running the two square
+conditions back through it returns the two conditions we started with. The
+decoupling is real but vacuous — s and t are separated coordinates of the same
+constraint, not two independent constraints.
+
+**Verdict.** A change of variables, not a reduction. No exponent moves. It
+belongs on this list for the same reason the other three do: the road looks
+open right up to the point where you check.
+
+**Same root cause as §1-§3.** Reversal is an involution on *digit positions*,
+and the curve condition is a statement about *magnitude*. Any purely positional
+re-coordinatisation — which is all a digit pairing can be — cannot touch a
+magnitude constraint. That is worth stating as the general shape of the wall:
+**re-coordinatising the digits will never help**; an attack has to change what
+is being asked of the value, not how the digits are labelled.
 
 ---
 

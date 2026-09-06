@@ -137,11 +137,49 @@ chance of an actual hit. The silence after 3187813 is statistically
 ordinary — 3 observed against 4.5 predicted on this curve, and twelve
 siblings range from none at all (k=7, k=13) to d = 31 (k=19).
 
+### Putting a number on Problem 1 (added 2026-09-05)
+
+The `C/d²` shape above gives the trend but no magnitude. Calibrating
+the constant from *observed* survivor counts rather than back-solving
+it from the d = 5 hit — the `hunt` logs give a mean of **3.47**
+curve-reversal pairs per digit-length over d = 13..27, ranging 0 to 7 —
+and taking `P(p and rev(p) both prime) ≈ 1/(d·ln10)²`:
+
+| range | expected number of emirps |
+|---|---|
+| d = 28 … 40 | 0.0076  (**0.76 %**) |
+| d = 28 … 100 | 0.0173  (1.73 %) |
+| **d = 28 … ∞** | **0.0238  (2.4 %)** |
+| d = 1 … ∞ (model total) | 1.076 — against 1 observed |
+
+So continuing the emirp search **to infinity** carries a ~2.4 % chance
+of a second example, and the model's total expectation over all
+digit-lengths, 1.08, sits almost exactly on the one pair we have.
+The search is not stalled for want of a better algorithm; it is at the
+point where the heuristic says there is most likely nothing left to
+find.
+
+Two caveats, and the second is the serious one:
+
+1. This is **TREND, not PROVEN**. A convergent expectation forbids
+   nothing — it makes no statement about any particular d.
+2. **The same model's other prediction was right, and the silence
+   around it was misread for 29 years.** It calls the palindrome side
+   divergent, and a fifth prime palindrome duly turned up at d = 59
+   (De Geest, 2026-04-24) after decades of absence that had been taken
+   for evidence of a last term. Whatever weight that earns the model,
+   it earns equally as a warning against over-trusting the emirp side's
+   convergence.
+
+This bears only on searching **past** d = 27. It says nothing about the
+coverage below that, which is exhaustive and independent of any
+heuristic.
+
 ---
 
 ## What has been ruled out
 
-Three attempts to do better than O(10^(d/2)) brute force, or to prove
+Four attempts to do better than O(10^(d/2)) brute force, or to prove
 non-existence, were tested and abandoned (2026):
 
 - **Meet-in-the-middle** (split n = a·10^t + b): the cross term 4ab
@@ -150,6 +188,12 @@ non-existence, were tested and abandoned (2026):
   force in disguise.
 - **Congruence obstruction**: 50 moduli, d ∈ [8, 30] — *zero* fixed-
   modulus obstructions. The real obstructions are non-congruential.
+- **Reversal-axis change of variables** (2026-09-05): pairing digits
+  as `s_i = a_i + a_{d-1-i}` and `t_i = a_i − a_{d-1-i}` does decouple
+  the two ends — `p+q` depends only on `s`, `p−q` only on `t` — but the
+  resulting system reconstructs `2p−1 = x²` exactly. An invertible
+  change of variables, not a constraint. See
+  [`structural_attacks_2026-06-04.md`](structural_attacks_2026-06-04.md) §3b.
 
 The takeaway: digit-reversal of a quadratic is *anti-structural* —
 reversal does not commute with arithmetic — which defeats both
