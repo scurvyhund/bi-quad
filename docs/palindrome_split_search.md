@@ -4,6 +4,8 @@
 Palindrome frontier moved **d = 27 → d = 37**.
 Emirp frontier **unchanged at d = 27** — the method does not apply there, for a reason given below.
 
+> **Note 2026-09-05:** "frontier" above means *this project's* frontier. De Geest's published enumeration of palindromic curve values reaches **d = 59**; our d = 29..37 values reproduce his and are not new. The tool is validated, not first. See [§7 External corroboration](#external-corroboration--de-geests-tables-2026-09-05).
+
 Tool: [`palsplit.c`](../palsplit.c). Prototype: `docs/palsplit.py`.
 
 ---
@@ -243,6 +245,35 @@ Still outstanding: d = 29..37 have no brute corroboration. A full d = 29 sweep i
 | M n/s | 255 | 99 | 103 | 72 | 68 |
 
 *Measured on 8 threads. The figure also decays under sustained load — the d = 29 cumulative average fell from 76 to 72 M n/s over 90 seconds as Tctl reached 92 °C, so the instantaneous steady-state rate is nearer 68. **Estimate any future run at the rate for its own d, not a rate carried over from a shorter one.** For reference, d = 25 is ~1.53×10^12 n-values, 4–6 hours.)*
+
+### External corroboration — De Geest's tables (2026-09-05)
+
+The strongest check on `palsplit` came from outside the project, and it cost no compute.
+
+**OEIS A027572** (palindromes of form n^2+(n+1)^2) has a 49-term b-file from De Geest.
+Its indices 38-49 are *exactly* our d = 29..35 values, div-5 ones included, n for n.
+Its index 49 is d = 35 and index 50 is d = 41 — so d = 37 and d = 39 are empty in his data too, matching our `d=37  0`.
+
+**`worldofnumbers.com/sumsquare.htm`** [SUSQ2] goes considerably further: a table of **strictly consecutive indices 1..69**, topping out at **d = 59**, credited across Jean Claude Rosa (to index 46), De Geest (47-52, 60-69) and Robert Xiao (53-59, Dec 2022), last extended 2026-04-23.
+The page also states outright: *"There are no palindromic sums of squares of type [SUSQ2] of EVEN lengths nor of ODD lengths 5, 9, 37, 39, 43."*
+
+Counts agree at every digit-length we have searched:
+
+| d | 13 | 15 | 17 | 19 | 21 | 23 | 25 | 27 | 29 | 31 | 33 | 35 | 37 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `palsplit --keep5` | 2 | 4 | 1 | 3 | 5 | 1 | 5 | 3 | 2 | 4 | 4 | 4 | 0 |
+| SUSQ2 / A027572 | 2 | 4 | 1 | 3 | 5 | 1 | 5 | 3 | 2 | 4 | 4 | 4 | 0 |
+
+**13 of 13, including the three lengths (17, 19, 23) that previously had no corroboration at all, and the empty d = 37.**
+His table is transcribed at [`degeest_susq2.txt`](degeest_susq2.txt) (67 of 69 entries; indices 3 and 8 are short values written without the page's digit separators).
+All 67 were re-verified from first principles here: `n+1` correct, `p = n^2+(n+1)^2`, palindromic, digit-count as listed.
+
+**Two corrections to this document follow.**
+
+1. **The d = 29..37 results in this section are not new.** They are re-derivations of indices 38-49, published between 2005 and 2021. The claim above that d = 17, 19, 23 "had none" was true of *internal* corroboration only; De Geest had them decades earlier. What `palsplit` earns here is validation, not priority — and as validation it is very strong, because his enumeration and ours share no code, no method and no author.
+2. **Raising the d = 37 ceiling will not produce new terms.** Consecutive indexing through 69 is a coverage claim (see the *Prior Art* rules in `CLAUDE.md`), so palindromic curve values are enumerated to d = 59 — twenty-two digit-lengths past where we stop. The int64 wall in section 8 is real but there is nothing behind it to find until **d > 59**, and at O(10^(d/4)) that is out of reach here: d = 61 extrapolates to roughly a CPU-year, before the cost of replacing u128 `p` with 256-bit arithmetic.
+
+Lifting the ceiling remains worthwhile for one reason only, and it is a good one: d = 41..49 carries 7 known palindromes and one known-empty length (43), which would be a **positive control an order of magnitude past anything `palsplit` has been tested on**. That is a prerequisite for trusting the tool past d = 59, not a search likely to find anything on its own.
 
 > **Therefore: 3187813 remains the largest prime palindrome on the curve through d = 37.**
 > That bounded statement STANDS. The unbounded 1997 conjecture does not:
