@@ -258,7 +258,26 @@ reopens:**
   loop. The most valuable pending run is not at the frontier at all — it is a
   **d = 31 brute** to continue bringing the verified floor up behind
   `palsplit` — the d = 29 brute is DONE (2026-09-05, found=2, agreeing with
-  `palsplit` exactly).
+  `palsplit` exactly). **d = 31 LAUNCHED 2026-09-05**, ETA ~9.8 days;
+  `palsplit` says 3, so the run either corroborates that count or exposes a
+  disagreement between the two tools — informative either way. d = 33 is
+  ~98 days even after the 2026-09-05 speedup and remains a non-starter, so
+  **d = 31 is the last comfortable rung of the corroboration ladder.**
+- **Open coding tasks on `palbrute.c`** (see
+  [`session_2026-09-05_palbrute_divq.md`](session_2026-09-05_palbrute_divq.md)):
+  - **Incremental digit maintenance, est. a further ~2x.**
+    `p(n+1) − p(n) = 4n + 4`, so `lo` and `hi` can be carried across
+    consecutive `n` — one 128-bit divide per OpenMP chunk instead of one per
+    `n`, with 64-bit divide-by-constant carry propagation in between. Needs
+    `schedule(dynamic, 1000000)` restructured into a loop over chunk indices
+    carrying state. Stays on the right side of the independence line (it
+    changes how the split is *computed*, not how candidates are *enumerated*);
+    adopting `palsplit`'s residue-jump enumeration would NOT.
+  - **Benchmark at the real thread count.** The 2026-09-05 `divq` change
+    measured 1.76x single-threaded and delivered 1.13x in production — this
+    box is a 15 W Ryzen 7 4700U and one core at boost is ~2x the clock of
+    eight sustained. Compare same-zone, same-block against the previous run's
+    checkpoint log; it is free and it is in `logs/`.
 - **What's still open:** does a second bi-quadratic emirp exist at any d ≥ 28?
   Is 3187813 truly the last prime palindrome? Both are *unproven* — only
   unobserved.

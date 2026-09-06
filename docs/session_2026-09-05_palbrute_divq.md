@@ -56,8 +56,46 @@ The reason is the whole point of section 1. The stride removes the
 same set of `n` either way. It was the right idea aimed at the wrong
 term, and only measurement said so.
 
+### It was not even new -- prior art check
+
+This identity is already documented in the project as
+[`skip_optimization.md`](skip_optimization.md), and already implemented
+in `hunt.c` as the **`n mod 10` skip**, worth ~35% there (added
+2026-06-29; the same table existed in the 2010 original and was lost in
+the GMP refactor). I rediscovered it and briefly thought it was a find.
+The project CLAUDE.md has a "Prior Art -- Check Before Claiming
+Anything Is New" section precisely for this; I should have grepped
+first, and the cost of not doing so was a wrong hypothesis pursued for
+an hour.
+
+Why it pays 35% in `hunt.c` and 1% here: `hunt.c` spends its per-n
+budget on a primality test, so removing 40% of the n removes 40% of
+the work. palbrute spends its budget on one long-latency divide that
+the removed n never reach.
+
+### A trap that follows from it -- do NOT port hunt.c's skip here
+
+`hunt.c`'s skip is **lossy**: it drops `n mod 10 in {1,3,6,8}` entirely
+because those give `p` divisible by 5, which can never be prime. That
+is sound for emirps and it is why `survivors(raw)` and `palindromes`
+are undercounted in optimized runs.
+
+For palbrute it would be **wrong**, and badly so. Note what the zone
+structure implies: in the lead-5 zone the first digit is 5, so a
+palindrome's last digit is also 5, so **every palindrome in the lead-5
+zone is divisible by 5 and composite** (past `p = 5` itself). Porting
+the div-5 skip would silently delete an entire zone.
+
+palbrute prints composite palindromes deliberately -- they are the
+positive control that proves the sweep is finding things at all (see
+section 7 on why a bare `found=0` is not self-validating). The lead-5
+zone is a third of that control. This is the same div-5 convention
+distinction that bit the survivor-count calibration; `palsplit` carries
+a `keep5` flag for exactly this reason.
+
 Kept here because the reasoning is sound and the identity is true; it
-is just not where the time goes.
+is just not where the time goes, and the obvious way to exploit it is
+a trap for this particular tool.
 
 ## 3. Finding the real cost
 
