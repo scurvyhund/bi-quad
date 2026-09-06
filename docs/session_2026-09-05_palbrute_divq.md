@@ -221,13 +221,61 @@ latency-bound on that one instruction and the `p % 10` hides
 completely in its shadow. Dropped — it would have added stride
 arithmetic and checkpoint-accounting complexity for nothing.
 
-Projected sweep times:
+### The benchmark overstated it -- production is 1.19x
 
-| d | before | after |
-|---|---|---|
-| 31 | 11.1 d | **6.3 d** |
-| 33 | 111 d | 63 d |
-| 35 | 3.0 yr | 1.7 yr |
+**The 1.76x above is a single-threaded, boost-clock number and it does
+not survive contact with the real run.**
+
+This box is a Ryzen 7 4700U: a 15 W laptop part, 8 cores / 8 threads,
+base 1.4-2.0 GHz. A single-threaded benchmark runs one core at full
+boost. The production sweep runs all 8 threads and settles near base
+clock, thermally limited. Both binaries are affected, but not by the
+same factor -- the loop's bottleneck shifts when the clock halves.
+
+Same-zone (z0), same-block comparison, d=29 old log vs d=31 new run:
+
+| block | d=29 (old) | d=31 (new) | ratio |
+|---|---|---|---|
+| 5e9 | 675 M n/s | 894 M n/s | 1.32x |
+| 10e9 | 653 M | 772 M | 1.18x |
+| 20e9 | 638 M | 751 M | 1.18x |
+| 30e9 | 620 M | 741 M | 1.19x |
+
+Both runs decay ~6% further across the zone as the chip heats (d=29
+z0 ended at 582 M n/s).
+
+**Measured production speedup: ~1.19x.**
+
+Projected sweep times, using the measured figure and d=29's zone mix
+(zones 1-2 are faster than zone 0: the lead-3 zone sends only 1 n in 5
+to is_pal_fast, against 2 in 5 for lead-1 and lead-5):
+
+| d | before | benchmark said | actual |
+|---|---|---|---|
+| 31 | 11.1 d | 6.3 d | **~9.6 d** |
+| 33 | 111 d | 63 d | ~93 d |
+| 35 | 3.0 yr | 1.7 yr | ~2.5 yr |
+
+### The methodology error, recorded
+
+Two mistakes compounded:
+
+1. **Benchmarked single-threaded on a thermally-limited part.** On a
+   15 W chip the difference between one core boosting and eight cores
+   sustained is roughly 2x in clock. Any micro-benchmark here must be
+   run at the thread count the real job uses.
+2. **Compared a benchmark ratio against a production average.** The
+   659 M n/s headline for d=29 is the mean over all three zones, but
+   the benchmark modelled the lead-1 zone only -- the slowest one.
+   Same-zone, same-block is the only fair comparison, and it is
+   available for free in the checkpoint logs.
+
+The correct procedure, for next time: build both binaries, run each on
+the same restricted n-range with all 8 threads, and compare. That
+costs minutes and would have caught this before any claim was made.
+
+**The change is still worth having** -- 1.19x is real, and the zone
+bug it uncovered (section 7) mattered far more than the speed.
 
 ## 7. The bug the validation found
 

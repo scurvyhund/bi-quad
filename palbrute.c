@@ -168,7 +168,11 @@ static int is_pal_rev(u128 x) {
  * direction (that code assembles RDX:RAX, this takes it apart).
  *
  * Measured: is_pal_fast 24.4 -> 14.8 ns, full inner loop 10.5 -> 6.0
- * ns per n (1.76x).  See docs/session_2026-09-05_palbrute_divq.md. */
+ * ns per n -- but that is SINGLE-THREADED at boost clock.  Production
+ * is ~1.19x: this is a 15 W laptop part and the 8-thread sweep runs
+ * clock-throttled far below single-core boost.  Benchmark at the
+ * thread count the real job uses.
+ * See docs/session_2026-09-05_palbrute_divq.md. */
 #if defined(__x86_64__) && !defined(PALBRUTE_NO_ASM)
 #define PALBRUTE_HAVE_DIVQ 1
 static inline void divq_u128(u128 x, uint64_t den, uint64_t *q,
