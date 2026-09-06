@@ -151,6 +151,33 @@ union is being weighted correctly in `N_d` and the last-digit pooling.
 **[ ] 10. Widen the comparison class** — `palcurve` on k = 23, 25, 27…
 More curves is more power for every density test, at minutes each.
 
+**[ ] 10a. Push the descent-prime search past 10^14.**
+`docs/triangular_form_and_1861.md` §2 establishes, exhaustively to
+10^14, that `61` and `1861` are the only curve primes whose reversal is
+a perfect square, and `1861` the only one whose root is itself prime
+(`rev(1861) = 1681 = 41²`, and `41 = 4²+5²` is back on the curve).
+Extending that bound is cheap per candidate — reverse, `isqrt`, compare
+— and the interesting question is whether the class is genuinely finite
+or merely sparse.
+
+**Honest weighting: this is a curiosity, not a result.** The reversal
+step is base-10 and the curve is arithmetic, so a second descent prime
+would not advance either open problem — the object is invisible to
+`hunt.c` by construction (it classifies on `rev(p)` landing *on the
+curve*, and `1681` does not). What it would buy is a sharper statement
+in a doc that currently says "only below 10^14", and the §3 Pell
+argument gives a prior worth testing: negative-Pell solutions are
+exponentially sparse at ~0.65 members per decade, so a null result out
+to 10^18 is the expected outcome, not a disappointment.
+
+Positive control is free and mandatory: any run must re-report `61` and
+`1861` before its null is worth anything.
+
+*Cost: hours, and it wants cores — `hunt` owns all 8 until ~Sep 13
+(see `scripts/resweep_tail.sh`). Do not start it alongside; per the
+one-box rule two 8-thread jobs each run at half speed and fight for
+cache. Payoff: a firmer bound in §2, nothing more.*
+
 ---
 
 ## Tier 2 — the other half of the open problem
