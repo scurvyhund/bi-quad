@@ -232,19 +232,43 @@ boost. The production sweep runs all 8 threads and settles near base
 clock, thermally limited. Both binaries are affected, but not by the
 same factor -- the loop's bottleneck shifts when the clock halves.
 
-Same-zone (z0), same-block comparison, d=29 old log vs d=31 new run:
+Same-zone (z0), same-block comparison, d=29 old log vs d=31 new run.
+Early blocks are still boosting and flatter the change; the ratio only
+means something once both runs are thermally saturated:
 
 | block | d=29 (old) | d=31 (new) | ratio |
 |---|---|---|---|
-| 5e9 | 675 M n/s | 894 M n/s | 1.32x |
-| 10e9 | 653 M | 772 M | 1.18x |
-| 20e9 | 638 M | 751 M | 1.18x |
+| 5e9 | 675 M n/s | 894 M n/s | 1.32x  (boosting) |
+| 10e9 | 653 M | 772 M | 1.18x  (boosting) |
 | 30e9 | 620 M | 741 M | 1.19x |
+| 50e9 | 616 M | 699 M | 1.135x |
+| 75e9 | 599 M | 670 M | 1.118x |
+| 100e9 | 588 M | 661 M | 1.125x |
+| 125e9 | 582 M | 658 M | 1.132x |
 
-Both runs decay ~6% further across the zone as the chip heats (d=29
-z0 ended at 582 M n/s).
+**Measured production speedup: 1.13x**, stable across four samples at
+steady state. The estimate moved 1.76 -> 1.19 -> 1.13 as the thermal
+envelope closed; 1.13 is the one to trust because both runs are
+saturated and the ratio has stopped drifting.
 
-**Measured production speedup: ~1.19x.**
+### Two independent measurements, and why they differ
+
+| measurement | conditions | result |
+|---|---|---|
+| d=19/d=21 full sweeps, old vs new binary | same d, 8 threads, run lasts seconds -- mostly at boost | 1.24x (d=21: 7.7s -> 6.2s) |
+| d=29 vs d=31 zone 0, steady state | 8 threads, hours of sustained load | 1.13x |
+
+Same story from both: the advantage is real but shrinks under
+sustained load, because `divq` buys its win in instruction count and
+the throttled part is clock-limited rather than issue-limited.
+
+**One confound, stated:** the steady-state comparison is old-at-d=29
+against new-at-d=31, so it conflates the code change with the digit
+step. d=31 is marginally *more* work per n (h=15 vs 14, and AMD's
+integer divider has operand-size-dependent latency), so the true
+fixed-d speedup is slightly **above** 1.13x. A clean fixed-d A/B at
+scale was not run because it would contend with the live d=31 sweep
+for all 8 cores -- the short-sweep row above is the fixed-d evidence.
 
 Projected sweep times, using the measured figure and d=29's zone mix
 (zones 1-2 are faster than zone 0: the lead-3 zone sends only 1 n in 5
@@ -252,9 +276,18 @@ to is_pal_fast, against 2 in 5 for lead-1 and lead-5):
 
 | d | before | benchmark said | actual |
 |---|---|---|---|
-| 31 | 11.1 d | 6.3 d | **~9.6 d** |
-| 33 | 111 d | 63 d | ~93 d |
-| 35 | 3.0 yr | 1.7 yr | ~2.5 yr |
+| 31 | 11.1 d | 6.3 d | **~9.8 d** |
+| 33 | 111 d | 63 d | ~98 d |
+| 35 | 3.0 yr | 1.7 yr | ~2.7 yr |
+
+(d=31 zone 0 is running at 658 M n/s; applying d=29's zone-mix uplift
+of 659/582 = 1.132 gives ~745 M n/s overall, and
+633,273,887,279,645 / 745e6 = 850,000 s = 9.8 days.)
+
+**This does not change the d=33 verdict.** 98 days is still a
+non-starter, so d=31 remains the last comfortable rung of the
+corroboration ladder. The speed work did not move the frontier; the
+bug fix in section 7 is what this session was actually worth.
 
 ### The methodology error, recorded
 
@@ -356,8 +389,23 @@ zlead[nz] = LEAD[k];
 int want = zlead[k];
 ```
 
-The distributed d=27 run in `distributed_run_2026-06-05.md` used
-ranged invocations and should be re-checked against this.
+### Blast radius: none
+
+Checked, not assumed. Every palbrute invocation on record is a
+full-window sweep with no range argument:
+
+    $ grep -rhoE './palbrute [^`|]*' docs/ logs/ *.md | sort -u
+    ./palbrute 29
+
+The distributed run of 2026-06-05 used `hunt.c` and `palhunt_gmp` on
+the two frontier boxes -- not palbrute -- so it is unaffected as well.
+The d=13..23 corroboration of palsplit and the d=29 cross-check were
+all full-window, where all three zones are non-empty and the compact
+index coincides with the LEAD[] index.
+
+**No published result changes.** The bug was latent, waiting for the
+first ranged run -- which is exactly how a large d would be split
+across machines.
 
 ### The lesson
 
