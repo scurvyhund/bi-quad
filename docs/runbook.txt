@@ -288,3 +288,73 @@ do
 done
 
 ==============================================================================
+
+--- 19. WHERE THE TIME GOES / PROVING A CHANGE IS SAFE (2026-09-05) ----------
+# 1. CENSUS THE HOT LOOP FIRST.  Software 128-bit divides hide as libgcc
+# calls and cost ~90 cycles each.  Name the OpenMP outlined function:
+objdump -d palbrute | awk '/main\._omp_fn\.0>:/,/^$/' \
+  | grep -o 'call.*<[A-Za-z_0-9.]*' | sort | uniq -c | sort -rn
+#   __udivti3 / __umodti3 in a hot loop = a u128 divide GCC would not
+#   emit as a single instruction.  See session_2026-09-05_palbrute_divq.md.
+# check whether a predicate was inlined (0 hits = fully inlined):
+objdump -d palbrute | grep -c '<is_pal_fast>'
+
+# 2. A/B WITH perf, NOT JUST WALL CLOCK.  Tells you WHY it got faster:
+perf stat -e cycles,instructions,branches,branch-misses ./palbrute.old 19
+perf stat -e cycles,instructions,branches,branch-misses ./palbrute 19
+#   instructions down + IPC up  = real codegen win
+#   branch-misses flat          = prediction was never the problem
+#   (2026-09-05: branches -27.9%, misses -6%, IPC 2.63 -> 3.08)
+
+# 3. NEVER QUOTE A SINGLE-THREAD NUMBER AS THE PRODUCTION SPEEDUP.
+# See section 11: single-core isolates CODEGEN.  It does NOT predict an
+# 8-thread run on this 15 W part -- one core at boost is ~2x the clock of
+# eight sustained.  Measured 1.76x single-threaded, 1.13x in production.
+# The honest comparison is SAME ZONE, SAME BLOCK, from the checkpoint
+# logs you already have -- and it is free:
+for b in 50000000000 75000000000 100000000000; do
+  a=$(grep -m1 "z0: $b /" logs/palbrute_d29.err | grep -oE '[0-9]+ n/s')
+  c=$(grep -m1 "z0: $b /" palbrute_d31.err     | grep -oE '[0-9]+ n/s')
+  echo "$b | old $a | new $c"
+done
+#   Compare only once BOTH runs are thermally saturated; early blocks are
+#   still boosting and flatter the change (1.32x -> 1.13x as it settles).
+
+# 4. PROVE A "NO-OP" EDIT IS A NO-OP -- DIFF THE ASSEMBLY.
+# `git diff -w` cannot do this (it ignores whitespace inside string
+# literals too).  Byte-identical .s is proof.  For a HEADER, check EVERY
+# consumer -- one proving identical says nothing about the others:
+mkdir -p /tmp/ab/head /tmp/ab/work && cp *.c *.h /tmp/ab/head/ \
+  && cp *.c *.h /tmp/ab/work/ && git show HEAD:curve.h > /tmp/ab/head/curve.h
+for f in $(grep -ln '#include "curve.h"' *.c | sed 's/\.c$//'); do
+  (cd /tmp/ab/head && gcc -O3 -march=znver2 -std=c99 -fopenmp -S -o $f.s $f.c)
+  (cd /tmp/ab/work && gcc -O3 -march=znver2 -std=c99 -fopenmp -S -o $f.s $f.c)
+  diff -q /tmp/ab/head/$f.s /tmp/ab/work/$f.s >/dev/null \
+    && echo "$f IDENTICAL" || echo "$f DIFFERS"
+done
+# and always check for the string-splice trap the same way:
+grep -n '\\$' curve.h    # backslash continuations; none => trap N/A
+
+# 5. C MICROBENCHMARKS: DEFEAT DEAD-CODE ELIMINATION.
+# A loop whose result is unused is DELETED.  Suspiciously round or tiny
+# numbers (0.00 ns) mean you measured nothing.  Register-only barrier:
+#     #define SINK(x) __asm__ volatile("" : "+r"(x))
+# Do NOT add a "memory" clobber -- it forces table reloads every
+# iteration and inflates every number.  Then verify with objdump that
+# the loop body actually survived.
+
+# 6. RUN A SECOND INSTANCE WHILE A LONG JOB HOLDS THE flock.
+# palbrute locks ./palbrute.lock (cwd-relative), so a test run from the
+# repo dir correctly REFUSES.  Test from a scratch dir instead:
+mkdir -p /tmp/pb && cp palbrute /tmp/pb/ && cd /tmp/pb && ./palbrute 13 --all
+#   (a bare exit-1 with no output IS the guard working -- check stderr)
+
+# 7. OLD-vs-NEW OUTPUT DIFF ACROSS EVERY d (the real regression test):
+for d in 1 3 5 7 9 11 13 15 17 19 21; do
+  ./palbrute.old $d 2>/dev/null | sed 's/ *time=[0-9.]*s//' > /tmp/o_$d
+  ./palbrute     $d 2>/dev/null | sed 's/ *time=[0-9.]*s//' > /tmp/n_$d
+  diff -q /tmp/o_$d /tmp/n_$d >/dev/null && echo "d=$d ok" || echo "d=$d DIFF"
+done
+#   strip the time= line or every run "differs".  Exercise EVERY mode too
+#   (--all, --verify, --slow, an explicit n-range, a resume) -- the
+#   2026-09-05 zone bug lived only in the ranged path.
