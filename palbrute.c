@@ -340,6 +340,21 @@ int main(int argc, char *argv[]) {
             visited = cv;
             printf("resuming: zone %d n=%lld  found=%ld so far\n",
                    czi, (long long)cn, found);
+         } else {
+            /* The checkpoint stores zi as a COMPACT zone slot, but the
+             * filename keys on d alone -- so a ckpt written by a run
+             * with a different n-range names a slot that no longer
+             * means the same zone.  The guard above rejects that
+             * (clipped zones start at strictly higher n, so cn falls
+             * below zlo[czi]) and no wrong answer results.  But
+             * rejection must not be SILENT: without this warning a
+             * ten-day run quietly restarts from zero and the only
+             * evidence is the absence of a "resuming:" line. */
+            fprintf(stderr, "  WARNING: %s does not match this run's"
+                    " zones/range -- IGNORING it and starting from the"
+                    " beginning.  (A checkpoint is only valid for the"
+                    " same d AND the same n_start/n_end.)\n", ckpt);
+            fflush(stderr);
          }
          fclose(cf);
       }
