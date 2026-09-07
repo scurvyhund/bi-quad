@@ -356,6 +356,53 @@ duplicated functions (`isqrt128`, `ipow10`, `curve`, `is_pal`,
 five residue helpers. Backup file, not a build target — left alone
 deliberately.
 
+**[ ] 18. REVISIT — stop the entry points going stale.**
+*Parked 2026-09-06. This is documentation integrity, not code, and it
+has already cost us once.*
+
+**What happened.** De Geest refuted the palindrome conjecture on
+2026-04-24. We recorded it thoroughly on 2026-09-04 — in
+`OPEN_PROBLEM.md`, `STATE_OF_THE_SEARCH.md` (struck through) and
+`palindrome_insights.md`. On 2026-09-06, *two days later*, four places
+still asserted it as live:
+
+- `README.md` — "The standing conjecture", present tense, and
+  "Four are known" in the definitions
+- `CLAUDE.md` — asserted it at line 9 and refuted it at line 115, so
+  every session read the stale half first
+- `CONTRIBUTORS.md`
+- `docs/biquad_curve_landscape.png` — baked into the caption by
+  `generate_graph.py`
+
+The pattern is not carelessness. The **analysis** documents get
+corrected because they are where you are working when you learn the
+thing. The **entry points** are the ones nobody revisits — and they are
+what a new reader, and every new session, sees first.
+
+**What was tried and abandoned (do not simply retry it).** Two grep
+checkers, both deleted the same day:
+
+1. *Unbounded-superlative grep* — 13 hits, **all false positives**. A
+   document quoting a refuted claim beside its refutation is textually
+   identical to one asserting it. Freeform markdown also wraps
+   sentences across lines, so the bound often sits on the next line.
+2. *Paragraph-scoped claims registry* — closer, and its self-test kept
+   catching real design faults (twice it let "known" count as a bound,
+   which is the original defect verbatim). Still produced false
+   positives in narrative sections after four iterations. Abandoned
+   deliberately: a check that cries wolf gets ignored on the day it is
+   right, which is the rubber-stamp failure `CLAUDE.md` warns about.
+
+**The idea worth trying instead.** Do not *detect* divergence — make it
+impossible. Have the entry points **quote a single claims table**
+rather than restate the results in prose. One file holds each bounded
+result and its bound; `README.md`, `CLAUDE.md` and the figure captions
+render from it. Then correcting a claim once corrects it everywhere,
+and there is nothing to check.
+
+Bigger change than a script, and worth doing properly rather than
+during a chain run. **Do not start while `hunt` owns the box.**
+
 ---
 
 ## Environment gotcha, learned the hard way
