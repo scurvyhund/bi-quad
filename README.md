@@ -70,10 +70,16 @@ re-confirmed by a direct GMP-certified hunt** — `palhunt_gmp`, every
 n, all `found = 0`.) At d = 27 the emirp brute (`hunt.c`)
 independently corroborates this: it flags exactly **3** palindromic
 values, all composite (verified by quadratic sieve) — so `found = 0`
-stands from a second, unrelated tool. The standing conjecture (Jim,
-since ~1997):
+stands from a second, unrelated tool. Jim's 1997 conjecture was:
 
 > **3187813 is the largest prime palindrome on the curve.**
+
+**REFUTED 2026-04-24.** Patrick De Geest exhibited a 59-digit prime
+palindrome on the curve (Prime Puzzles & Problems, Puzzle 14), four
+months before we noticed. What survives is the bounded result above --
+no prime palindrome on the curve for d = 8...27 — and it is the
+*emirp* that remains open. See
+[`docs/session_2026-09-04_palindrome_conjecture_refuted.md`](docs/session_2026-09-04_palindrome_conjecture_refuted.md).
 
 ### Structural limits (what *can't* work)
 

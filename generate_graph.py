@@ -113,7 +113,7 @@ def star(cx,cy,r,fill):
 _pal_off = {5:(16,-18,"lb"), 181:(-18,-24,"rb"), 313:(16,-22,"lb"),
             3187813:(18,0,"lm")}
 _pal_lab = {5:"5", 181:"181", 313:"313",
-            3187813:"3187813  (d=7) — the largest palindrome, since 1997"}
+            3187813:"3187813  (d=7) — largest for d \u2264 27, not overall"}
 for (n,p,dd) in prime_pals:
     cx,cy = AX(math.log10(n)), AY(math.log10(p))
     star(cx,cy,11,GOLD)
@@ -129,7 +129,7 @@ for (nn,pp) in emirp_pts:
 text(AX(math.log10(85))+18, AY(math.log10(14621)),
      "12641 ⟷ 14621  (d=5) — the only bi-quadratic emirp", F(18), EMR, "lm")
 
-text(ax_l+14, A_t+14, "★ prime palindrome (only four, all d ≤ 7)    ◆ bi-quadratic emirp (only one)",
+text(ax_l+14, A_t+14, "★ prime palindrome (four below d=28)    ◆ bi-quadratic emirp (only one)",
      F(17), INK, "la")
 
 # ================= PANEL B : obstruction landscape =================

@@ -8,7 +8,9 @@ that chased it.
   after Simon Singh's *Fermat's Enigma*.
 - The **prime-palindrome conjecture** — that `3187813` is the largest prime
   palindrome on the curve — is his, first found on a **386** by bending the x87
-  FPU's 80-bit registers into a 64-bit integer engine.
+  FPU's 80-bit registers into a 64-bit integer engine. (De Geest refuted it in
+  April 2026 with a 59-digit example; it stood for 29 years, and the search it
+  drove is what built this project.)
 - The mathematics, the intuition, the hardware ingenuity, and the persistence
   across nearly three decades are all his. bi-quad exists because he never let
   the curve go.

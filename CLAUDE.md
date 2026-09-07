@@ -6,8 +6,11 @@ Searches for bi-quadratic emirp pairs (p, rev(p)) and prime palindromes
 on the curve p = 2n² + 2n + 1 = n² + (n+1)².
 
 The ONLY known bi-quadratic emirp: 12641 ↔ 14621 (d=5, n=79/85).
-Jim's palindrome conjecture: 3187813 (d=7) is the largest prime
-palindrome on this curve (held since 1997; confirmed to d=21 by sieve).
+Jim's palindrome conjecture (1997): 3187813 (d=7) is the largest
+prime palindrome on this curve. **REFUTED 2026-04-24** -- De Geest
+exhibited a 59-digit example (Prime Puzzles, Puzzle 14). What survives
+is the bounded result: NO prime palindrome on the curve for d = 8..27.
+Do not restate the conjecture as open; see Prior Art below.
 
 The emirp sieve and palindrome search are the SAME sieve — a modular
 obstruction kills both. See docs/ for the full technical picture.
