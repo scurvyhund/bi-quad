@@ -38,7 +38,22 @@ checks: $(CHECKS) hunt
 $(CHECKS): %: %.c curve_gmp.h
 	$(CC) -O2 -std=c99 -Wall -Wextra -o $@ $< $(LDLIBS)
 
+# GUARD: the resweep chain (scripts/resweep_tail.sh) invokes ./hunt
+# FRESH for each d, so replacing this binary mid-chain destroys the
+# single-binary provenance that is the entire point of the run.
+# chmod a-w does NOT protect it -- gcc unlinks and recreates the
+# output, and the directory is writable. Tested 2026-09-06.
 hunt: hunt.c curve_gmp.h
+	@if pgrep -x hunt >/dev/null 2>&1; then \
+	  echo "*** REFUSING to rebuild hunt: one is RUNNING."; \
+	  echo "***"; \
+	  echo "*** The resweep chain re-invokes ./hunt per digit-length."; \
+	  echo "*** Replacing it now voids the run's provenance."; \
+	  echo "***   watch:  tail -f logs/hunt_resweep_2026-09-05.log"; \
+	  echo "***   build elsewhere if you must:"; \
+	  echo "***     $(CC) $(CFLAGS) -o hunt_new hunt.c $(LDLIBS)"; \
+	  exit 1; \
+	fi
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
 
 # --- unit tests: run after ANY edit to curve.h / curve_gmp.h ---
