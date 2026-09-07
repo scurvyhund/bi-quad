@@ -78,7 +78,27 @@ The only one known on our curve: **12641 ↔ 14621** (d=5, n=79/85).
 **emirp** (general usage) — a prime whose digit reversal is a *different* prime. The bi-quadratic version additionally demands both lie on the curve.
 
 **prime palindrome (on the curve)** — the degenerate converse pair `m = n`, i.e. `p = rev(p)`.
-**Jim's conjecture:** `3187813` (d=7) is the largest. Held 1997–2026, **REFUTED 2026-09-04** — a fifth prime palindrome exists at d=59. True only in the bounded form, *largest through d=37*.
+**Jim's conjecture:** `3187813` (d=7) is the largest. Held 1997–2026, **REFUTED 2026-09-04** — a fifth prime palindrome exists at d=59. True only in the bounded form: largest through **d = 27** by our own brute force, and through **d = 37** by `palsplit`.
+
+**the five terms** — exactly five prime palindromes on the curve are known, and the enumeration between them is *complete*, so the ordinals are meaningful rather than a running count:
+
+| # | n | d | p |
+|---|---|---|---|
+| 1 | 1 | 1 | `5` |
+| 2 | 9 | 3 | `181` |
+| 3 | 12 | 3 | `313` |
+| 4 | 1262 | 7 | `3187813` |
+| 5 | 91732095351342012927350087594 | 59 | `1.68 × 10^58` |
+
+**Why nothing lies between #4 and #5** — the gap `d = 8…58` is closed twice, by two independent routes, and neither is ours alone:
+
+- `d ≤ 27` — our exhaustive brute force (`hunt.c`, `palbrute.c`), and `d ≤ 37` via `palsplit`, validated against De Geest's table rather than merely self-consistent.
+- `d ≤ 47` — **Alekseyev**'s comment on A050239: no terms below `10^47`. Independent of De Geest and of us.
+- `d ≤ 59` — **De Geest** [SUSQ2], strictly consecutive indices `1..69`. Consecutive indexing *is* a coverage claim (see *Prior Art* in `CLAUDE.md`), so every palindromic curve value to d = 59 is enumerated; exactly one of them past d = 7 is prime.
+
+⚠ **The ordinal rests on someone else's enumeration.** We have verified only to d = 37. Calling De Geest's term "the fifth" — rather than "a larger one" — inherits his completeness claim for `d = 38…58`. That is a well-founded claim (three named workers, consecutive indices, last extended 2026-04-23) and Alekseyev independently covers most of the range, but it is *not* a result we reproduced. Say "the fifth known" if the distinction matters.
+
+Nothing is known above d = 59.
 
 **the unification** — the emirp sieve *is* the palindrome sieve: a palindrome is a survivor with `m = n`. A modular obstruction kills both. See `unification` notes and `mod11_converse_constraint.md`.
 
@@ -289,7 +309,7 @@ adjective each — conflating them was a live risk on 2026-09-05.
 | A001844 | centered squares (curve, any) | — |
 | **A027571** | n-values giving palindromic `p` | 49 terms |
 | **A027572** | palindromic curve values, any | 49; `a(50)>10^40` |
-| **A050239** | palindromic curve **primes** | 4; none `<10^47` |
+| **A050239** | palindromic curve **primes** | **5 known**; none in `d = 8…58` |
 | **A002407** | cuban primes, `(n+1)³ − n³` | — |
 | A005891 | centered pentagonal numbers | — |
 
