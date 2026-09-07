@@ -23,8 +23,8 @@ by the optimized binary — see §9.)
 | `p` is **never** divisible by 11 → palindromes only at **odd** d | **PROVEN** |
 | `p` ends in one of `{01,13,21,41,61,81}`, else `…5` (div-5) | **PROVEN** |
 | a palindrome is the `m = n` (degenerate) case of an emirp | **PROVEN** |
-| only four prime palindromes: `5, 181, 313, 3187813` | **REFUTED 2026-09-04** — a fifth exists at d=59 |
-| `3187813` is the largest prime palindrome on the curve | **REFUTED 2026-09-04** (true only through d=37) |
+| only four prime palindromes: `5, 181, 313, 3187813` | **REFUTED 2026-09-04** — **five** are known; the fifth is at d = 59 (De Geest, 2026-04-24) |
+| `3187813` is the largest prime palindrome on the curve | **REFUTED 2026-09-04** — true only as a bound: largest through **d = 27** (our brute force), **d = 37** (`palsplit`) |
 
 ---
 
@@ -48,15 +48,34 @@ palindromes — *every* value on the curve has it by construction:
 That last line is the whole project in one number — Fermat's two-square
 theorem (the book that started it) surfacing inside the palindrome hunt.
 
+The fifth term joins the same confluence, fifty-two digit-lengths later
+and with `n` itself 29 digits long:
+
+```
+  n = 91732095351342012927350087594
+  p = n² + (n+1)²  =  1.68 × 10^58   (59 digits, palindromic, prime)
+```
+
+Nothing about the confluence is rare *per curve value* — every one of
+them is a `4n+1` sum of consecutive squares. What is rare is landing on
+a palindrome that is also prime, and §7 puts a number on how rare.
+
 ---
 
-## 2. Only four are prime — yet the curve keeps making palindromes
+## 2. A long primality desert — but not an endless one
 
-The only prime palindromes are `5, 181, 313, 3187813`, all at **d ≤ 7**.
-But palindromic *values* keep appearing at nearly every odd d out to 27.
-The desert past `3187813` is a **primality** desert, not a palindrome
-desert — the curve never stops minting palindromes; past d = 7 they are
-simply all composite.
+Four prime palindromes sit at **d ≤ 7** (`5, 181, 313, 3187813`), and
+then nothing for fifty digit-lengths. Palindromic *values*, meanwhile,
+keep appearing at nearly every odd d out to 27.
+
+So the gap past `3187813` is a **primality** desert, not a palindrome
+desert — the curve never stops minting palindromes; through **d = 37**
+(the limit we have checked) they are simply all composite.
+
+**The desert ends.** A fifth prime palindrome exists at **d = 59**
+(De Geest, 2026-04-24). Fifty-two digit-lengths of composites, and then
+another prime — which is what §7's density argument said would happen,
+and what the 1997 conjecture said would not.
 
 ---
 
@@ -183,7 +202,7 @@ conjecture but real members of the palindrome population.
 
 ---
 
-## 7. Why the conjecture is the *interesting* claim *(heuristic — TREND)*
+## 7. The heuristic won *(and this is the doc's sharpest result)*
 
 Two densities diverge:
 
@@ -194,10 +213,31 @@ Two densities diverge:
 | bi-quadratic **emirp** | `C/d²` | sum **converges** (≈ 1) |
 
 The prime-palindrome sum `Σ C′/d` diverges — so the heuristic does **not**
-predict a last one. "3187813 is the largest" therefore **bets against its
-own heuristic**, which is exactly what makes it a conjecture worth chasing
-and not a theorem. (The emirp side is the opposite: `C/d²` converges, so
-"only one emirp" is what the heuristic *predicts*.)
+predict a last one. "3187813 is the largest" therefore **bet against its
+own heuristic**, which is what made it a conjecture worth chasing rather
+than a theorem.
+
+**It lost, and the heuristic was right.** De Geest exhibited the fifth
+term at d = 59 on 2026-04-24. This section was written before that was
+known to us, and it named the correct outcome in advance — the divergent
+sum said "expect another, eventually", and another duly appeared.
+
+Two things follow, and they pull in opposite directions:
+
+- **Do not expect a last prime palindrome.** A divergent sum predicts
+  infinitely many. Searching for the largest is searching for something
+  the heuristic says is not there. What a search *can* deliver is the
+  next one, and a bound below it.
+- **The emirp side is the opposite case and remains the live question.**
+  `C/d²` converges to ≈ 1, so "only one" is exactly what the heuristic
+  *predicts* — `12641 ⟷ 14621` is the expected total, not a shortfall.
+  Here the conjecture and the heuristic agree, which is precisely why a
+  counterexample would be worth far more than the palindrome one was.
+
+⚠ **One data point does not confirm a heuristic.** The d = 59 term
+refutes the conjecture that opposed the density argument; it does not
+prove the density argument. `C′` is not derived, only fitted, and the
+next term's position is not predicted by anything here.
 
 ---
 
