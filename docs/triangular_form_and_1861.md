@@ -229,3 +229,50 @@ four-digit prime reversing into the square of another prime on the same
 curve, in a year that factors as 40 × 41.
 
 He would have enjoyed that, and he would not have written down why.
+
+---
+
+## 8. Published — Prime Curios, 2026-09-06
+
+**The 1861 curio was accepted.** Verified live at
+`t5k.org/curios/page.php/1861.html` on 2026-09-06, attributed to
+**Adams**:
+
+> The only prime below 10¹⁴ that is a sum of two consecutive squares
+> (1861 = 30² + 31²), where the reversal is the square of a prime
+> (1681 = 41²). The root 41 is itself a prime that is a sum of two
+> consecutive squares 4² + 5².
+
+That is §2 and §3 of this document, compressed to one sentence.
+
+It is the seventh curio on the page. The other six — Greer, Post,
+Loungrides, Francois, Shelton, Luen — were all there before, and one
+of them (Francois, "the sum of the squares of two consecutive
+integers") sits directly adjacent to our territory. Checking those
+first is what kept this from being a duplicate, and it is the same
+check that caught the 3187813 submission before it went out asserting
+a conjecture that had already been refuted. See the Prior Art section
+of `CLAUDE.md`.
+
+**Do not re-submit this.** A future session finding §2 fresh should
+stop here.
+
+### The bound is ours, and it is a bound
+
+The claim rests on "below 10¹⁴", which is a search result, not a
+theorem. Note what the published condition actually is — it is
+*stricter* than the descent-prime set of §2. `61 = 5² + 6²` reverses
+to `16 = 4²`, but 4 is not prime, so 61 satisfies §2 and **fails** the
+curio's condition. 1861 is the only survivor of the stricter form
+below 10¹⁴.
+
+Extending that bound is parked as `siege_plan.md` Tier 1 item 10a,
+and it now carries an obligation it did not have yesterday: the claim
+is published. If the search past 10¹⁴ turns up a second example, the
+curio needs correcting, and that is on us to report rather than wait
+to be caught.
+
+### Third curio under "Adams"
+
+After 12641 (the emirp pair) and 3187813. The submitter-database
+linkage raised in `PrimeCurios.txt` is still open.
