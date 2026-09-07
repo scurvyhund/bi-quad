@@ -31,7 +31,24 @@ candidates through 27 digits — before any primality test** — a
   that is what "bi-quadratic" means: two numbers, one curve. **Exactly
   one is known: `12641 ⟷ 14621` (d=5) — the only one through 27 digits.**
 - **Prime palindrome on the curve** — a prime `p = 2n²+2n+1` that reads the same
-  forwards and backwards. Four are known: **5, 181, 313, 3187813**.
+  forwards and backwards. **Five are known**, and the enumeration between them
+  is complete, so the ordinals mean something:
+
+  | # | n | d | p |
+  |---|---|---|---|
+  | 1 | 1 | 1 | `5` |
+  | 2 | 9 | 3 | `181` |
+  | 3 | 12 | 3 | `313` |
+  | 4 | 1262 | 7 | `3187813` — Jim's, 1997 |
+  | 5 | 91732095351342012927350087594 | 59 | `1.68 × 10^58` — De Geest, 2026-04-24 |
+
+  Nothing lies between #4 and #5. That gap is closed twice over, by
+  independent routes: our exhaustive brute force to d = 27 (and `palsplit`
+  to d = 37), **Alekseyev**'s bound of no terms below `10^47`, and **De
+  Geest**'s strictly consecutive indices `1..69` reaching d = 59. We
+  verified only to d = 37, so "fifth" inherits his completeness claim for
+  d = 38…58 — see [`docs/GLOSSARY.md`](docs/GLOSSARY.md) *the five terms*.
+  Nothing at all is known above d = 59.
 
 These two searches turn out to be **the same sieve**: a palindrome is just the
 `m = n` case of the emirp relation, so any obstruction kills both.
