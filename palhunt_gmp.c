@@ -1,8 +1,8 @@
 /*
- * palhunt_gmp.c — Prime palindromes on the curve 2n^2+2n+1, PAST the 64-bit wall.
+ * palhunt_gmp.c -- Prime palindromes on the curve 2n^2+2n+1, PAST the 64-bit wall.
  *
  * n in uint64, p = 2n^2+2n+1 in unsigned __int128 (good to ~37 digits), and GMP
- * is called ONLY to certify the rare palindrome — so it stays fast while reaching
+ * is called ONLY to certify the rare palindrome -- so it stays fast while reaching
  * digit-lengths palhunt.c (uint64, <=19 digits) could never touch.
  *
  * Hunts for the next prime palindrome on the curve beyond Jim's 3187813 (1997).
@@ -11,7 +11,7 @@
  * Usage: ./palhunt_big [min_d] [max_d]
  */
 /*
- * STATUS 2026-09-05 — FROZEN.  DO NOT CONVERGE ONTO curve.h.
+ * STATUS 2026-09-05 -- FROZEN.  DO NOT CONVERGE ONTO curve.h.
  *
  * This file is in NO Makefile target (not TARGET, PALS, CHECKS, TESTS,
  * nor clean).  It predates curve.h: last touched 2026-06-23 by the
@@ -79,16 +79,16 @@ int main(int argc,char**argv){
          mpz_t z; mpz_init(z);
          #pragma omp for schedule(dynamic,1000000)
          for(unsigned long long i=0;i<range;i++){
-            /* MOD-5 OPTIMIZATION (available, not applied — 2026-06-19)
+            /* MOD-5 OPTIMIZATION (available, not applied -- 2026-06-19)
              * For p = 2n^2+2n+1:
-             *   n≡1 (mod 5) → p≡5 (mod 5) → p divisible by 5, never prime
-             *   n≡3 (mod 5) → p≡5 (mod 5) → p divisible by 5, never prime
+             *   n==1 (mod 5) -> p==5 (mod 5) -> p divisible by 5, never prime
+             *   n==3 (mod 5) -> p==5 (mod 5) -> p divisible by 5, never prime
              * So adding:
              *   unsigned r = (unsigned)((nmin+i) % 5);
              *   if (r==1 || r==3) continue;
              * BEFORE curve() would skip 40% of candidates before the
              * expensive u128 multiply.  Benchmarked 2026-06-06: ~10%
-             * CPU-time saving (skip-fraction != speedup — the saving is
+             * CPU-time saving (skip-fraction != speedup -- the saving is
              * small because cost lives in the survivor path, not here).
              * Deliberately omitted: search is finalising and the gain
              * does not affect mathematical results.

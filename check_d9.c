@@ -1,4 +1,4 @@
-/* check_d9.c — Enumerate all 9-digit bi-quadratic emirp candidates.
+/* check_d9.c -- Enumerate all 9-digit bi-quadratic emirp candidates.
  *
  * Build: gcc -O2 -std=c99 -o check_d9 check_d9.c -lgmp
  */
@@ -18,8 +18,8 @@ int main(void)
 
    /* Bracket the n range for d=9 before allocating anything, so the
     * error path below has nothing to free.
-    * n_min: smallest n where 2n²+2n+1 >= 10^8
-    * n_max: largest  n where 2n²+2n+1 <= 10^9 - 1 */
+    * n_min: smallest n where 2n^2+2n+1 >= 10^8
+    * n_max: largest  n where 2n^2+2n+1 <= 10^9 - 1 */
    long n_min = 0, n_max = 0;
    for (long n = 7000; n < 8000; n++) {
       long p = 2L * n * n + 2 * n + 1;

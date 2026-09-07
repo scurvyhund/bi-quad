@@ -1,6 +1,6 @@
-/* check_d7.c — Enumerate all 7-digit bi-quadratic emirp candidates.
- * Shows every n where p=2n²+2n+1 has 7 digits and rev(p) is also
- * of the form 2m²+2m+1.
+/* check_d7.c -- Enumerate all 7-digit bi-quadratic emirp candidates.
+ * Shows every n where p=2n^2+2n+1 has 7 digits and rev(p) is also
+ * of the form 2m^2+2m+1.
  *
  * Build: gcc -O2 -std=c99 -o check_d7 check_d7.c -lgmp
  */
@@ -18,7 +18,7 @@ int main(void)
    printf("\n  7-Digit Bi-Quadratic Emirp Candidate Enumeration\n");
    printf("====================================================\n\n");
 
-   /* For d=7: 1000000 <= 2n²+2n+1 <= 9999999.
+   /* For d=7: 1000000 <= 2n^2+2n+1 <= 9999999.
     * Both ends are computed. n_min used to be hardcoded to 710 with a
     * guard (n_min == 0) that could never fire, so the true first
     * 7-digit n = 707 and its two successors were never enumerated. */

@@ -1,8 +1,8 @@
 /* 
- * mod_obstruct.c — Modular obstruction search for bi-quadratic emirps
+ * mod_obstruct.c -- Modular obstruction search for bi-quadratic emirps
  * For each digit count d and depth k, determines whether a d-digit
  * converse prime pair (p, rev(p)) with both p and rev(p) of the form
- * 2n² + 2n + 1 is structurally possible, based on modular constraints
+ * 2n^2 + 2n + 1 is structurally possible, based on modular constraints
  * on the first and last k digits.
  *
  * Default gcc compiler cmd: 
@@ -18,19 +18,19 @@
  *
  * Algorithm:
  *  
- * For p = 2n²+2n+1 and q = rev(p) = 2m²+2m+1:
+ * For p = 2n^2+2n+1 and q = rev(p) = 2m^2+2m+1:
  *   
- *   - last  k digits of p  → determined by n mod 10^k
- *   - first k digits of q = reverse(last k of p) → must be achievable
- *   - last  k digits of q  = reverse(first k of p) → must be valid ending
- *   - first k digits of p → determined by magnitude of n
+ *   - last  k digits of p  -> determined by n mod 10^k
+ *   - first k digits of q = reverse(last k of p) -> must be achievable
+ *   - last  k digits of q  = reverse(first k of p) -> must be valid ending
+ *   - first k digits of p -> determined by magnitude of n
  *
  * Both the p-side and q-side constraints are checked.
  *
  * Memory-efficient design (supports k up to ~13):
  *
  * - is_valid_ending stored as bitset (1 bit/entry vs 1 byte)
- *   - endings[] array eliminated — computed inline via __int128
+ *   - endings[] array eliminated -- computed inline via __int128
  *   - Phase 2b reverse-residue lookup replaced by Hensel lifting
  *   - valid_firsts[] right-sized to actual count (not mod-sized)
  *
@@ -51,7 +51,7 @@
 #define NUM_THREADS     8
 #define CKPT_FILE      "mod_obstruct.ckpt"
 
-// Bitset macros — compact bool array using 1 bit per entry 
+// Bitset macros -- compact bool array using 1 bit per entry 
 #define BITSET_WORDS(n) (((n) + 63) / 64)
 #define BITSET_SET(bs, i) ((bs)[(i) >> 6] |= (1ULL << ((i) & 63)))
 #define BITSET_GET(bs, i) (((bs)[(i) >> 6] >> ((i) & 63)) & 1)
@@ -92,10 +92,10 @@ static bool read_checkpoint(int max_d, int max_k, int *min_k, int *min_d) {
 }
 
 /* 
- * Compute (2r² + 2r + 1) mod m.
- * Uses 64-bit arithmetic when mod ≤ 10^9 (k ≤ 9), since
- * 2r² fits in unsigned long long.  Falls back to __int128
- * for k ≥ 10 where r can exceed ~3×10^9. 
+ * Compute (2r^2 + 2r + 1) mod m.
+ * Uses 64-bit arithmetic when mod <= 10^9 (k <= 9), since
+ * 2r^2 fits in unsigned long long.  Falls back to __int128
+ * for k >= 10 where r can exceed ~3x10^9. 
  * 
  */
 static inline long ending_for_residue(long r, long m) {
@@ -138,17 +138,17 @@ static bool sorted_has_value_in_range(const long *arr, long len,
    return (left < len && arr[left] <= hi);
 }
 
-// Compute n_min, n_max for d-digit numbers of the form 2n²+2n+1. 
+// Compute n_min, n_max for d-digit numbers of the form 2n^2+2n+1. 
 
 /* 
- * Compute first-k-digit prefix of p = 2n²+2n+1 for given n.
+ * Compute first-k-digit prefix of p = 2n^2+2n+1 for given n.
  * Returns floor(p / 10^(d-k)).
  *
  */
 
 static long compute_first_k(mpz_t n, int d, int k, mpz_t tmp_p, mpz_t tmp_pow)
 {
-   // p = 2n² + 2n + 1 
+   // p = 2n^2 + 2n + 1 
    mpz_mul(tmp_p, n, n);
    mpz_mul_ui(tmp_p, tmp_p, 2);
    mpz_addmul_ui(tmp_p, n, 2);
@@ -161,7 +161,7 @@ static long compute_first_k(mpz_t n, int d, int k, mpz_t tmp_p, mpz_t tmp_pow)
    return mpz_get_ui(tmp_p);
 }
 
-// Find first n >= lo with n ≡ r (mod stride) 
+// Find first n >= lo with n == r (mod stride) 
 static void first_n_with_residue(mpz_t result, mpz_t lo,
                          long r, long stride) 
 {
@@ -172,7 +172,7 @@ static void first_n_with_residue(mpz_t result, mpz_t lo,
 }
 
 /* 
- * Solve 2m² + 2m + 1 ≡ target (mod 10^k) via Hensel lifting.
+ * Solve 2m^2 + 2m + 1 == target (mod 10^k) via Hensel lifting.
  * Returns number of solutions stored in sols[].
  * Max solutions bounded by ~4 * 2^(k-1).
  *
@@ -193,7 +193,7 @@ static int solve_residues(long target, int k, long *sols) {
          sols[count++] = r;
    }
 
-   // Hensel lift: mod 10^j → mod 10^(j+1) 
+   // Hensel lift: mod 10^j -> mod 10^(j+1) 
    long pow10j = 10;
    
    for (int j = 1; j < k; j++) {
@@ -214,7 +214,7 @@ static int solve_residues(long target, int k, long *sols) {
          }
       }
 
-      // Swap: copy tmp → sols 
+      // Swap: copy tmp -> sols 
       for (int i = 0; i < new_count; i++)
          sols[i] = tmp[i];
       count = new_count;
@@ -263,9 +263,9 @@ int main(int argc, char *argv[]) {
 
       /* 
        * Phase 1: Build is_valid_ending bitset.
-       * Mark which last-k-digit values are achievable by 2n²+2n+1.
+       * Mark which last-k-digit values are achievable by 2n^2+2n+1.
        * Uses bitset (mod/8 bytes) instead of bool array (mod bytes).
-       * endings[] array eliminated — computed inline via __int128. 
+       * endings[] array eliminated -- computed inline via __int128. 
        *
        */
       
@@ -368,7 +368,7 @@ int main(int argc, char *argv[]) {
        *   1. Compute range of achievable first-k prefixes for p
        *   2. Check if any valid first falls in that range (p-side pass)
        *   3. For each matching first-k prefix f:
-       *      - q's last-k = reverse_k(f) → find m residues via Hensel
+       *      - q's last-k = reverse_k(f) -> find m residues via Hensel
        *      - q's first-k = reverse_k(ending_of_p)
        *      - Chk if any such m achieves that first-k prefix (q-side pass)
        *
@@ -397,7 +397,7 @@ int main(int argc, char *argv[]) {
          long survivors = 0;
 
          /* Shared progress counters (atomic). g_scanned = TRUE aggregate
-          * residues examined across ALL threads — robust to load imbalance,
+          * residues examined across ALL threads -- robust to load imbalance,
           * unlike the old per-thread r%100M checkpoint that went silent
           * whenever one thread fell behind. g_heavy = residues that reach
           * the expensive Hensel/q-side work, the real cost driver and the
@@ -408,7 +408,7 @@ int main(int argc, char *argv[]) {
           * every ~20s of WALL time regardless of per-residue cost. The old
           * count-based thresholds were useless at d=21, where a single heavy
           * residue costs ~100ms and a thread needs hours to reach a 2M-iter
-          * flush — so both counters sat at 0 for 20+ min while all 8 cores
+          * flush -- so both counters sat at 0 for 20+ min while all 8 cores
           * ground away. cur_r in the output shows position in [0,mod). */
          double hb_t0         = omp_get_wtime();
          double hb_last       = hb_t0;
@@ -439,7 +439,7 @@ int main(int argc, char *argv[]) {
                /* Aggregate progress: flush a thread-local tally into the
                 * shared counter every 2M iterations (keeps atomics rare),
                 * then emit one line per 100M residues of TRUE total
-                * progress — accurate regardless of load imbalance. */
+                * progress -- accurate regardless of load imbalance. */
                if (++loc_scanned >= 200000) {
                   #pragma omp atomic
                   g_scanned += loc_scanned;
@@ -469,7 +469,7 @@ int main(int argc, char *argv[]) {
                }
 
                /*
-                * First n ≡ r (mod 10^k) in [n_min, n_max] —
+                * First n == r (mod 10^k) in [n_min, n_max] --
                 * check this BEFORE computing the ending to
                 * skip residues with no n values cheaply
                 * (at k=10 d=11, eliminates 99.999% of r).
@@ -491,7 +491,7 @@ int main(int argc, char *argv[]) {
                if (!BITSET_GET(is_valid_ending, p_ending))
                   continue;
 
-               /* q's first-k digits = reverse_k(p_ending) — fixed for
+               /* q's first-k digits = reverse_k(p_ending) -- fixed for
                 * this residue (depends only on r), so compute once. */
                long q_first = reverse_k(p_ending, k);
 
@@ -501,8 +501,8 @@ int main(int argc, char *argv[]) {
                /*
                 * EXACT per-residue check (replaces the old interval
                 * [fk_min,fk_max] over-approximation). Enumerate every
-                * actual n-value for this residue — t_first, +mod, +2*mod,
-                * ... <= n_max — and test its EXACT p first-k prefix.
+                * actual n-value for this residue -- t_first, +mod, +2*mod,
+                * ... <= n_max -- and test its EXACT p first-k prefix.
                 *
                 * The interval was correct only when a residue had a
                 * single n-value (range < mod, i.e. d<=20 at k=10). At
@@ -511,7 +511,7 @@ int main(int argc, char *argv[]) {
                 * produces (wrong counts) AND forced a giant valid_firsts
                 * sweep (intractable). Enumerating the few real n-values is
                 * exact and cheap, and collapses to the identical single
-                * point check for d<=20 — so d<=20 results are unchanged.
+                * point check for d<=20 -- so d<=20 results are unchanged.
                 */
                bool surv = false;
 
@@ -533,7 +533,7 @@ int main(int argc, char *argv[]) {
                   if (!BITSET_GET(is_valid_ending, q_ending))
                      continue;
 
-                  /* q-side Hensel work — count it + time-based heartbeat */
+                  /* q-side Hensel work -- count it + time-based heartbeat */
                   {
                      #pragma omp atomic
                      g_heavy++;
@@ -643,7 +643,7 @@ int main(int argc, char *argv[]) {
          printf("    d=%2d  survivors = %6ld%s\n", d, survivors, tag);
          fflush(stdout);
 
-         // If saturated, all larger d will also saturate — skip
+         // If saturated, all larger d will also saturate -- skip
          if (survivors == sat_level) {
             printf("    d=%2d..%2d  (skipped — saturated)\n",
                   d + 1, max_d);

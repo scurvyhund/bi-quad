@@ -1,5 +1,5 @@
 /*
- * hunt.c — Direct brute-force hunt for bi-quadratic emirps.
+ * hunt.c -- Direct brute-force hunt for bi-quadratic emirps.
  *
  * For each digit count d, enumerate EVERY n with p = 2n^2+2n+1
  * having d digits, form q = rev(p), and test the full conditions:
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
 
       double t0 = omp_get_wtime();
 
-      /* Outer block loop (sequential) — parallel region per block.
+      /* Outer block loop (sequential) -- parallel region per block.
        * A complete block is the checkpoint unit. */
       for (long blk = start_i; blk < range; blk += BLOCK_SIZE) {
          long blk_end = blk + BLOCK_SIZE;
@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
                   emirps++;
                }
 
-               /* Print hit immediately — never buffer results. */
+               /* Print hit immediately -- never buffer results. */
                #pragma omp critical (stdout)
                {
                   const char *lbl =

@@ -1,5 +1,5 @@
 /*
- * palhunt_opt.c — OPTIMIZED palhunt_gmp.c (bi-quad experiment, 2026-06-06).
+ * palhunt_opt.c -- OPTIMIZED palhunt_gmp.c (bi-quad experiment, 2026-06-06).
  *
  * Identical math to palhunt_gmp.c, but the divide-bound inner loop is fixed:
  * the original computed p = curve(n) and then `p % 10` (a 128-bit __udivti3) on
@@ -10,7 +10,7 @@
  *     last(p) :  1  5  3  5  1
  *
  * So we keep n mod 5 with cheap 64-bit arithmetic (one u128%5 per d, outside the
- * loop), skip n ≡ 1,3 (last digit 5 -> composite) WITHOUT computing p, and never
+ * loop), skip n == 1,3 (last digit 5 -> composite) WITHOUT computing p, and never
  * do a 128-bit modulo in the hot path. This is the digit-ending "proof by
  * construction" applied to the brute inner loop.
  *
@@ -18,7 +18,7 @@
  * Usage: ./palhunt_opt_c [min_d] [max_d]
  */
 /*
- * STATUS 2026-09-05 — FROZEN.  DO NOT CONVERGE ONTO curve.h.
+ * STATUS 2026-09-05 -- FROZEN.  DO NOT CONVERGE ONTO curve.h.
  *
  * This file is in NO Makefile target (not TARGET, PALS, CHECKS, TESTS,
  * nor clean).  It predates curve.h: last touched 2026-06-23 by the

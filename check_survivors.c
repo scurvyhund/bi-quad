@@ -1,13 +1,13 @@
-/* check_survivors.c — Enumerate all bi-quadratic emirp candidates
+/* check_survivors.c -- Enumerate all bi-quadratic emirp candidates
  * for a given digit count d.
  *
  * NOTE (2026-06-05): this counts NON-PALINDROME converse candidates
- * — it skips palindromes (p==rev(p)) at the strcmp below. That is the
+ * -- it skips palindromes (p==rev(p)) at the strcmp below. That is the
  * right metric for emirp hunting, but it differs from hunt.c's
  * "survivors(raw)", which ALSO counts the palindromic case. e.g.
  * d=13: this prints 2 (non-pal); hunt raw = 4 (= 2 + 2 palindromes).
- * BOTH are correct — the difference is definitional, not a
- * disagreement. Only real limit: 64-bit `long` overflows at d>=19 —
+ * BOTH are correct -- the difference is definitional, not a
+ * disagreement. Only real limit: 64-bit `long` overflows at d>=19 --
  * use hunt.c (GMP) past there.
  * See docs/session_2026-06-05_emirp_d5_correction.md.
  *

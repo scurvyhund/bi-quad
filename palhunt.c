@@ -1,7 +1,7 @@
 /*
- * palhunt.c — Find PRIME PALINDROMES on the curve p = 2n^2+2n+1 (= n^2+(n+1)^2).
+ * palhunt.c -- Find PRIME PALINDROMES on the curve p = 2n^2+2n+1 (= n^2+(n+1)^2).
  *
- * Every such p is ≡ 1 (mod 4) — a "4n+1 prime". This enumerates n, forms p,
+ * Every such p is == 1 (mod 4) -- a "4n+1 prime". This enumerates n, forms p,
  * keeps the ones whose decimal digits are a palindrome, and tests primality
  * (deterministic Miller-Rabin, exact for all 64-bit p). Reports every hit.
  *
@@ -11,7 +11,7 @@
  * Usage: ./palhunt [max_n]      (default 3000000000)
  */
 /*
- * STATUS 2026-09-05 — FROZEN.  DO NOT CONVERGE ONTO curve.h.
+ * STATUS 2026-09-05 -- FROZEN.  DO NOT CONVERGE ONTO curve.h.
  *
  * This file is in NO Makefile target (not TARGET, PALS, CHECKS, TESTS,
  * nor clean).  It predates curve.h: last touched 2026-06-23 by the

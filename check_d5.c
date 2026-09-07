@@ -1,6 +1,6 @@
-/* check_d5.c — Enumerate all 5-digit bi-quadratic emirp candidates.
- * Shows every n where p=2n²+2n+1 has 5 digits and rev(p) is also
- * of the form 2m²+2m+1.
+/* check_d5.c -- Enumerate all 5-digit bi-quadratic emirp candidates.
+ * Shows every n where p=2n^2+2n+1 has 5 digits and rev(p) is also
+ * of the form 2m^2+2m+1.
  *
  * Build: gcc -O2 -std=c99 -o check_d5 check_d5.c -lgmp
  */
@@ -18,8 +18,8 @@ int main(void)
    printf("\n  5-Digit Bi-Quadratic Emirp Candidate Enumeration\n");
    printf("====================================================\n\n");
 
-   /* For d=5: 10000 <= 2n²+2n+1 <= 99999
-    * n_min = 70 (2·70²+2·70+1 = 9941 → 4 digits, so 71)
+   /* For d=5: 10000 <= 2n^2+2n+1 <= 99999
+    * n_min = 70 (2*70^2+2*70+1 = 9941 -> 4 digits, so 71)
     * Let's compute precisely */
    int n_min = 0, n_max = 0;
    for (int n = 0; n < 1000; n++) {

@@ -1,4 +1,4 @@
-/* check_d21.c — Sample and verify d=21 residue processing with timing
+/* check_d21.c -- Sample and verify d=21 residue processing with timing
  *
  * Tests 100 random n values in the d=21 range to estimate per-residue
  * computation time and extrapolate to full d=21 run time.
@@ -26,7 +26,7 @@ int main(void) {
    mpz_init(check);
    mpz_init(lo_bound);
 
-   /* Calculate n_min: smallest n where 2n²+2n+1 >= 10^20 */
+   /* Calculate n_min: smallest n where 2n^2+2n+1 >= 10^20 */
    mpz_ui_pow_ui(temp, 10, 20);
    mpz_mul_ui(temp, temp, 2);
    mpz_sub_ui(temp, temp, 1);
@@ -45,7 +45,7 @@ int main(void) {
    if (mpz_cmp(check, lo_bound) < 0)
       mpz_add_ui(n_min, n_min, 1);
 
-   /* Calculate n_max: largest n where 2n²+2n+1 < 10^21 */
+   /* Calculate n_max: largest n where 2n^2+2n+1 < 10^21 */
    mpz_ui_pow_ui(temp, 10, 21);
    mpz_mul_ui(temp, temp, 2);
    mpz_sub_ui(temp, temp, 1);
@@ -80,7 +80,7 @@ int main(void) {
       mpz_set(n_sample, n_min);
       mpz_add_ui(n_sample, n_sample, offset);
 
-      /* Compute p = 2n²+2n+1 */
+      /* Compute p = 2n^2+2n+1 */
       mpz_mul(p, n_sample, n_sample);
       mpz_mul_ui(p, p, 2);
       mpz_addmul_ui(p, n_sample, 2);
