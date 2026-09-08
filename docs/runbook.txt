@@ -237,6 +237,27 @@ claude -r                            # --resume : interactive picker
 # NOT restored on resume: launch flags (--add-dir, --mcp-config, --settings,
 #   --fallback-model) and plan/bypassPermissions modes -- pass them again,
 #   e.g. re-add the extra dir:  claude -c --add-dir ~/programming/c/lock256
+#
+# LAUNCH DIRECTORY POLICY (2026-09-08) -- always start at the REPO ROOT:
+#     claude
+#   The project key IS the launch CWD, so a session started in docs/ or
+#   logs/ is filed separately and 'claude -c' at the root never finds it
+#   -- it silently starts COLD instead.  Reach subdirectories by path.
+#   Enforced by a global SessionStart hook (not by memory):
+#     ~/.claude/hooks/warn-not-repo-root.sh   (wired in ~/.claude/settings.json)
+#   It compares the launch CWD to 'git rev-parse --show-toplevel' and warns
+#   loudly, naming both paths, when they differ.  Silent at a repo root and
+#   outside git; always exits 0.  Verify it still fires:
+      echo '{"cwd":"'$PWD'/docs"}' | ~/.claude/hooks/warn-not-repo-root.sh
+#
+# DELETING A STRAY PROJECT KEY -- only AFTER that session has exited.
+#   A live session re-creates its directory and writes a stub by path on
+#   exit, so deleting one while it runs just makes you delete it twice.
+#   Confirm nothing is running there, THEN remove:
+      ps -eo pid,comm --no-headers | awk '$2 ~ /^claude/ {print $1}' \
+        | while read p; do readlink /proc/$p/cwd; done
+#   ...then delete ONLY the stray key, spelled out in full -- never a glob:
+      rm -rf ~/.claude/projects/<the-stray-key-name>
 
 --- 16. CONVERSE PAIRS & THE mod-11 CONSTRAINT -------------------------------
 # Theory: docs/mod11_converse_constraint.md  (PROVEN, verified d=5..27)
