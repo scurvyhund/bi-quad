@@ -405,3 +405,30 @@ done
 #   strip the time= line or every run "differs".  Exercise EVERY mode too
 #   (--all, --verify, --slow, an explicit n-range, a resume) -- the
 #   2026-09-05 zone bug lived only in the ranged path.
+
+# 4. PREDICTING A LEG'S RUNTIME -- PARITY, NOT A UNIFORM sqrt(10).
+# MEASURED (hunt, 9 consecutive legs, d=13..26, one binary 2d1948a):
+#   the RANGE grows a flat x3.162 every step -- verified across all
+#   four d=22..26 gaps -- but WALL TIME does not.  It alternates:
+#       even -> ODD   x4.11 .. x5.40   (mean 4.96)   EXPENSIVE
+#       odd  -> even  x1.67 .. x2.42   (mean 2.11)
+#   The two multiply to ~10.5 (= two digits of range), so parity
+#   REDISTRIBUTES the growth, it does not add any.
+# HYPOTHESIS ONLY (not verified): odd d carries palindrome candidates
+#   and even d has none (mod-11, section 16), so odd legs pay extra
+#   primality work.  Plausible, unproven -- do not quote as mechanism.
+# CONSEQUENCE: a uniform x3.16 UNDER-estimates every odd-d leg ~1.6x.
+#   d=27 was estimated 70h that way; parity gives 92-116h, and the
+#   independent June 2026 d=27 run (120.3h) agrees with parity, not
+#   with the extrapolation.  Weight a measured prior over your own.
+# Recompute the ladder from any resweep log:
+awk '/^  d=/{if(match($0,/d=[0-9]+/))d=substr($0,RSTART+2,RLENGTH-2);next}
+     /wall=/{if(d!=""){match($0,/wall=[0-9.]+/)
+       print d, substr($0,RSTART+5,RLENGTH-5); d=""}}' \
+     logs/hunt_resweep_2026-09-05.log \
+  | awk '{d[NR]=$1+0;w[NR]=$2+0}
+     END{for(i=2;i<=NR;i++){if(w[i-1]<=0)continue
+       printf "  d=%d->%d  x%.2f  %s\n",d[i-1],d[i],w[i]/w[i-1],
+         (d[i]%2==1?"even->ODD":"odd->even")}}'
+#   Skips are NOT legs: d=18->22 shows x114 only because d=19..21 were
+#   run on a different binary in June.  Ignore any non-consecutive pair.
