@@ -1,0 +1,36 @@
+# Palindromic curve-values p = 2n^2+2n+1 at d = 27.
+#
+# Regenerated 2026-09-11 with palsplit (head/tail split search), an
+# INDEPENDENT method from the n-enumerating hunt.c that produced the
+# original d=27 list in pals.txt (2026-07-05).  Both find the same
+# three values, and the 2026-09-05..11 resweep leg independently
+# reported palindromes=3 at d=27 -- three agreeing routes.
+#
+# These are numeric palindromes on the curve, NOT prime palindromes:
+# all three are COMPOSITE.  Factored with Michel Leonard's qs
+# (quadratic sieve; see CREDITS.md), 2026-07-05.  Each factorization
+# is a self-checkable certificate; all three products were re-verified
+# to equal p on 2026-09-11, and each value re-verified to be both a
+# decimal palindrome and on the curve.
+#
+# COUNT NOTE: there is NO div-5 palindrome at d=27, so the
+# skip-optimized hunt's count of 3 is complete here, not an undercount
+# -- unlike d=25, where the div-5 palindrome IS missed by the skip
+# build (see pals_d25.txt).  This is a NULL result from a filter flag,
+# so it was earned rather than read at face value:
+#   - --keep5 returns found=3 at BOTH t=6 and t=8 (not one config);
+#   - and the flag is demonstrably NOT inert -- at d=25 it moves the
+#     count 4 -> 5 at both t=6 and t=8.
+# A flag that changed nothing anywhere would print the same found=3.
+#
+# Cross-check: palsplit is correct for every split width t, so two t
+# values agreeing is a free check and is mandatory at the frontier.
+# t=6 and t=8 both return these same three values.
+#
+# CONSEQUENCE: no prime palindrome on the curve at d=27.
+  - 108491007414868414700194801 (n=7365154696775)   composite
+      = 73 * 101 * 137 * 28343893 * 3789391189657
+  - 318216440234333432044612813 (n=12613810689762)  composite
+      = 33601 * 9470445529428690576013
+  - 318288756988131889657882813 (n=12615243893562)  composite
+      = 409 * 23917 * 200461 * 7548241 * 21503821
