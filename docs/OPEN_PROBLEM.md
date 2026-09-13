@@ -152,6 +152,17 @@ and taking `P(p and rev(p) both prime) ≈ 1/(d·ln10)²`:
 | **d = 28 … ∞** | **0.0238  (2.4 %)** |
 | d = 1 … ∞ (model total) | 1.076 — against 1 observed |
 
+> **A second, independent calibration exists** and is roughly a factor
+> of two lower: `gmp-cvo/docs/biquadratic_emirps_analysis.md` §5 sums
+> P(n) over each decade and gets ~0.012 for everything past 10^27,
+> against the 0.0238 above. The difference is calibration, not model —
+> that one back-solves its constant from the d = 5 hit, this one takes
+> it from *observed* survivor counts over d = 13…27, which is the
+> better-grounded of the two. Quote **2.4 %**, and note the spread.
+> Neither figure changes the conclusion: the expected yield past the
+> frontier is small enough that further search buys bound strength,
+> not a realistic chance of a second example.
+
 So continuing the emirp search **to infinity** carries a ~2.4 % chance
 of a second example, and the model's total expectation over all
 digit-lengths, 1.08, sits almost exactly on the one pair we have.

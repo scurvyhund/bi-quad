@@ -60,6 +60,23 @@ increasing k.
 
 ## Algorithm (for a given k)
 
+![Control flow of mod_obstruct: argument parsing and checkpoint
+resume, then Phase 1 (is_valid_ending bitset), Phase 2 (valid_firsts[],
+two-pass and sorted), and Phase 3 (the OpenMP digit-count sweep with
+the two-sided feasibility check and Hensel lift), with checkpoint
+writes per d and per k](mod_obstruct.png)
+
+The diagram is generated from [`mod_obstruct.dot`](mod_obstruct.dot):
+
+    dot -Tpng docs/mod_obstruct.dot -o docs/mod_obstruct.png
+
+Verified against the source 2026-09-12: every function and constant it
+names is present in `mod_obstruct.c`, and the argument order it shows
+(`max_d max_k min_k min_d`) matches `main()`. Regenerating reproduces
+the committed image; a ~0.2% pixel difference confined to the Phase 2
+cluster label is graphviz rendering drift, not a content change.
+
+
 ### Phase 1: Build the Valid Endings Bitset
 
 Compute all possible last-k-digit patterns of numbers of the form 2n² + 2n + 1.

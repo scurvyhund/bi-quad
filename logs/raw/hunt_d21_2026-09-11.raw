@@ -1,0 +1,20 @@
+
+  Bi-Quadratic Emirp HUNT (direct brute force)
+  ============================================
+  d = 21 .. 21
+
+  palindrome     n=7360311900  p=108348382545283843801
+  palindrome     n=8032814139  p=129052205999502250921
+  palindrome     n=8055329360  p=129776662212266677921
+  survivor       n=8529868069  p=145517298566151313661  q=166313151665892715541
+  survivor       n=9119022745  p=166313151665892715541  q=145517298566151313661
+  d=21  ckpt 5000000000/15289611963 (32.7%)  surv=5  pals=3  emrp=0  [0.03 h]
+  palindrome     n=12574461617  p=316234169939961432613
+  d=21  ckpt 10000000000/15289611963 (65.4%)  surv=6  pals=4  emrp=0  [0.06 h]
+  d=21  ckpt 15000000000/15289611963 (98.1%)  surv=6  pals=4  emrp=0  [0.09 h]
+  d=21  ckpt 15289611963/15289611963 (100.0%)  surv=6  pals=4  emrp=0  [0.10 h]
+  d=21  range=15289611963  survivors(raw)=6  palindromes=4  prime-eligible=6  EMIRPS=0   [0.10 h]
+
+  Hunt complete.
+
+  wall=345.48s

@@ -12,9 +12,16 @@
 > take; **the emirp is now the live question.** See
 > [`session_2026-09-04_palindrome_conjecture_refuted.md`](session_2026-09-04_palindrome_conjecture_refuted.md).
 >
-> **Status (2026-09-03):** emirps brute-confirmed **through d = 27**
-> (unchanged since 2026-07-05). Prime palindromes now searched **through
-> d = 37**, with the multi-tool verified floor now at **d = 29**
+> **Status (2026-09-12):** emirps brute-confirmed **through d = 27**.
+> The bound is unchanged since 2026-07-05, but its *provenance* is not:
+> as of 2026-09-11 the whole chain d = 13…27 rests on a **single
+> byte-verified binary** rather than the patchwork of builds it had
+> accumulated over months, d = 19…21 included. A bound below 28 digits
+> is a claim about the chain, not about any one length — see
+> [`resweep_d13-27_provenance.md`](resweep_d13-27_provenance.md).
+> Prime palindromes now searched **through
+> d = 37** (re-verified 2026-09-12, two split widths per length), with
+> the multi-tool verified floor now at **d = 29**
 > (`palbrute` closed it 2026-09-05). The two
 > objects no longer share a frontier — or a search cost. See §4: the
 > ~10^(d/2) wall still stands for emirps, and has been broken for

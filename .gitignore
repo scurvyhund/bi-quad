@@ -2,6 +2,7 @@
 mod_obstruct
 hunt
 hunt_noopt
+hunt_2d1948a
 palhunt
 palhunt_gmp
 mitm_probe
@@ -37,7 +38,10 @@ zig-out/
 *.ckpt
 
 # --- Logs (transient run output; keep a specific one with `git add -f logs/<name>`) ---
-logs/
+logs/*
+!logs/hunt_resweep_*.log
+!logs/mod11_verify_*.log
+!logs/raw/
 
 # --- Editor / code-navigation tooling ---
 tags

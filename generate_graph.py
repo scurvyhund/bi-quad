@@ -49,7 +49,7 @@ def text(x,y,s,fnt,fill=INK,anchor="la"):
 
 # ================= header =================
 text(W/2, 40, "The curve  p = 2n² + 2n + 1  =  n² + (n+1)²", FB(40), INK, "ma")
-text(W/2, 90, "what an obstruction sieve + exhaustive brute force found  ·  BigFermat, 2026-07-05",
+text(W/2, 90, "what an obstruction sieve + exhaustive brute force found  ·  BigFermat, d=13..27 resweep 2026-09-11",
      F(22), MUT, "ma")
 
 # ================= PANEL A : the curve, log-log =================

@@ -52,6 +52,24 @@ run on the existing binary rather than a rebuild.
 d=19..21 were the last hole: they had been resting on a June build.
 Filled 2026-09-11 (~7 min total).
 
+## Count basis — why the figure and this table differ
+
+This table is **skip-optimised**: `hunt` skips n where p is divisible
+by 5, so div-5 survivors and palindromes are never enumerated. The
+figure `biquad_curve_landscape.png` is **count-preserving** — it
+includes them. Both are right; they count different things, and the
+figure says so nowhere, which is why a reader comparing the two sees a
+discrepancy that is not one.
+
+Worked example: d = 15 reads `palindromes=3` here and 4 in the figure.
+The fourth is divisible by 5, hence trivially composite, hence dropped
+by the skip build. Verified across every odd d: the figure's palindrome
+column matches `palsplit --keep5` at all eight of d = 13, 15, 17, 19,
+21, 23, 25, 27, and this table matches `palsplit` without the flag.
+
+The distinction never touches the emirp result — a div-5 value cannot
+be prime, so it cannot be half of an emirp pair.
+
 ## The null result is earned, not assumed
 
 `EMIRPS=0` everywhere is the headline, and a sweep that can only report

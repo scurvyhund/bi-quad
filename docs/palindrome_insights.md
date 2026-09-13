@@ -161,7 +161,7 @@ endings are far from uniform:
 the signal rather than blurring it: three of its five palindromes landed
 in the densest `…13` channel.
 
-| ending | before (d ≤ 27) | + d = 25 | now |
+| ending | before the d = 25 dump | + d = 25 | now |
 |---|---|---|---|
 | `…13` | 8 | +3 | **11** |
 | `…41` | 1 | +1 | 2 |

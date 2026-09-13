@@ -186,7 +186,7 @@ cache. Payoff: a firmer bound in §2, nothing more.*
 `OPEN_PROBLEM.md` predicts emirps converge to ≈ 1 total, and this is
 the half the heuristic calls *correct*. The same machinery applies:
 `N_d`, the last-digit signature, Hardy–Littlewood. Test against
-`hunt.c`'s survivor counts, which already exist for d ≤ 25. Would give
+`hunt.c`'s survivor counts, which already exist for d ≤ 27. Would give
 the emirp conjecture the quantitative footing the palindrome side now
 has.
 *Cost: a day. Payoff: the whole open problem, not half of it.*

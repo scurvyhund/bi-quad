@@ -1,0 +1,11 @@
+=== resweep d=19..21 on 1a72938 ===
+  d=19  range=1528961196  survivors(raw)=0  palindromes=0  prime-eligible=0  EMIRPS=0   [0.01 h]
+  wall=29.47s
+  --- d=19 clean (raw: logs/raw/hunt_d19_2026-09-11.raw) ---
+  d=20  range=4834999835  survivors(raw)=0  palindromes=0  prime-eligible=0  EMIRPS=0   [0.02 h]
+  wall=67.63s
+  --- d=20 clean (raw: logs/raw/hunt_d20_2026-09-11.raw) ---
+  d=21  range=15289611963  survivors(raw)=6  palindromes=4  prime-eligible=6  EMIRPS=0   [0.10 h]
+  wall=345.48s
+  --- d=21 clean (raw: logs/raw/hunt_d21_2026-09-11.raw) ---
+=== resweep d=19..21 complete, all EMIRPS=0 ===

@@ -1,0 +1,16 @@
+# Palindromic curve-values p = 2n^2+2n+1 at d = 17.
+#
+# Generated 2026-09-12 during the repository audit, which found d=17
+# was the one length with a palindrome but no certificate file
+# (d=13/15/21/25/27 all had one). d=19 and d=23 have no prime-eligible
+# palindrome, so they need no file.
+#
+# palsplit reports found=1 with AND without --keep5, so there is no
+# div-5 palindrome at d=17 and this list is complete.
+#
+# COMPOSITE. Factorisation is a self-checkable certificate: the
+# product below equals p (verified on generation).
+#
+# So there is no prime palindrome at d = 17.
+  - 12951570707515921 (n=80472264)   composite
+      = 13 * 17 * 113 * 1609 * 322326253

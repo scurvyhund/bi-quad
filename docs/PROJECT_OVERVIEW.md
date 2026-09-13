@@ -362,7 +362,9 @@ chase the post-cliff tail.
 1. ~~Does the `d=16` re-obstruction survive at `k=9`?~~ **Resolved: yes** —
    confirmed by sieve (k8,k9) and exact brute force.
 2. ~~Do any small-`d` survivors yield a genuine emirp?~~ **Resolved: no** — d≤19
-   is exhaustively clear (see §5 hunt). The search moves to **d ≥ 20**.
+   was exhaustively clear at the time (see §5 hunt). *(Historical: the
+   search has since closed **d = 13…27**; see
+   [`resweep_d13-27_provenance.md`](resweep_d13-27_provenance.md).)*
 3. **The central question:** do obstructions become *total* for all large `d`
    (→ non-existence of bi-quadratic emirps), or do prime-eligible candidates
    persist? **Status:** search is `~10^(d/2)`-bound (brute force `hunt.c`

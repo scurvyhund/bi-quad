@@ -1,0 +1,12 @@
+
+  Bi-Quadratic Emirp HUNT (direct brute force)
+  ============================================
+  d = 16 .. 16
+
+  survivor       n=52184650  p=5446475495614301  q=1034165945746445
+  d=16  ckpt 48349998/48349998 (100.0%)  surv=1  pals=0  emrp=0  [0.00 h]
+  d=16  range=48349998  survivors(raw)=1  palindromes=0  prime-eligible=0  EMIRPS=0   [0.00 h]
+
+  Hunt complete.
+
+  wall=0.56s

@@ -1,0 +1,36 @@
+
+  Bi-Quadratic Emirp HUNT (direct brute force)
+  ============================================
+  d = 13 .. 13
+
+  survivor       n=1247067  p=3110354699113  q=3119964530113
+  survivor       n=1248992  p=3119964530113  q=3110354699113
+  palindrome     n=1258182  p=3166046406613
+  palindrome     n=904280  p=1635446445361
+  d=13  ckpt 1528961/1528961 (100.0%)  surv=4  pals=2  emrp=0  [0.00 h]
+  d=13  range=1528961  survivors(raw)=4  palindromes=2  prime-eligible=4  EMIRPS=0   [0.00 h]
+
+  Hunt complete.
+
+  wall=0.02s
+  *** EMIRP ***  n=999  p=12641  q=14621
+  d=13  range=100  survivors(raw)=1  palindromes=0  prime-eligible=1  EMIRPS=1   [0.00 h]
+  wall=0.00s
+  Bi-Quadratic Emirp HUNT
+Command exited with non-zero status 137
+  wall=0.00s
+
+  Bi-Quadratic Emirp HUNT (direct brute force)
+  ============================================
+  d = 13 .. 13
+
+  survivor       n=1247067  p=3110354699113  q=3119964530113
+  survivor       n=1248992  p=3119964530113  q=3110354699113
+  palindrome     n=1258182  p=3166046406613
+  palindrome     n=904280  p=1635446445361
+  d=13  ckpt 1528961/1528961 (100.0%)  surv=4  pals=2  emrp=0  [0.00 h]
+  d=13  range=1528961  survivors(raw)=4  palindromes=2  prime-eligible=4  EMIRPS=0   [0.00 h]
+
+  Hunt complete.
+
+  wall=0.03s
