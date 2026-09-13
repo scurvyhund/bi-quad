@@ -354,6 +354,58 @@ All four in `structural_attacks_2026-06-04.md`. Do not re-propose without a genu
 
 ---
 
+## Method vocabulary
+
+Terms this project coined for how it works, not for what it studies. A reader
+who skips these will misread our own tables.
+
+**count basis** (2026-09-12) — *which* survivors a count includes. Two are in
+use and they disagree by design:
+
+- **skip-optimised** — `hunt` skips `n` where `p ≡ 0 (mod 5)`, so div-5
+  survivors and palindromes are never enumerated. This is what the resweep
+  logs and `resweep_d13-27_provenance.md` report.
+- **count-preserving** — nothing skipped. This is what
+  `biquad_curve_landscape.png` plots, and what `palsplit --keep5` reproduces.
+
+So d = 15 reads `palindromes=3` in the table and **4** in the figure, and both
+are right. Always say which basis a count is on. A div-5 value cannot be
+prime, so the distinction never touches an emirp or prime-palindrome result —
+only the raw counts. Verified across all eight odd d ≤ 27.
+
+**the chain** (2026-09-11) — the set of runs a bound rests on. "No emirp below
+28 digits" is a claim about the *chain*, not about any single length: each leg
+can be individually correct while the chain is a patchwork of builds. Hence
+**single-binary provenance** — every leg d = 13…27 run on one byte-verified
+binary (`2d1948a`), which is what the 2026-09-05…11 resweep bought. It changed
+no result and strengthened every one.
+
+**parity scaling** (2026-09-09) — how a `hunt` leg's wall time grows. The
+search *range* grows a flat ×3.162 per digit, but time does not: it alternates
+by the parity of the target length, **even → odd ≈ ×4.96** and **odd → even ≈
+×2.11** (measured over nine consecutive legs, d = 13…26). The two multiply to
+~10.5, one decade, so parity redistributes the growth rather than adding any.
+A uniform ×3.16 therefore under-estimates every odd-d leg by ~1.6×. See
+runbook §19. The obvious mechanism — odd d carries palindrome candidates while
+even d has none by the mod-11 result — is **hypothesis only**, unprofiled.
+
+**filter the view, not the record** (2026-09-11) — never let a filter be the
+only consumer of a stream you cannot regenerate. `tee` the full output to disk
+and filter only what a human reads. A whitelist discards precisely what you
+failed to anticipate: the 2026-09-05 wrapper's
+`grep -E "range=|wall=|EMIRP"` ate every palindrome line of a 111-hour run,
+and — worse — the mod-11 alarm, which was a `fprintf(stderr, "*** BUG …")`
+matching none of those patterns. Filtering the *view* is fine; filtering the
+*record* is not.
+
+**earned null** — a `found=0` that carries evidence the search was working:
+a positive control in the same run and the same mode, a known-answer case, or
+an independent method agreeing. An unearned null is indistinguishable from a
+broken search. Applies to our own shell commands too — "0 occurrences" is
+first a hypothesis that the command is broken.
+
+---
+
 ## Tools
 
 | file | what it does |
