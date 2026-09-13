@@ -41,6 +41,8 @@ zig-out/
 logs/*
 !logs/hunt_resweep_*.log
 !logs/mod11_verify_*.log
+!logs/mod11_CLOSURE.txt
+!logs/preserved/
 !logs/raw/
 
 # --- Editor / code-navigation tooling ---
