@@ -46,19 +46,19 @@ grep 'd=21' logs/run_clean.log
 
 ```bash
 # Is it running? Shows PID and command
-pgrep -a mod_obstruct
+pgrep -ax mod_obstruct
 
 # CPU and memory overview (all threads show as one process)
-top -p $(pgrep mod_obstruct)
+top -p $(pgrep -x mod_obstruct)
 
 # One-shot snapshot: PID, RSS (KB), VSZ (KB)
-ps -o pid,rss,vsz,%mem,%cpu,etime,comm -p $(pgrep mod_obstruct)
+ps -o pid,rss,vsz,%mem,%cpu,etime,comm -p $(pgrep -x mod_obstruct)
 
 # Thread view — see individual OpenMP threads
-ps -eLo pid,tid,%cpu,comm -p $(pgrep mod_obstruct)
+ps -eLo pid,tid,%cpu,comm -p $(pgrep -x mod_obstruct)
 
 # htop filtered to mod_obstruct (if htop installed)
-htop -p $(pgrep mod_obstruct)
+htop -p $(pgrep -x mod_obstruct)
 ```
 
 ## Memory diagnostics
@@ -68,17 +68,17 @@ htop -p $(pgrep mod_obstruct)
 free -h
 
 # Swap usage for mod_obstruct specifically
-grep VmSwap /proc/$(pgrep mod_obstruct)/status
+grep VmSwap /proc/$(pgrep -x mod_obstruct)/status
 
 # Full memory breakdown for the process
-grep -E 'VmPeak|VmRSS|VmSwap|VmSize' /proc/$(pgrep mod_obstruct)/status
+grep -E 'VmPeak|VmRSS|VmSwap|VmSize' /proc/$(pgrep -x mod_obstruct)/status
 
 # Watch for swap activity (si/so columns = swap in/out per second)
 # si/so should be 0 during normal operation; nonzero means thrashing
 vmstat 1
 
 # Memory map summary (shared libs, heap, stack per thread)
-pmap -x $(pgrep mod_obstruct) | tail -5
+pmap -x $(pgrep -x mod_obstruct) | tail -5
 ```
 
 ## CPU diagnostics
@@ -108,18 +108,20 @@ cat mod_obstruct.ckpt
 
 ```bash
 # Graceful pause (SIGSTOP) — freezes process, resume with CONT
-kill -STOP $(pgrep mod_obstruct)
-kill -CONT $(pgrep mod_obstruct)
+kill -STOP $(pgrep -x mod_obstruct)     # pause (SIGSTOP is not a kill)
+kill -CONT $(pgrep -x mod_obstruct)     # resume
 
 # Kill (checkpoint saved for last completed d)
-kill $(pgrep mod_obstruct)
+scripts/jobctl.sh stop mod_obstruct     # kills, then VERIFIES it landed
+# NOT `kill $(pgrep ...)` on its own: a missed kill is silent, and
+# `kill X && echo killed` short-circuits so "killed" never prints.
 ```
 
 ## Quick health check (copy-paste one-liner)
 
 ```bash
 # Shows: is it running, CPU%, memory, swap, and last log line
-pgrep -a mod_obstruct && ps -o rss,%mem,%cpu,etime -p $(pgrep mod_obstruct) && grep VmSwap /proc/$(pgrep mod_obstruct)/status && tail -1 logs/run_clean.log
+pgrep -a mod_obstruct && ps -o rss,%mem,%cpu,etime -p $(pgrep -x mod_obstruct) && grep VmSwap /proc/$(pgrep -x mod_obstruct)/status && tail -1 logs/run_clean.log
 ```
 
 ## Interpreting signs of trouble

@@ -10,8 +10,18 @@ cd /home/jim/programming/c/BigFermat/bi-quad || exit 1
 OUT=logs/mod11_CLOSURE.txt
 STAMP=$(date +%F_%H%M%S)
 
-# wait for BOTH legs: hunt gone AND no resweep_leg wrapper still queued
-while pgrep -x hunt >/dev/null || pgrep -f '[r]esweep_leg.sh' >/dev/null; do
+# wait for BOTH legs: hunt gone AND no resweep_leg wrapper still queued.
+# The wrapper test matches EXACT argv rather than a cmdline substring:
+# `pgrep -f` matches the shell running it, and the project rule is that
+# it never appears in a loop condition -- the [r]esweep bracket trick
+# works but relies on being clever, which is how this class of bug
+# returns.
+wrappers_running() {
+   ps -eo args --no-headers \
+     | awk '$1=="/bin/bash" && $2=="scripts/resweep_leg.sh"' \
+     | grep -q .
+}
+while pgrep -x hunt >/dev/null || wrappers_running; do
    sleep 60
 done
 sleep 20   # let the final write land
