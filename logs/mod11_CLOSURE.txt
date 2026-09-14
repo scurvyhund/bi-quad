@@ -1,0 +1,25 @@
+=== mod-11 closure  2026-09-13 22:37:12 ===
+binary: 24d279f4535e22d85fe8f4d365de9b54  (2d1948a chain artifact)
+
+  d=16  raw=logs/raw/hunt_d16_2026-09-12.raw
+  survivors found in raw: 1
+  BUG lines in raw      : 0
+    [OK ] survivor      n=52184650 p mod 11=5 pal=False
+  VERDICT: CLEAN  (independently recomputed, not inferred from silence)
+
+  d=24  raw=logs/raw/hunt_d24_2026-09-12.raw
+  survivors found in raw: 1
+  BUG lines in raw      : 0
+    [OK ] survivor      n=503620338249 p mod 11=8 pal=False
+  VERDICT: CLEAN  (independently recomputed, not inferred from silence)
+
+  d=26  raw=logs/raw/hunt_d26_2026-09-12.raw
+  survivors found in raw: 4
+  BUG lines in raw      : 0
+    [OK ] survivor      n=3000805374559 p mod 11=3 pal=False
+    [OK ] survivor      n=3006966671440 p mod 11=8 pal=False
+    [OK ] survivor      n=5135366353399 p mod 11=3 pal=False
+    [OK ] survivor      n=5308564896842 p mod 11=5 pal=False
+  VERDICT: CLEAN  (independently recomputed, not inferred from silence)
+
+OVERALL: ALL CLEAN -- gap closed
