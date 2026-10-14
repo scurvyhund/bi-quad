@@ -4,7 +4,7 @@ Working list, newest thinking at the top of each tier. Cost is wall-clock
 on the 8-core box. "Payoff" is what the project can *claim* afterwards
 that it cannot claim now.
 
-Status key: **[ ]** not started · **[~]** in progress · **[x]** done
+Status key: **[ ]** not started · **[~]** in progress · **[x]** done · **[-]** dropped
 
 ---
 
@@ -151,7 +151,11 @@ union is being weighted correctly in `N_d` and the last-digit pooling.
 **[ ] 10. Widen the comparison class** — `palcurve` on k = 23, 25, 27…
 More curves is more power for every density test, at minutes each.
 
-**[ ] 10a. Push the descent-prime search past 10^14.**
+**[-] 10a. Push the descent-prime search past 10^14.** DROPPED 2026-10-13.
+A curiosity built from stacked base-10 conditions, not worth the cores;
+the published curio is correct for the range it claims. Resurrect only if
+another line of work makes reversal-to-a-square relevant.
+
 `docs/triangular_form_and_1861.md` §2 establishes, exhaustively to
 10^14, that `61` and `1861` are the only curve primes whose reversal is
 a perfect square, and `1861` the only one whose root is itself prime
