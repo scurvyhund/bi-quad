@@ -62,7 +62,8 @@ The bound can be stated as: no bi-quadratic emirp for d=13..27, found by exhaust
 
 ## Logs that must not be cited
 
-`run_10e22.log` and all six runs in `10e25_to_10e30.txt` hit a silent truncation, as did `cvpipe_nitroIII_10e25-10e26_zones1-6.log` if it had ever run (it failed to launch).
+`run_10e22.log` and all six runs in `10e25_to_10e30.txt` hit a silent truncation.
+`cvpipe_nitroIII_10e25-10e26_zones1-6.log` holds only a failed launch, so it records no search at all.
 With `MAX_ZONES` at 64, a run from n=0 stopped partway through d=12: 64 zones and 63,680 n-values, whatever `Max prime` said.
 Those logs still print the requested limit and find 12641, so they look healthy.
 
