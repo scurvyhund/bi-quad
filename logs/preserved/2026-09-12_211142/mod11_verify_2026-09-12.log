@@ -1,0 +1,10 @@
+=== resweep d=24..24 on 51b1d48 ===
+  d=24  range=483499983437  survivors(raw)=1  palindromes=0  prime-eligible=0  EMIRPS=0   [2.41 h]
+  wall=8658.88s
+  --- d=24 clean (raw: logs/raw/hunt_d24_2026-09-12.raw) ---
+=== resweep d=24..24 complete, all EMIRPS=0 ===
+=== resweep d=26..26 on b7611d0 ===
+  d=26  range=4834999834365  survivors(raw)=4  palindromes=0  prime-eligible=2  EMIRPS=0   [24.17 h]
+  wall=87022.89s
+  --- d=26 clean (raw: logs/raw/hunt_d26_2026-09-12.raw) ---
+=== resweep d=26..26 complete, all EMIRPS=0 ===
