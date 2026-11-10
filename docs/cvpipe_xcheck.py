@@ -41,6 +41,12 @@ RUNS = [("10e25_run_with_bugFix.txt", (2, 25)),
         ("run_10e27.log", (27, 27)),
         ("run_10e28.log", (28, 28))]
 
+# Per-digit pass on the fixed binary (gmp-cvo 5b9974f), 2026-11-10
+PASS_DIR = os.path.abspath(os.path.join(BIQUAD_LOGS, "preserved",
+                                        "cvpipe_d13-22_2026-11-10"))
+RUNS += [(os.path.join(PASS_DIR, "cvpipe_d%d.log" % d), (d, d))
+         for d in range(13, 23)]
+
 def curve_value(n):
    return 2 * n * n + 2 * n + 1
 
@@ -138,7 +144,8 @@ def main():
       ok = (r["consec"], r["pal"]) == want and not problems \
            and r["walked"] == r["zone_n"]
       rc |= 0 if ok else 1
-      print("%-27s %2d..%2d  %d/%d  %d/%d  %s%s" % (name, lo, hi,
+      print("%-27s %2d..%2d  %d/%d  %d/%d  %s%s" % (os.path.basename(name),
+            lo, hi,
             r["consec"], want[0], r["pal"], want[1],
             "complete" if not problems and r["walked"] == r["zone_n"]
             else "INCOMPLETE %s" % problems[:3], "" if ok else "  <-- DIFF"))

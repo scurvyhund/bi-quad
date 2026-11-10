@@ -43,6 +43,22 @@ The harvested values reproduce the resweep's raw and palindrome counts at every 
 
 "Zones complete" means the run's zones bracket the true n-range of every digit length and leading pair, and candidates generated equals zone n-values.
 
+## Per-digit pass on the fixed binary (2026-11-10)
+
+The two runs above match d=13..22 only as part of their totals, so each digit length was re-run on its own, using the binary built from `gmp-cvo` `5b9974f` (md5 `5d750a6d`).
+Predictions were written down before the run.
+Raw logs and `SHA256SUMS` are in `logs/preserved/cvpipe_d13-22_2026-11-10/`.
+
+| d | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Consec-sq, actual / predicted | 2 / 2 | 6 / 6 | 2 / 2 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 2 / 2 | 0 / 0 |
+| Palindromes, actual / predicted | 2 / 2 | 0 / 0 | 3 / 3 | 0 / 0 | 1 / 1 | 0 / 0 | 0 / 0 | 0 / 0 | 4 / 4 | 0 / 0 |
+| Emirps | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Prime palindromes (Otto primes) | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+
+All ten runs exited 0 and walked every zone n-value.
+The nonzero rows are the positive control: this run found what it was expected to find.
+
 ## What this establishes
 
 - **A second enumerator agrees**, including on non-palindrome pairs, which `palsplit` could not check.
@@ -54,8 +70,7 @@ The bound can be stated as: no bi-quadratic emirp for d=13..27, found by exhaust
 
 ## Limits
 
-- d=13..22 agree only in aggregate, inside the d=2..25 and d=2..26 totals. A mismatch there would have to cancel to stay hidden.
-- The February-March 2026 `cvpipe` binaries were not preserved, so the logs cannot be tied to a checked build.
+- The February-March 2026 `cvpipe` binaries were not preserved, so the d=23..27 logs cannot be tied to a checked build. d=13..22 can, through the per-digit pass.
 - Both engines share GMP, the author and the machine.
 - `run_10e28.log` covers d=28 and reports 0 consec-sq and 0 palindromes.
   **This is not a claim of no emirp at d=28.** No `hunt` run exists there, so the agreement the script prints for that row has nothing behind it, and the verification rule in `CLAUDE.md` requires brute-force confirmation.

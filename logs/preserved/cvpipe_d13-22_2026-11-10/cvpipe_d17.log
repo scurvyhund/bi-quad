@@ -1,0 +1,49 @@
+
+  CVPipe — Merged Con-verse Prime Pipeline
+==============================================================
+  Max prime:   100000000000000000
+  Start N:     70710678
+  Max N:       223606797
+  Threads:     16
+  MR rounds:   25
+  Formula:     2n^2 + 2n + 1
+  Output:      converse.dat, otto_primes.dat
+--------------------------------------------------------------
+  Zones:       7
+  Zone n-vals: 16895209
+  Naive n-vals:152896120
+  Zone skip:   88.9% eliminated (9.0x)
+==============================================================
+  Zone  Pattern  Dig  n_min               n_max               n_count     
+  ----  -------  ---  ------------------  ------------------  ------------
+  1     10       17   70710678            74161984            3451307     
+  2     12       17   77459666            80622576            3162911     
+  3     14       17   83666002            86602539            2936538     
+  4     16       17   89442718            92195444            2752727     
+  5     18       17   94868329            97467942            2599614     
+  6     31       17   124498995           126491105           1992111     
+  7     10       18   223606797           223606797           1           
+
+
+============================================================
+  CVPipe COMPLETE
+==============================================================
+  Search zones:                     7
+  Zone n-values:             16895209
+  Naive n-values:           152896120
+  Zone skip:                     9.0x
+  Candidates generated:      16895209
+  Gatekeeper passed:         10137122
+  Palindromes found:                1
+  Consec-sq pre-filter:             0  (sent to MR)
+  Miller-Rabin tests:               1
+  Primes confirmed:                 0
+  Emirps found:                     0
+  CON-VERSE pairs:                  0
+  Otto primes:                      0
+  Wall time:                      0.0 seconds
+  CPU time:                       0.5 seconds
+==============================================================
+
+  No con-verse pairs found in this range.
+==========================================================
