@@ -452,7 +452,8 @@ python3 docs/cvpipe_xcheck.py
 # Known-answer check after any cvpipe rebuild, from an EMPTY dir, because
 #   cvpipe overwrites converse.dat and otto_primes.dat in the current dir.
 #   Expect Consec-sq 18, Palindromes 7, CON-VERSE 1 (12641 <==> 14621):
-../gmp-cvo/cvpipe 100000000000000
+~/programming/c/BigFermat/gmp-cvo/cvpipe 100000000000000
 # One digit length d: start_n = isqrt(10^(d-1)/2), max_prime = 10^d
 d=21; s=$(python3 -c "from math import isqrt;print(isqrt(10**($d-1)//2))")
-../gmp-cvo/cvpipe $s 1$(printf '0%.0s' $(seq $d)) | tee cvpipe_d$d.log
+~/programming/c/BigFermat/gmp-cvo/cvpipe $s \
+   1$(printf '0%.0s' $(seq $d)) | tee cvpipe_d$d.log
