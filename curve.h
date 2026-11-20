@@ -44,6 +44,33 @@
  * project's integer-wraparound policy. */
 typedef unsigned __int128 u128;
 
+/* INPUT LIMITS.  Nothing below checks its arguments -- these are hot
+ * inner-loop helpers -- so each function's domain is stated at it, and
+ * the TOOLS enforce it at entry (d, t, A/B/C validated in main).  A
+ * value outside the stated domain does not fail: it wraps, aliases or
+ * reads past a table, and returns a plausible wrong number.
+ *
+ *   curve(n)       n >= 0.  Exact for every non-negative int64 (2n^2
+ *                  < 1.7e38 < 2^128).  NEGATIVE n ALIASES: curve(-1-k)
+ *                  == curve(k), so curve(-1) == curve(0) == 1 -- a
+ *                  valid-looking value, not garbage.  Callers clamp.
+ *   curve_mod      r >= 0, m >= 1.
+ *   n_at(p)        p < 2^127 (forms 2p-1).  d <= 38 satisfies it.
+ *   curve_abc      a in [1,3], b >= 0, c >= 0, and the RESULT < 2^128.
+ *                  For a <= 3 the a*m^2 term fits for every int64 m >= 0
+ *                  (3 * (2^63)^2 = 0.75 * 2^128); it is a large b or c
+ *                  that can push the sum over.  Negative b or c is
+ *                  WRONG, not just out of range: m_at's (u128)b wraps.
+ *   m_at           as curve_abc, plus 4*a*p + b^2 < 2^128.
+ *   digit_at(p,i)  init_pow10() called; 0 <= i <= BQ_MAX_D + 1.
+ *                  bq_pow10 is a STATIC array: an overrun is invisible
+ *                  to Valgrind (heap-only) -- only ASan catches it.
+ *   is_pal_d(p,d)  as digit_at, so 1 <= d <= BQ_MAX_D + 2.
+ *   rev_digits     v >= 0, 0 <= t <= 18 (int64 holds 18 digits safely;
+ *                  callers cap t at MAX_T = 13).
+ *   u128_str       any u128; buf holds BQ_STRLEN bytes.
+ */
+
 /* Extent of the pow10 table.  10^37 is the largest power of ten for
  * which 2p still fits a u128 (2*10^37 < 3.40e38), which is what the
  * band arithmetic needs.  This is the TABLE size only -- a tool's own
@@ -135,7 +162,8 @@ static inline int64_t curve_abc_mod(int64_t r, int64_t md,
  * (d <= 37); palcurve caps at d = 33, which is conservative on purpose
  * -- see the comment on its MAX_D. */
 static inline int64_t m_at(u128 p, int64_t a, int64_t b, int64_t c) {
-   u128 disc = 4 * (u128)a * p + (u128)(b * b);
+   /* square b in u128: b * b in int64 overflows for |b| > 3.04e9 */
+   u128 disc = 4 * (u128)a * p + (u128)b * (u128)b;
    u128 sub  = 4 * (u128)a * (u128)c;
    disc = (disc > sub) ? disc - sub : 0;
    u128 s = isqrt_u128(disc);

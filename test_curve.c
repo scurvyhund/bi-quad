@@ -142,6 +142,28 @@ int main(void) {
       }
    }
 
+   /* B large enough that B*B overflows int64 (|B| > 3.04e9).  m_at
+    * must square B in u128; squaring it in int64 first is undefined
+    * behaviour and, in practice, a wrong band edge. */
+   printf("m_at: large B (B*B past int64)\n");
+   {
+      const int64_t big_b[] = { 3037000500LL, 4000000000LL,
+                                1000000000000LL };
+      for (int c = 0; c < 3; c++) {
+         int64_t B = big_b[c];
+         for (int64_t m = 0; m < 2000; m += 7) {
+            u128 p = curve_abc(m, 1, B, 1);
+            int64_t got = m_at(p, 1, B, 1);
+            if (got != m) {
+               printf("  FAIL m_at(1,%lld,1 @ m=%lld) = %lld\n",
+                      (long long)B, (long long)m, (long long)got);
+               fails++;
+               break;
+            }
+         }
+      }
+   }
+
    printf("digit_at / is_pal_d / rev_digits\n");
    if (digit_at(123456789, 0) != 9) { printf("  FAIL digit_at 0\n"); fails++; }
    if (digit_at(123456789, 8) != 1) { printf("  FAIL digit_at 8\n"); fails++; }
