@@ -66,7 +66,7 @@ and that prediction is *not* refuted.
 ## Consequences
 
 1. **Prime Curios submission on 3187813 withdrawn** — it asserted the
-   refuted conjecture. See `PrimeCurios.txt`.
+   refuted conjecture. See `PrimeCurios.txt` (Jim's local correspondence draft — deliberately not in the repo).
 2. **The d ≥ 39 palindrome frontier is not ours to take.**
    `sumsquare.htm` carries a *sequentially indexed* enumeration of
    palindromes on this curve reaching **index 69** (the 59-digit term),

@@ -275,4 +275,4 @@ to be caught.
 ### Third curio under "Adams"
 
 After 12641 (the emirp pair) and 3187813. The submitter-database
-linkage raised in `PrimeCurios.txt` is still open.
+linkage raised in `PrimeCurios.txt` (Jim's local correspondence draft, not in the repo) is still open.

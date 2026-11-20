@@ -85,5 +85,5 @@ Without this fix the filtered run never detects saturation and never skips.
 - nitroII→nitroIII passwordless SSH was *not* completed (key generated on nitroII, host
   key for nitroIII added to known_hosts, but the public key was never authorized on
   nitroIII). Not needed if Claude Code runs directly on nitroIII tonight.
-- The earlier `mod_obstruct_session_ref.txt` (prior session) described bug #2's Phase-1
+- The earlier `mod_obstruct_session_ref.txt` (prior session; local notes, not in the repo) described bug #2's Phase-1
   fix; that plan is now implemented **and extended** (p-side hole + saturation level).
