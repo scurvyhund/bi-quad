@@ -33,16 +33,37 @@
  * If you need these primitives in NEW code, include curve.h.  If you
  * need to re-run this tool, rebuild from the Build line above and
  * re-run its cross-check; do not "modernise" it first.
+ *
+ * AMENDED 2026-11-19 (bounds audit, docs/audit_2026-11.md) -- the ONLY
+ * change since the freeze: min_d/max_d are parsed strictly and refused
+ * outside 1 <= min_d <= max_d <= 37.  The u128 arithmetic holds to
+ * d = 38, but the long-double leading-digit filter (line "fast exact
+ * leading digit") is verified only to d = 37: applied to all 49 curve
+ * palindromes d = 1..37 it misclassifies none.  Past that it is
+ * unverified, and d >= 39 overflowed silently.  The search itself is
+ * untouched; output for every valid range is byte-identical.
  */
 
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <omp.h>
 #include <gmp.h>
 
 typedef unsigned __int128 u128;
 #define NT 8
+#define MAX_D_LD 37   /* long-double filter verified to here; see above */
+
+static int parse_d(const char *s, int *out) {
+   char *end;
+   errno = 0;
+   long v = strtol(s, &end, 10);
+   if (errno || end == s || *end != '\0' || v < 1 || v > MAX_D_LD)
+      return 0;
+   *out = (int)v;
+   return 1;
+}
 
 static u128 ipow10(int e){ u128 r=1; while(e-->0) r*=10; return r; }
 static u128 isqrt128(u128 x){
@@ -59,7 +80,13 @@ static void to_mpz(mpz_t z,u128 x){
 }
 
 int main(int argc,char**argv){
-   int dmin = argc>1?atoi(argv[1]):1, dmax = argc>2?atoi(argv[2]):7;
+   int dmin = 1, dmax = 7;
+   if (argc > 3 || (argc > 1 && !parse_d(argv[1], &dmin))
+         || (argc > 2 && !parse_d(argv[2], &dmax)) || dmin > dmax) {
+      fprintf(stderr, "usage: %s [min_d] [max_d]   1 <= min_d <= max_d"
+              " <= %d\n", argv[0], MAX_D_LD);
+      return 1;
+   }
    printf("\n  PRIME PALINDROMES on p = 2n^2+2n+1   (d=%d..%d, GMP-certified)\n", dmin,dmax);
    printf("  =================================================================\n");
    for(int d=dmin; d<=dmax; d++){
