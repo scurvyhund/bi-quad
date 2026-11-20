@@ -15,9 +15,18 @@
  * to stdout with fflush so no result is lost on crash or kill.
  *
  * Checkpointing: every BLOCK_SIZE iterations the run saves progress
- * atomically to hunt_d<N>.ckpt (written via tmp+rename). On restart
+ * atomically to hunt_d<NN>_<CKPT_TAG>.ckpt (tmp + rename). On restart
  * the run resumes from the last checkpoint, restoring cumulative
  * counts. The checkpoint file is deleted on clean completion.
+ *
+ * The checkpoint is keyed to EVERYTHING that defines the count, not
+ * just d: the filter set (CKPT_TAG, also in the file name), n_min and
+ * the range.  A file that is malformed or does not match is REJECTED
+ * LOUDLY on stderr and the d restarts from zero.  The tag is in the
+ * name so binaries with different filters (hunt_noopt, pre-5f5fc4f
+ * builds: plain hunt_d<NN>.ckpt) can never resume from each other's
+ * counts; a legacy-named file is reported, never read or touched.
+ * Change CKPT_TAG whenever the filters change what is counted.
  *
  * Build:  gcc hunt.c -o hunt -O3 -march=znver2 -std=c99 -Wall \
  *             -fopenmp -lgmp
@@ -44,7 +53,11 @@
 #include "curve_gmp.h"   /* on_curve, compute_n_bounds */
 
 #define NUM_THREADS  8
+#ifndef BLOCK_SIZE                 /* -D override for resume tests */
 #define BLOCK_SIZE   5000000000L    /* 5 B iters per checkpoint block */
+#endif
+#define CKPT_TAG     "skip10x11"    /* VALID_NMOD + even-d VALID_NMOD11 */
+#define CKPT_MAGIC   "HUNTCKPT2"
 #define HUNT_MAX_D   38   /* long-index ceiling; see header */
 
 /* n%10 in {1,3,6,8} -> p ends in 5 -> composite; skip those.
@@ -66,21 +79,72 @@ static const int VALID_NMOD[10] = {1,0,1,0,1,1,0,1,0,1};
  * VALID_NMOD since gcd(10,11) = 1. */
 static const int VALID_NMOD11[11] = {0,1,0,1,1,1,1,1,0,1,0};
 
-/* Atomic checkpoint write: write to .tmp then rename over target. */
-static void write_ckpt(const char *path, long blk_end,
+/* Atomic checkpoint write: write to .tmp then rename over target.
+ * Every step is checked: a failed write leaves the PREVIOUS checkpoint
+ * in place, so it must be reported -- silently, a restart would redo
+ * work the heartbeat said was saved. */
+static void write_ckpt(const char *path, int d, const char *nmin_s,
+                        long range, long blk_end,
                         long surv, long elig,
                         long emrp, long pals) {
-   char tmp[80];
-   snprintf(tmp, sizeof(tmp), "%s.tmp", path);
-   FILE *f = fopen(tmp, "w");
-   if (!f) {
-      fprintf(stderr, "  WARNING: cannot write ckpt %s\n", tmp);
+   char tmp[128];
+   if (snprintf(tmp, sizeof(tmp), "%s.tmp", path)
+         >= (int)sizeof(tmp)) {
+      fprintf(stderr, "  WARNING: ckpt path too long: %s\n", path);
       return;
    }
-   fprintf(f, "%ld %ld %ld %ld %ld\n",
-           blk_end, surv, elig, emrp, pals);
-   fclose(f);
-   rename(tmp, path);
+   FILE *f = fopen(tmp, "w");
+   if (!f) {
+      fprintf(stderr, "  WARNING: cannot open ckpt %s\n", tmp);
+      return;
+   }
+   int bad = fprintf(f, "%s %s %d %s %ld\n%ld %ld %ld %ld %ld\n",
+                     CKPT_MAGIC, CKPT_TAG, d, nmin_s, range,
+                     blk_end, surv, elig, emrp, pals) < 0;
+   bad |= (fflush(f) != 0);
+   bad |= (fclose(f) != 0);
+   if (bad || rename(tmp, path) != 0) {
+      fprintf(stderr,
+         "  WARNING: ckpt write FAILED for %s at i=%ld -- previous "
+         "checkpoint (if any) left in place\n", path, blk_end);
+      remove(tmp);
+   }
+}
+
+/* Read a checkpoint.  Returns 1 = valid (outputs set), 0 = no file,
+ * -1 = present but rejected (reason already printed, LOUDLY). */
+static int read_ckpt(const char *path, int d, const char *nmin_s,
+                     long range, long *ci, long *cs, long *ce,
+                     long *cemrp, long *cpal) {
+   FILE *cf = fopen(path, "r");
+   if (!cf) return 0;
+   char magic[16], tag[32], nmin_f[64];
+   int fd;
+   long frange;
+   int got = fscanf(cf, "%15s %31s %d %63s %ld %ld %ld %ld %ld %ld",
+                    magic, tag, &fd, nmin_f, &frange,
+                    ci, cs, ce, cemrp, cpal);
+   fclose(cf);
+   const char *why = NULL;
+   if (got != 10)                         why = "malformed";
+   else if (strcmp(magic, CKPT_MAGIC))    why = "wrong format/version";
+   else if (strcmp(tag, CKPT_TAG))        why = "different filter tag";
+   else if (fd != d)                      why = "different d";
+   else if (strcmp(nmin_f, nmin_s))       why = "different n_min";
+   else if (frange != range)              why = "different range";
+   else if (*ci < 0 || *ci > range)       why = "position out of range";
+   else if (*cs < 0 || *ce < 0 || *cemrp < 0 || *cpal < 0
+            || *ce > *cs || *cpal > *cs || *cemrp > *cs)
+                                          why = "inconsistent counts";
+   if (why) {
+      fprintf(stderr,
+         "  *** CHECKPOINT REJECTED: %s (%s) -- d=%d restarts from "
+         "ZERO; file will be overwritten at the first block\n",
+         path, why, d);
+      fflush(stderr);
+      return -1;
+   }
+   return 1;
 }
 
 /* Parse a digit count; false on junk, trailing text or out-of-range. */
@@ -131,8 +195,19 @@ int main(int argc, char *argv[]) {
       long range = mpz_get_si(rng) + 1;
       mpz_clear(rng);
 
-      char ckpt[64];
-      snprintf(ckpt, sizeof(ckpt), "hunt_d%02d.ckpt", d);
+      char ckpt[64], legacy[64];
+      snprintf(ckpt, sizeof(ckpt), "hunt_d%02d_%s.ckpt", d, CKPT_TAG);
+      snprintf(legacy, sizeof(legacy), "hunt_d%02d.ckpt", d);
+      char *nmin_s = mpz_get_str(NULL, 10, n_min);
+      {
+         FILE *lf = fopen(legacy, "r");
+         if (lf) {
+            fclose(lf);
+            fprintf(stderr,
+               "  NOTE: legacy %s present (hunt_noopt or a pre-5f5fc4f "
+               "build) -- NOT read, NOT touched\n", legacy);
+         }
+      }
 
       long start_i        = 0;
       long survivors      = 0;
@@ -142,24 +217,20 @@ int main(int argc, char *argv[]) {
 
       /* Load checkpoint if present */
       {
-         FILE *cf = fopen(ckpt, "r");
-         if (cf) {
-            long ci, cs, ce, cemrp, cpal;
-            if (fscanf(cf, "%ld %ld %ld %ld %ld",
-                       &ci, &cs, &ce, &cemrp, &cpal) == 5
-                  && ci > 0 && ci <= range) {
-               start_i        = ci;
-               survivors      = cs;
-               elig_survivors = ce;
-               emirps         = cemrp;
-               palindromes    = cpal;
-               printf(
-                  "  d=%2d: resuming from i=%ld/%ld (%.1f%%)\n",
-                  d, start_i, range,
-                  100.0 * start_i / range);
-               fflush(stdout);
-            }
-            fclose(cf);
+         long ci, cs, ce, cemrp, cpal;
+         if (read_ckpt(ckpt, d, nmin_s, range,
+                       &ci, &cs, &ce, &cemrp, &cpal) == 1) {
+            start_i        = ci;
+            survivors      = cs;
+            elig_survivors = ce;
+            emirps         = cemrp;
+            palindromes    = cpal;
+            printf(
+               "  d=%2d: resuming from i=%ld/%ld (%.1f%%)"
+               "  surv=%ld pals=%ld emrp=%ld\n",
+               d, start_i, range, 100.0 * start_i / range,
+               survivors, palindromes, emirps);
+            fflush(stdout);
          }
       }
 
@@ -296,7 +367,7 @@ int main(int argc, char *argv[]) {
             free(pbuf); free(qbuf);
          } /* end omp parallel */
 
-         write_ckpt(ckpt, blk_end,
+         write_ckpt(ckpt, d, nmin_s, range, blk_end,
                     survivors, elig_survivors, emirps, palindromes);
          fprintf(stderr,
             "  d=%2d  ckpt %ld/%ld (%.1f%%)"
@@ -318,6 +389,7 @@ int main(int argc, char *argv[]) {
       fflush(stdout);
 
       remove(ckpt);
+      free(nmin_s);
       mpz_clears(n_min, n_max, NULL);
    }
 
