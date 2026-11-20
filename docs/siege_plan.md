@@ -42,6 +42,9 @@ untracked-and-unignored file remains in the tree. **Rotation is
 optional hygiene, not incident response** — skipped deliberately.
 Optional follow-up: a pre-commit hook refusing `glpat-`/`ghp_`/`gho_`,
 which would also catch the file under a different name.
+**2026-11-19:** moved out of the repo tree entirely, to
+`~/.config/gitlab/token` (dir 700, file 600). The `.gitignore` line
+stays as a second guard. Nothing read it: all three remotes use SSH.
 
 **[x] 4. Push — DONE 2026-09-03.** 11 commits, `8b6adac -> 1a7727a`,
 verified landed on origin / github / codeberg.
