@@ -60,17 +60,26 @@
  * ---------------------------------------------------------------
  *
  * CHECKPOINTING.  A d=29 lead-1 sweep is ~4.7 days, so progress is
- * saved after every block to palbrute_d<NN>.ckpt -- written to .tmp
- * then renamed, so a kill mid-write cannot corrupt it -- and resumed
- * automatically on restart.  Deleted on clean completion.  Same
- * pattern as hunt.c.
+ * saved after every block -- written to .tmp then renamed, so a kill
+ * mid-write cannot corrupt it -- and resumed automatically when the
+ * SAME invocation is repeated.  Deleted on clean completion.
+ *
+ * The file is named for the whole run, palbrute_d<NN>_<a>_<b>_<mode>
+ * .ckpt (a, b = the effective n-range; mode = zones|all), and stores
+ * the zone by its LEADING DIGIT, never by its compacted slot.  Keyed by
+ * d alone (before 2026-11-19), a checkpoint from a full run was
+ * accepted by a later explicit slice of the same d whenever its n fell
+ * inside the slice's zone: the slice skipped up to that n and carried
+ * the other run's found count.  Demonstrated: "13 750000 950000" with a
+ * stale checkpoint at n=910000 reported found=0, although the slice
+ * holds 1635446445361 (n=904280).  docs/audit_2026-11.md.
  *
  * Build:
  *   gcc -O3 -march=znver2 -mtune=znver2 -std=c99 -Wall -Wextra \
  *       -fopenmp -o palbrute palbrute.c -lgmp -lm
  *
  * Usage:
- *   ./palbrute <d> [n_start] [n_end] [--all]
+ *   ./palbrute <d> [n_start] [n_end] [--all] [--verify | --slow]
  *
  *   With no range, sweeps the whole d-digit window.  n_start/n_end are
  *   inclusive and intersect the zones.  Progress and ETA go to stderr,
@@ -84,6 +93,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <limits.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/file.h>
@@ -94,8 +106,11 @@
 
 #define NUM_THREADS   8
 #define MAX_D         BQ_MAX_D
+#ifndef BLOCK_SIZE                   /* -D override for resume tests */
 #define BLOCK_SIZE    5000000000LL   /* checkpoint unit */
+#endif
 #define NZONE         3
+#define CKPT_MAGIC    "PALBRUTE2"
 
 /* the only leading digits a curve palindrome can have */
 static const int LEAD[NZONE] = {1, 3, 5};
@@ -217,20 +232,41 @@ static int64_t first_n_at_least(u128 target) {
    return n;
 }
 
-/* atomic checkpoint: write to .tmp, then rename over the target */
-static void write_ckpt(const char *path, int zi, int64_t nnext,
+/* Atomic checkpoint: .tmp then rename.  Every step checked -- a failed
+ * write leaves the previous checkpoint in place, and must say so.
+ * Records the run's identity (d, a, b, mode) and the zone's LEADING
+ * DIGIT, so it cannot be read back as a different zone or range. */
+static void write_ckpt(const char *path, int d, int64_t a, int64_t b,
+                       int all, int lead, int64_t nnext,
                        long found, long long visited) {
-   char tmp[80];
+   char tmp[192];
    snprintf(tmp, sizeof(tmp), "%s.tmp", path);
    FILE *f = fopen(tmp, "w");
    if (!f) {
-      fprintf(stderr, "  WARNING: cannot write ckpt %s\n", tmp);
+      fprintf(stderr, "  WARNING: cannot open ckpt %s\n", tmp);
       return;
    }
-   fprintf(f, "%d %lld %ld %lld\n", zi, (long long)nnext, found,
-           visited);
-   fclose(f);
-   rename(tmp, path);
+   int bad = fprintf(f, "%s %d %lld %lld %d\n%d %lld %ld %lld\n",
+                     CKPT_MAGIC, d, (long long)a, (long long)b, all,
+                     lead, (long long)nnext, found, visited) < 0;
+   bad |= (fflush(f) != 0);
+   bad |= (fclose(f) != 0);
+   if (bad || rename(tmp, path) != 0) {
+      fprintf(stderr, "  WARNING: ckpt write FAILED for %s at n=%lld --"
+              " previous checkpoint (if any) left in place\n",
+              path, (long long)nnext);
+      remove(tmp);
+   }
+}
+
+/* Whole-string signed parse: false on empty, junk or trailing text. */
+static bool parse_ll(const char *s, long long *out) {
+   char *end;
+   errno = 0;
+   long long v = strtoll(s, &end, 10);
+   if (errno || end == s || *end != '\0') return false;
+   *out = v;
+   return true;
 }
 
 int main(int argc, char *argv[]) {
@@ -240,17 +276,31 @@ int main(int argc, char *argv[]) {
               argv[0]);
       return 1;
    }
-   int d = atoi(argv[1]);
+   /* Strict.  atoi/strtoll used to turn any unknown word into a range
+    * bound: "--verfiy" became n_start = 0, was clamped to n_min, and the
+    * run went ahead WITHOUT verify.  Now each flag at most once, at most
+    * two whole-string integers, anything else is a usage error. */
+   long long dl = 0;
    int all = 0;
    int verify = 0;
    int64_t argn[2];
    int nargn = 0;
-   for (int i = 2; i < argc; i++) {
-      if (strcmp(argv[i], "--all") == 0) all = 1;
-      else if (strcmp(argv[i], "--verify") == 0) verify = 1;
-      else if (strcmp(argv[i], "--slow") == 0) verify = 2;
-      else if (nargn < 2) argn[nargn++] = strtoll(argv[i], NULL, 10);
+   bool ok = parse_ll(argv[1], &dl) && dl >= INT_MIN && dl <= INT_MAX;
+   for (int i = 2; ok && i < argc; i++) {
+      long long v;
+      if (strcmp(argv[i], "--all") == 0 && !all) all = 1;
+      else if (strcmp(argv[i], "--verify") == 0 && !verify) verify = 1;
+      else if (strcmp(argv[i], "--slow") == 0 && !verify) verify = 2;
+      else if (nargn < 2 && parse_ll(argv[i], &v)) argn[nargn++] = v;
+      else ok = false;
    }
+   if (!ok) {
+      fprintf(stderr,
+              "usage: %s <d> [n_start] [n_end] [--all] [--verify|--slow]\n",
+              argv[0]);
+      return 1;
+   }
+   int d = (int)dl;
    if (d < 1 || d > MAX_D) {
       fprintf(stderr, "d must be in [1, %d] (u128 limit)\n", MAX_D);
       return 1;
@@ -276,6 +326,11 @@ int main(int argc, char *argv[]) {
 
    int64_t a = (nargn > 0) ? argn[0] : nmin;
    int64_t b = (nargn > 1) ? argn[1] : nmax;
+   if (a < nmin || b > nmax) {
+      /* clipping to the d-digit window is legitimate, but say so */
+      fprintf(stderr, "  NOTE: range clipped to the d=%d window "
+              "[%lld, %lld]\n", d, (long long)nmin, (long long)nmax);
+   }
    if (a < nmin) a = nmin;
    if (b > nmax) b = nmax;
    if (a > b) {
@@ -317,8 +372,18 @@ int main(int argc, char *argv[]) {
    int64_t visit = 0;
    for (int k = 0; k < nz; k++) visit += zhi[k] - zlo[k] + 1;
 
-   char ckpt[64];
-   snprintf(ckpt, sizeof(ckpt), "palbrute_d%02d.ckpt", d);
+   char ckpt[160], legacy[64];
+   snprintf(ckpt, sizeof(ckpt), "palbrute_d%02d_%lld_%lld_%s.ckpt", d,
+            (long long)a, (long long)b, all ? "all" : "zones");
+   snprintf(legacy, sizeof(legacy), "palbrute_d%02d.ckpt", d);
+   {
+      FILE *lf = fopen(legacy, "r");
+      if (lf) {
+         fclose(lf);
+         fprintf(stderr, "  NOTE: legacy %s present (pre-2026-11-19, keyed"
+                 " by d alone) -- NOT read, NOT touched\n", legacy);
+      }
+   }
 
    int start_z = 0;
    int64_t start_n = nz ? zlo[0] : 0;
@@ -327,36 +392,39 @@ int main(int argc, char *argv[]) {
    {
       FILE *cf = fopen(ckpt, "r");
       if (cf) {
-         int czi;
-         long long cn, cv;
+         char magic[16];
+         int cd, call, clead;
+         long long ca, cb, cn, cv;
          long cfound;
-         if (fscanf(cf, "%d %lld %ld %lld", &czi, &cn, &cfound, &cv)
-                == 4
-               && czi >= 0 && czi < nz
-               && cn >= zlo[czi] && cn <= zhi[czi] + 1) {
-            start_z = czi;
+         int got = fscanf(cf, "%15s %d %lld %lld %d %d %lld %ld %lld",
+                          magic, &cd, &ca, &cb, &call, &clead, &cn,
+                          &cfound, &cv);
+         fclose(cf);
+         int cz = -1;                     /* slot whose lead is clead */
+         for (int k = 0; got == 9 && k < nz; k++)
+            if (zlead[k] == clead) cz = k;
+         const char *why = NULL;
+         if (got != 9)                          why = "malformed";
+         else if (strcmp(magic, CKPT_MAGIC))    why = "wrong format";
+         else if (cd != d || ca != a || cb != b || call != all)
+                                                why = "different run";
+         else if (cz < 0)                       why = "names no zone";
+         else if (cn < zlo[cz] || cn > zhi[cz] + 1)
+                                                why = "n outside zone";
+         else if (cfound < 0 || cv < 0 || cv > visit)
+                                                why = "bad counts";
+         if (why) {
+            fprintf(stderr, "  *** CHECKPOINT REJECTED: %s (%s) --"
+                    " starting this run from the beginning\n", ckpt, why);
+            fflush(stderr);
+         } else {
+            start_z = cz;
             start_n = (int64_t)cn;
             found = cfound;
             visited = cv;
-            printf("resuming: zone %d n=%lld  found=%ld so far\n",
-                   czi, (long long)cn, found);
-         } else {
-            /* The checkpoint stores zi as a COMPACT zone slot, but the
-             * filename keys on d alone -- so a ckpt written by a run
-             * with a different n-range names a slot that no longer
-             * means the same zone.  The guard above rejects that
-             * (clipped zones start at strictly higher n, so cn falls
-             * below zlo[czi]) and no wrong answer results.  But
-             * rejection must not be SILENT: without this warning a
-             * ten-day run quietly restarts from zero and the only
-             * evidence is the absence of a "resuming:" line. */
-            fprintf(stderr, "  WARNING: %s does not match this run's"
-                    " zones/range -- IGNORING it and starting from the"
-                    " beginning.  (A checkpoint is only valid for the"
-                    " same d AND the same n_start/n_end.)\n", ckpt);
-            fflush(stderr);
+            printf("resuming: zone lead %d n=%lld  found=%ld so far\n",
+                   clead, (long long)cn, found);
          }
-         fclose(cf);
       }
    }
 
@@ -436,7 +504,8 @@ int main(int argc, char *argv[]) {
          }
 
          visited += blk_end - blk + 1;
-         write_ckpt(ckpt, k, blk_end + 1, found, visited);
+         write_ckpt(ckpt, d, a, b, all, zlead[k], blk_end + 1, found,
+                    visited);
 
          double el = omp_get_wtime() - t0;
          double frac = (double)visited / (double)visit;
