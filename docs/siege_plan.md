@@ -178,7 +178,7 @@ Positive control is free and mandatory: any run must re-report `61` and
 `1861` before its null is worth anything.
 
 *Cost: hours, and it wants cores — `hunt` owns all 8 until ~Sep 13
-(see `scripts/resweep_tail.sh`). Do not start it alongside; per the
+(see `scripts/archive/resweep_tail_2026-09-05.sh`). Do not start it alongside; per the
 one-box rule two 8-thread jobs each run at half speed and fight for
 cache. Payoff: a firmer bound in §2, nothing more.*
 
