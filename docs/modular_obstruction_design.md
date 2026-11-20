@@ -175,10 +175,23 @@ the fly using iterative Hensel lifting:
 1. **Base case:** brute-force solutions mod 10 (at most 4: endings 1,3,5 only)
 2. **Lift:** from mod 10^j to mod 10^(j+1) — try 10 digit extensions per
    solution
-3. **Growth:** each lift step ≤ doubles the solution count
+3. **Growth:** bounded by the CRT split below — not "≤ doubles per step"
 
-Max solutions ≈ 4 × 2^(k-1). At k=10 that's ~2048 — fits in a stack-allocated
-buffer (32KB). No heap allocation needed.
+**Proven bound** (`hensel_cap()` in `mod_obstruct.c`; the root count
+mod 2^k is 4, mod 5^k peaks at max(2·5^⌊(k−1)/2⌋, 5^⌊k/2⌋)):
+
+    hensel_cap(k) = 4 · max(2·5^⌊(k−1)/2⌋, 5^⌊k/2⌋)
+                  = 500 (k=6), 5000 (k=9), 12500 (k=10), 125000 (k=13)
+
+The buffers are heap-allocated at that size, the lift is exact `u128`,
+and exceeding the cap is a fatal error, never a truncation.
+
+> **Corrected 2026-11-19.** This section used to say "max ≈ 4 × 2^(k−1),
+> ~2048 at k=10, fits in a 32KB stack buffer". That estimate was wrong
+> (k=9 has targets with 5000 solutions), and the code built on it — a
+> fixed `MAX_HENSEL_SOLS = 4096` that silently dropped solutions, plus
+> an int64 overflow at k ≥ 10 — produced the false k=10 d=21
+> OBSTRUCTION. Fixed `417ca34`; see `docs/audit_2026-11.md`.
 
 ---
 
