@@ -50,6 +50,11 @@ gcc -O3 -march=znver2 -mtune=znver2 -std=c99 -Wall -Wextra -fopenmp \
 #   Valgrind. Run the normal build under OMP_NUM_THREADS=1 instead:
 OMP_NUM_THREADS=1 valgrind --leak-check=full ./mod_obstruct 14 6 6 13
 #   (expect OpenMP pool noise in "possibly lost"; judge "definitely lost")
+# prove no binary predates its source/headers (plain `make` skips the
+#   check_* tools; run before claiming "rebuilt from HEAD"):
+make stale
+# is a doc's "verified at <hash>" stamp still true?  empty = holds
+git log <hash>.. -- mod_obstruct.c
 
 --- 4. SANITY CHECK (always run before a long job) --------------------------
 # palindrome build is good if this prints 181, 313 (d=3) and 3187813 (d=7)
