@@ -14,7 +14,7 @@ PALS     = palsplit palcurve palbrute
 CHECKS   = check_d5 check_d7 check_d9 check_survivors
 TESTS    = test_curve test_curve_gmp test_palpred test_palpred_noasm
 
-.PHONY: all pals checks test tests sanitize clean palpred_drift
+.PHONY: all pals checks test tests sanitize clean palpred_drift stale
 
 all: $(TARGET)
 
@@ -55,6 +55,26 @@ hunt: hunt.c curve_gmp.h
 	  exit 1; \
 	fi
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+
+# --- stale: FAIL if any built binary predates its source -------------
+# The audit close-out says "rebuild everything from HEAD"; this PROVES
+# it.  `make` alone skips $(CHECKS), which is how four check binaries
+# sat older than their .c through a "rebuilt from HEAD" claim
+# (2026-11-19).  Makefile targets are tested with `make -q` (so a
+# changed HEADER counts); any other ./foo with a foo.c by mtime.
+# Binaries that do not exist are not stale -- only ones you might run.
+KNOWN = $(TARGET) $(PALS) $(CHECKS) $(TESTS) hunt
+stale:
+	@n=0; for t in $(KNOWN); do \
+	  [ -e $$t ] || continue; \
+	  $(MAKE) -q $$t >/dev/null 2>&1 || { echo "STALE: $$t"; n=1; }; \
+	done; \
+	for c in *.c; do b=$${c%.c}; \
+	  case " $(KNOWN) " in *" $$b "*) continue;; esac; \
+	  [ -x $$b ] && [ $$c -nt $$b ] && { echo "STALE: $$b"; n=1; }; \
+	done; \
+	[ $$n = 0 ] && echo "stale: none -- every binary is newer than its source"; \
+	exit $$n
 
 # --- unit tests: run after ANY edit to curve.h / curve_gmp.h ---
 test_curve: test_curve.c curve.h
