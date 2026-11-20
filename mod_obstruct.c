@@ -541,6 +541,11 @@ int main(int argc, char *argv[]) {
           * flush -- so both counters sat at 0 for 20+ min while all 8 cores
           * ground away. cur_r in the output shows position in [0,mod). */
          double hb_t0         = omp_get_wtime();
+         /* hb_last is read OUTSIDE the (hb) critical section by every
+          * thread and written inside it, so both sides are atomic: a plain
+          * concurrent read/write is a data race (UB).  TSan with Archer
+          * did not report it (2026-11-19) -- dynamic tools see only what
+          * they observe; the language rules decide. */
          double hb_last       = hb_t0;
          long   hb_last_heavy = 0;
 
@@ -586,7 +591,10 @@ int main(int argc, char *argv[]) {
                   loc_scanned = 0;
                   /* time-based heartbeat (covers cheap regions, where
                    * this flush path fires often) */
-                  if (omp_get_wtime() - hb_last >= 20.0) {
+                  double hb_seen;    /* unlocked: atomic read */
+                  #pragma omp atomic read
+                  hb_seen = hb_last;
+                  if (omp_get_wtime() - hb_seen >= 20.0) {
                      #pragma omp critical (hb)
                      if (omp_get_wtime() - hb_last >= 20.0) {
                         double n2 = omp_get_wtime();
@@ -602,6 +610,7 @@ int main(int argc, char *argv[]) {
                            d, n2 - hb_t0, hv, rate, sc / 1000000,
                            r, 100.0 * (double)r / (double)mod);
                         fflush(stderr);
+                        #pragma omp atomic write
                         hb_last = n2;
                         hb_last_heavy = hv;
                      }
@@ -677,7 +686,10 @@ int main(int argc, char *argv[]) {
                   {
                      #pragma omp atomic
                      g_heavy++;
-                     if (omp_get_wtime() - hb_last >= 20.0) {
+                     double hb_seen;    /* unlocked: atomic read */
+                     #pragma omp atomic read
+                     hb_seen = hb_last;
+                     if (omp_get_wtime() - hb_seen >= 20.0) {
                         #pragma omp critical (hb)
                         if (omp_get_wtime() - hb_last >= 20.0) {
                            double n2 = omp_get_wtime();
@@ -693,6 +705,7 @@ int main(int argc, char *argv[]) {
                               d, n2 - hb_t0, hv, rate, sc / 1000000,
                               r, 100.0 * (double)r / (double)mod);
                            fflush(stderr);
+                           #pragma omp atomic write
                            hb_last = n2;
                            hb_last_heavy = hv;
                         }
