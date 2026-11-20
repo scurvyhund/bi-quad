@@ -124,7 +124,7 @@ while f(hi) >= 10**d:     hi -= 1
 print("d=%d  %.2f%%  (i=%d of %d)" % (d, 100*i/(hi-lo+1), i, hi-lo+1))
 EOF
 # The ckpt is the ONLY live signal when a driver script pipes hunt
-# through a grep: scripts/resweep_tail.sh filters on
+# through a grep: scripts/archive/resweep_tail_2026-09-05.sh filters on
 # "range=|wall=|EMIRP", which does NOT match the per-block "d=NN ckpt"
 # heartbeat.  A d=27 leg is then silent in the log for ~6 DAYS while
 # running perfectly.  Do not read that silence as a stall.
