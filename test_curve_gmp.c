@@ -36,6 +36,12 @@
 
 static int fails = 0;
 
+/* exact u128 -> mpz, two 64-bit limbs, least significant first */
+static void u128_to_mpz(mpz_t z, u128 v) {
+   uint64_t w[2] = { (uint64_t)v, (uint64_t)(v >> 64) };
+   mpz_import(z, 2, -1, sizeof(uint64_t), 0, 0, w);
+}
+
 /* independent oracle: is v on the curve, decided in u128 with no GMP */
 static int on_curve_u128(u128 v, int64_t *m_out) {
    if (v == 0) return 0;
@@ -132,6 +138,78 @@ int main(void) {
          }
       }
       mpz_clears(big, chk, NULL);
+   }
+
+   /* 3b. curve.h's u128 helpers at the TOP of the range, against GMP.
+    * test_curve.c stops isqrt at 2^124; nothing checked 2^128-1, nor
+    * curve() at INT64_MAX.  Edges first, then 200k pseudo-random
+    * values spread over every bit width 1..128. */
+   printf("u128 helpers vs GMP at the top of the range\n");
+   {
+      mpz_t z, r, w;
+      mpz_inits(z, r, w, NULL);
+      const u128 top = ~(u128)0;
+      const u128 s64 = (u128)UINT64_MAX * UINT64_MAX;  /* (2^64-1)^2 */
+      const u128 h127 = (u128)1 << 127;
+      u128 edge[] = { top, top - 1, s64 - 1, s64, s64 + 1,
+                      h127 - 1, h127, h127 + 1, 0, 1, 2, 3 };
+      /* xorshift64: unsigned BY INTENT -- the wrap is the generator */
+      uint64_t x = 0x9E3779B97F4A7C15ULL;
+      long checked = 0;
+      for (int i = 0; i < 200000 + 12; i++) {
+         u128 v;
+         if (i < 12) {
+            v = edge[i];
+         } else {
+            x ^= x << 13; x ^= x >> 7; x ^= x << 17;
+            uint64_t y = x;
+            x ^= x << 13; x ^= x >> 7; x ^= x << 17;
+            int bits = 1 + (int)(y % 128);
+            v = ((u128)x << 64) | y;
+            if (bits < 128) v &= ((u128)1 << bits) - 1;
+         }
+         u128_to_mpz(z, v);
+         mpz_sqrt(r, z);
+         u128_to_mpz(w, isqrt_u128(v));
+         if (mpz_cmp(r, w) != 0) {
+            u128_str(v, buf);
+            printf("  FAIL isqrt_u128(%s)\n", buf);
+            fails++;
+            break;
+         }
+         checked++;
+      }
+      printf("  isqrt_u128: %ld values exact\n", checked);
+
+      /* curve(n) exact for every int64 n >= 0, incl. INT64_MAX */
+      int64_t ns[] = { INT64_MAX, INT64_MAX - 1, (int64_t)1 << 62,
+                       3037000499LL, 0, 1 };
+      for (int i = 0; i < 6; i++) {
+         mpz_set_si(w, ns[i]);
+         curve_mpz(r, w);
+         u128_to_mpz(z, curve(ns[i]));
+         if (mpz_cmp(r, z) != 0) {
+            printf("  FAIL curve(%lld) != curve_mpz\n",
+                   (long long)ns[i]);
+            fails++;
+         }
+      }
+      /* n_at needs p < 2^127.  curve(INT64_MAX) = 2^127 - 2^64 + 1 is
+       * below it, so the round trip must hold for EVERY int64 n >= 0,
+       * right up to INT64_MAX. */
+      for (int64_t n = INT64_MAX; n > INT64_MAX - 2000; n -= 97) {
+         u128 p = curve(n);
+         if (p >= h127 || n_at(p) != n || n_at(p - 1) != n - 1) {
+            printf("  FAIL n_at top-of-int64 n=%lld\n", (long long)n);
+            fails++;
+            break;
+         }
+      }
+      if (curve(INT64_MAX) != h127 - ((u128)1 << 64) + 1) {
+         printf("  FAIL curve(INT64_MAX) != 2^127 - 2^64 + 1\n");
+         fails++;
+      }
+      mpz_clears(z, r, w, NULL);
    }
 
    /* 4. the wrapper must agree with the canonical form exactly */
