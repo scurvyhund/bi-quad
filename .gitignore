@@ -107,3 +107,4 @@ hunt
 # --- Python bytecode ---
 __pycache__/
 *_san
+test_palpred_noasm

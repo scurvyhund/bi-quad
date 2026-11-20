@@ -12,9 +12,9 @@ LDLIBS   = -lgmp
 TARGET   = mod_obstruct
 PALS     = palsplit palcurve palbrute
 CHECKS   = check_d5 check_d7 check_d9 check_survivors
-TESTS    = test_curve test_curve_gmp test_palpred
+TESTS    = test_curve test_curve_gmp test_palpred test_palpred_noasm
 
-.PHONY: all pals checks test tests sanitize clean
+.PHONY: all pals checks test tests sanitize clean palpred_drift
 
 all: $(TARGET)
 
@@ -66,10 +66,29 @@ test_curve_gmp: test_curve_gmp.c curve.h curve_gmp.h
 test_palpred: test_palpred.c curve.h
 	$(CC) -O2 -std=c99 -Wall -Wextra -o $@ $< -lm
 
-tests: $(TESTS)
+test_palpred_noasm: test_palpred.c curve.h
+	$(CC) -O2 -std=c99 -Wall -Wextra -DPALBRUTE_NO_ASM -o $@ $< -lm
+
+# test_palpred holds COPIES of palbrute's predicates; fail if they drift.
+PB_FAST = /^static int is_pal_fast\(u128 x, int d\) \{/,/^}/
+PB_DIVQ = /^\#if defined\(__x86_64__\) && !defined\(PALBRUTE_NO_ASM\)/,/^\#endif/
+palpred_drift: palbrute.c test_palpred.c
+	@awk '$(PB_FAST)' palbrute.c    > .pb_fast.a
+	@awk '$(PB_FAST)' test_palpred.c > .pb_fast.b
+	@awk '$(PB_DIVQ)' palbrute.c    > .pb_divq.a
+	@awk '$(PB_DIVQ)' test_palpred.c > .pb_divq.b
+	@cmp -s .pb_fast.a .pb_fast.b && cmp -s .pb_divq.a .pb_divq.b \
+	   && test -s .pb_fast.a && test -s .pb_divq.a \
+	   || { echo "FAIL: test_palpred.c copy of palbrute's predicates has DRIFTED"; \
+	        rm -f .pb_fast.? .pb_divq.?; exit 1; }
+	@rm -f .pb_fast.? .pb_divq.?
+	@echo "palpred copy: identical to palbrute.c"
+
+tests: $(TESTS) palpred_drift
 	./test_curve
 	./test_curve_gmp
 	./test_palpred
+	./test_palpred_noasm
 
 # --- sanitizer pass: run before any long job, and after header edits ---
 # clang, not gcc: gcc cannot trap UNSIGNED wraps at all, and this box's
@@ -84,10 +103,14 @@ SAN_BINS = $(addsuffix _san,$(TESTS))
 %_san: %.c curve.h curve_gmp.h
 	$(SANCC) $(SANFLAGS) -o $@ $< $(LDLIBS) -lm
 
+test_palpred_noasm_san: test_palpred.c curve.h
+	$(SANCC) $(SANFLAGS) -DPALBRUTE_NO_ASM -o $@ $< -lm
+
 sanitize: $(SAN_BINS)
 	$(SANENV) ./test_curve_san
 	$(SANENV) ./test_curve_gmp_san
 	$(SANENV) ./test_palpred_san
+	$(SANENV) ./test_palpred_noasm_san
 
 clean:
 	rm -f $(TARGET) $(PALS) $(CHECKS) hunt $(TESTS) $(SAN_BINS)	

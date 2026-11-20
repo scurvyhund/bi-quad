@@ -26,6 +26,12 @@
 #include "curve.h"
 
 /* ---- the two predicates, verbatim from palbrute.c ---------------- */
+/* VERBATIM means checked: `make tests` diffs is_pal_fast and the divq
+ * block below against palbrute.c and FAILS on any drift.  Until
+ * 2026-11-19 this copy silently lacked palbrute's divq path -- the one
+ * every x86-64 production run uses -- so only the portable fallback was
+ * tested.  The binary is now built twice: test_palpred (divq path) and
+ * test_palpred_noasm (-DPALBRUTE_NO_ASM, portable path). */
 
 static int is_pal_rev(u128 x) {
    u128 r = 0, t = x;
@@ -36,11 +42,30 @@ static int is_pal_rev(u128 x) {
    return r == x;
 }
 
+#if defined(__x86_64__) && !defined(PALBRUTE_NO_ASM)
+#define PALBRUTE_HAVE_DIVQ 1
+static inline void divq_u128(u128 x, uint64_t den, uint64_t *q,
+                             uint64_t *r) {
+   __asm__ ("divq %[den]"
+            : "=a" (*q), "=d" (*r)
+            : [den] "r" (den),
+              "a" ((uint64_t)x), "d" ((uint64_t)(x >> 64)));
+}
+#endif
+
 static int is_pal_fast(u128 x, int d) {
    int h = d / 2;
    if (h == 0) return 1;
+#ifdef PALBRUTE_HAVE_DIVQ
+   uint64_t quo, lo;
+   divq_u128(x, (uint64_t)bq_pow10[h], &quo, &lo);
+   /* d - 2h is 0 for even d and 1 for odd d, so the second step is a
+    * 64-bit divide by a compile-time-known 1 or 10 */
+   uint64_t hi = (d & 1) ? quo / 10 : quo;
+#else
    uint64_t lo = (uint64_t)(x % bq_pow10[h]);
    uint64_t hi = (uint64_t)(x / bq_pow10[d - h]);
+#endif
    uint64_t t = (uint64_t)bq_pow10[h - 1];
    for (int i = 0; i < h; i++) {
       if (lo % 10 != hi / t) return 0;
