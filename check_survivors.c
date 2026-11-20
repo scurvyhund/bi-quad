@@ -19,6 +19,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
+#include <ctype.h>
 #include <gmp.h>
 
 #include "curve_gmp.h"   /* on_curve / is_consec_sq, reverse_str */
@@ -30,11 +32,20 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   int d = atoi(argv[1]);
-   if (d < 2 || d > 18) {
-      fprintf(stderr, "d must be 2..18 (long arithmetic range)\n");
+   /* Strict parse (2026-11-19): atoi() accepted "12x" as 12 and
+    * " 5" as 5 -- the class the bounds audit removed from every other
+    * tool.  Whole string must be plain digits (no sign or leading
+    * space, which strtol would skip) with a value in 2..18. */
+   char *end;
+   errno = 0;
+   long dl = strtol(argv[1], &end, 10);
+   if (errno || end == argv[1] || *end != '\0'
+         || !isdigit((unsigned char)argv[1][0]) || dl < 2 || dl > 18) {
+      fprintf(stderr, "d must be an integer 2..18 (long arithmetic "
+              "range), got '%s'\n", argv[1]);
       return 1;
    }
+   int d = (int)dl;
 
    printf("\n  %d-Digit Bi-Quadratic Emirp Candidate Enumeration\n", d);
    printf("====================================================\n\n");
