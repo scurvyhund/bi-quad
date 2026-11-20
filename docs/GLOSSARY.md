@@ -129,6 +129,7 @@ Rule of thumb: compare **`prime-eligible` and `EMIRPS`** across builds; expect `
 **the cliff / `range < mod`** — `mod_obstruct` is valid and tractable only while `range < mod` (at most one n-value per residue).
 k=10 → valid to d≤20, cliff at d=21; k=6 → valid to d≤12, cliff at d=13.
 Past the cliff the old interval method **over-counts** and is slow. Fixed in 22a7121 by enumerating actual n-values.
+⚠ The false k=10 **d=21 obstruction** was *not* this — over-counting cannot produce a zero. It was an int64 overflow in the Hensel lift (`solve_residues`), which made every k ≥ 10 run unreliable once true m ≥ 2³¹ (d ≳ 20); also a silent 4096-solution cap at k=9. Both fixed in `417ca34` (2026-11-19).
 
 **div-5 filter / `VALID_NMOD`** — skips `n` values whose `p` is divisible by 5.
 ⚠ **Lossy**: it drops div-5 *composites*, so survivor and palindrome counts are undercounts. Emirp results are unaffected. See `skip_optimization.md`.

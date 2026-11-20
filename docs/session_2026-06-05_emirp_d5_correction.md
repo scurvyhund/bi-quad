@@ -55,6 +55,14 @@ survivor through d=24 is composite EXCEPT two: the d=5 emirp and the d=7 palindr
    cleanly true at d=18; d=19,20,21 needed brute force (d=19,20 raw-survivor /
    saturated, d=21 cliff).
 
+   > **CORRECTION 2026-11-19 — wrong cause.** The d=21 over-claim was not the
+   > `range<mod` cliff: that bug *over*-counts, so it cannot produce a zero, and the
+   > false run (`landscape_k10.log`) came 11 h after the cliff fix `22a7121`. The
+   > cause was `solve_residues` forming `2r²` in int64, which overflows at k=10 —
+   > all 6 true d=21 survivors lose their m-residue. Fixed in `417ca34` (exact u128
+   > lift, proven buffer bound); the fixed binary reports d=21 survivors = 8.
+   > See `audit_2026-11.md`.
+
 ## cvpipe — one bogus log, but the real runs ARE real (corrected 2026-06-05)
 
 Initial over-reaction: I found one cvpipe log

@@ -79,7 +79,9 @@ Always cross-check with the brute-force pair:
 - bi-quad/docs/brute_validate.py — independent Python ground-truth
 
 Fast engines (suspect until verified):
-- mod_obstruct.c — has had real bugs (interval over-approx; d=21 cliff)
+- mod_obstruct.c — has had real bugs (interval over-approx; Hensel
+  int64 overflow at k>=10 + silent 4096 cap at k=9, fixed 417ca34 --
+  THAT, not the cliff, made the false k=10 d=21 OBSTRUCTION)
 - gmp-cvo/cvpipe — internally consistent but high-d runs not always
   independently brute-verified
 
@@ -88,7 +90,11 @@ Fast engines (suspect until verified):
 mod_obstruct is valid and tractable ONLY when range < mod (at most
 one n-value per residue). The cliff by k:
 
-- k=10 (mod=10^10): valid d≤20; cliff at d=21 (range/mod=1.53)
+- k=10 (mod=10^10): valid d≤20; cliff at d=21 (range/mod=1.53).
+  OBSTRUCTION claims from k>=9 runs BEFORE 417ca34 need independent
+  confirmation (Hensel overflow/cap could only make false ones; k=10
+  d=21 was one). Positive control for k=10:
+  `./mod_obstruct 21 10 10 21` must give d=21 survivors = 8 (~40 min).
 - k=6  (mod=10^6):  valid d≤12; cliff at d=13 (range/mod=1.53)
 
 Past the cliff the old interval method OVER-COUNTS (wrong results)

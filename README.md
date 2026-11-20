@@ -82,9 +82,10 @@ so far, the **only** — bi-quadratic emirp. The next one, if any, has
 
 The **only** prime palindromes on the curve through **27 digits** —
 confirmed exhaustively — are **5, 181, 313, 3187813**, all at ≤ 7
-digits. (d ≤ 21 via the modular sieve; **d = 8…27 independently
-re-confirmed by a direct GMP-certified hunt** — `palhunt_gmp`, every
-n, all `found = 0`.) At d = 27 the emirp brute (`hunt.c`)
+digits. (**d = 8…27 by a direct GMP-certified hunt** — `palhunt_gmp`,
+every n, all `found = 0`. An earlier "d ≤ 21 via the modular sieve"
+is **withdrawn**: the sieve's k=10 d=21 obstruction was false, from an
+integer overflow fixed 2026-11-19 — see `docs/audit_2026-11.md`.) At d = 27 the emirp brute (`hunt.c`)
 independently corroborates this: it flags exactly **3** palindromic
 values, all composite (verified by quadratic sieve) — so `found = 0`
 stands from a second, unrelated tool. Jim's 1997 conjecture was:

@@ -311,7 +311,9 @@ raw:   6  0  7  2  6  0  5  2  4  6  6  2  1  0  3  0  7  0  3  2  7  6  5   tot
   d = 17, 19           : only palindromic survivors (composite) → no emirp candidate
   all other d          : emirp candidates exist, ALL composite (hunt.c)
   NB: d=7's 5 palindromes include 3187813 (PRIME). The sieve's old "d=21
-      obstruction" was a range<mod cliff artifact (§4); hunt shows d=21 has 2
+      obstruction" was FALSE -- caused by an int64 overflow in the Hensel
+      lift (fixed 417ca34, 2026-11-19), not the range<mod cliff (§4) as
+      first thought; see docs/audit_2026-11.md. hunt shows d=21 has 2
       composite emirp candidates + 5 palindromes.
   NB2: d=5..26 counts INCLUDE div-5 (trivially composite) survivors &
       palindromes. d=27's (cand=2, pal=3, raw=5) is div-5-EXCLUDED --

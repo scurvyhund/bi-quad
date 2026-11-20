@@ -5,6 +5,11 @@
 > The corrected result is that it's the **only** one through 24 digits. The d=18–21
 > sieve obstructions are also partly wrong (d=21 was a range<mod cliff artifact; it
 > has 6 composite candidates). See `session_2026-06-05_emirp_d5_correction.md`.
+>
+> ⚠️ **CORRECTION 2026-11-19:** the d=21 obstruction was NOT a cliff artifact.
+> `solve_residues` overflowed int64 at k=10, dropping the m-residue of all 6 true
+> d=21 survivors; the false run postdates the cliff fix by 11 h. Fixed in `417ca34`;
+> the fixed binary reports d=21 survivors = 8. See `audit_2026-11.md`.
 
 > A full, re-readable record of one extraordinary session. Where the
 > 2026-06-03 archive was about *fixing* the project (the cliff bug), this one is
