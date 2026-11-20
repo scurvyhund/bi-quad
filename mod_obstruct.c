@@ -14,7 +14,10 @@
  * Usage:  ./mod_obstruct [max_d] [max_k] [min_k] [min_d]
  *
  *         defaults: max_d=50, max_k=6, min_k=3, min_d=0
- *         min_k/min_d allow resuming an interrupted run
+ *         min_k/min_d set where the run STARTS.  An interrupted run
+ *         resumes when re-invoked with the SAME four arguments, from
+ *         mod_obstruct_D<max_d>_K<max_k>_k<min_k>_d<min_d>.ckpt in the
+ *         current directory; any other invocation ignores that file.
  *
  * Algorithm:
  *  
@@ -51,7 +54,13 @@
 #define DEFAULT_MAX_D  50
 #define DEFAULT_MAX_K   6
 #define NUM_THREADS     8
-#define CKPT_FILE      "mod_obstruct.ckpt"
+#define CKPT_LEGACY    "mod_obstruct.ckpt"   /* pre-2026-11-19 name */
+#define CKPT_MAGIC     "MODOBS2"
+/* Bump when a change alters which survivors are counted, so a
+ * checkpoint from an older binary is REJECTED rather than resumed into
+ * a log whose earlier lines that binary wrote.  "hensel-u128" = after
+ * 417ca34; every earlier binary could make false obstructions at k>=9. */
+#define CKPT_BUILD     "hensel-u128"
 
 /* Argument ceilings.  MAX_K: every fixed-width step is now exact far
  * past this (u128 lift, long mod to 10^18); the binding limit is
@@ -67,39 +76,80 @@
 #define BITSET_SET(bs, i) ((bs)[(i) >> 6] |= (1ULL << ((i) & 63)))
 #define BITSET_GET(bs, i) (((bs)[(i) >> 6] >> ((i) & 63)) & 1)
 
-/* 
- * Write checkpoint atomically: write to tmp file, then rename.
- * Stores the next (k, d) to process so we can resume there. 
- * 
+/*
+ * Checkpointing.  The checkpoint is named after the WHOLE invocation --
+ * max_d, max_k AND the starting min_k, min_d -- so a run resumes only
+ * from its own checkpoint.  Keyed by (max_d, max_k) alone, an
+ * interrupted sanity run (50 6 6 11, which never terminates) left
+ * "50 6 6 16" in mod_obstruct.ckpt, and the next plain "50 6" silently
+ * started at k=6 d=16, skipping k=3..5 and d=7..15 (2026-11-19).
+ *
+ * The file holds the NEXT unprocessed (k, d).  Anything malformed,
+ * from another build, or naming a position outside the run is REJECTED
+ * LOUDLY and the run starts at its beginning.  Deleted on completion.
  */
-static void write_checkpoint(int max_d, int max_k, int k, int d) {
-   FILE *f = fopen(CKPT_FILE ".tmp", "w");
-   if (f) {
-      fprintf(f, "%d %d %d %d\n", max_d, max_k, k, d);
-      fclose(f);
-      rename(CKPT_FILE ".tmp", CKPT_FILE);
+static char g_ckpt[128];
+static int  g_max_d, g_max_k, g_min_k, g_min_d;
+
+static void ckpt_init(int max_d, int max_k, int min_k, int min_d) {
+   g_max_d = max_d; g_max_k = max_k; g_min_k = min_k; g_min_d = min_d;
+   snprintf(g_ckpt, sizeof(g_ckpt), "mod_obstruct_D%d_K%d_k%d_d%d.ckpt",
+            max_d, max_k, min_k, min_d);
+}
+
+/* Atomic: write .tmp, then rename.  Every step checked -- a failed
+ * write leaves the previous checkpoint in place, and must say so. */
+static void write_checkpoint(int k, int d) {
+   char tmp[160];
+   snprintf(tmp, sizeof(tmp), "%s.tmp", g_ckpt);
+   FILE *f = fopen(tmp, "w");
+   if (!f) {
+      fprintf(stderr, "  WARNING: cannot open checkpoint %s\n", tmp);
+      return;
+   }
+   int bad = fprintf(f, "%s %s %d %d %d %d\n%d %d\n", CKPT_MAGIC,
+                     CKPT_BUILD, g_max_d, g_max_k, g_min_k, g_min_d,
+                     k, d) < 0;
+   bad |= (fflush(f) != 0);
+   bad |= (fclose(f) != 0);
+   if (bad || rename(tmp, g_ckpt) != 0) {
+      fprintf(stderr, "  WARNING: checkpoint write FAILED for %s at "
+              "k=%d d=%d -- previous checkpoint (if any) left in place\n",
+              g_ckpt, k, d);
+      remove(tmp);
    }
 }
 
-/* 
- * Read checkpoint and set min_k/min_d if it matches current run params.
- * Returns true if checkpoint was loaded successfully. 
- *
- */
-static bool read_checkpoint(int max_d, int max_k, int *min_k, int *min_d) {
-   FILE *f = fopen(CKPT_FILE, "r");
-   if (!f) return false;
-
-   int ck_max_d, ck_max_k, ck_k, ck_d;
-   if (fscanf(f, "%d %d %d %d", &ck_max_d, &ck_max_k, &ck_k, &ck_d) == 4
-      && ck_max_d == max_d && ck_max_k == max_k) {
-      fclose(f);
-      *min_k = ck_k;
-      *min_d = ck_d;
-      return true;
-   }
+/* 1 = valid, next position in *k, *d;  0 = no checkpoint;
+ * -1 = present but rejected (reason printed). */
+static int read_checkpoint(int *k, int *d) {
+   FILE *f = fopen(g_ckpt, "r");
+   if (!f) return 0;
+   char magic[16], build[32];
+   int cd, ck, cmk, cmd, nk, nd;
+   int got = fscanf(f, "%15s %31s %d %d %d %d %d %d", magic, build,
+                    &cd, &ck, &cmk, &cmd, &nk, &nd);
    fclose(f);
-   return false;
+   const char *why = NULL;
+   if (got != 8)                           why = "malformed";
+   else if (strcmp(magic, CKPT_MAGIC))     why = "wrong format";
+   else if (strcmp(build, CKPT_BUILD))     why = "written by another build";
+   else if (cd != g_max_d || ck != g_max_k
+            || cmk != g_min_k || cmd != g_min_d)
+                                           why = "different run parameters";
+   else if (nk < g_min_k || nk > g_max_k + 1
+            || nd < 0 || nd > g_max_d + 1
+            || (nk == g_min_k && nd != 0 && nd < g_min_d))
+                                           why = "position outside the run";
+   if (why) {
+      fprintf(stderr, "  *** CHECKPOINT REJECTED: %s (%s) -- starting "
+              "this run from its beginning\n", g_ckpt, why);
+      fflush(stderr);
+      return -1;
+   }
+   *k = nk;
+   *d = nd;
+   return 1;
 }
 
 /* 
@@ -295,17 +345,22 @@ int main(int argc, char *argv[]) {
       return 1;
    }
 
-   // Auto-resume from checkpoint if no explicit min_k/min_d given 
-   bool from_ckpt = false;
-   if (argc <= 3) {
-      from_ckpt = read_checkpoint(max_d, max_k, &min_k, &min_d);
-      if (from_ckpt && (min_k < 1 || min_k > max_k + 1
-                        || min_d < 0 || min_d > max_d + 1)) {
-         fprintf(stderr, "  *** CHECKPOINT REJECTED: %s names k=%d d=%d, "
-                 "outside this run -- starting from k=3\n",
-                 CKPT_FILE, min_k, min_d);
-         min_k = 3; min_d = 0; from_ckpt = false;
+   /* Resume only from THIS invocation's own checkpoint. */
+   ckpt_init(max_d, max_k, min_k, min_d);
+   {
+      FILE *lf = fopen(CKPT_LEGACY, "r");
+      if (lf) {
+         fclose(lf);
+         fprintf(stderr, "  NOTE: legacy %s present (pre-2026-11-19 "
+                 "build) -- NOT read, NOT touched\n", CKPT_LEGACY);
       }
+   }
+   const int run_k = min_k, run_d = min_d;   /* as invoked */
+   int ck_k, ck_d;
+   bool from_ckpt = (read_checkpoint(&ck_k, &ck_d) == 1);
+   if (from_ckpt) {
+      min_k = ck_k;
+      min_d = ck_d;
    }
 
    printf("\n");
@@ -313,10 +368,11 @@ int main(int argc, char *argv[]) {
    printf("=====================================================\n");
    printf("  max_d = %d    max_k = %d", max_d, max_k);
 
-   if (min_k > 3 || min_d > 0) {
-      printf("    (resuming from k=%d, d=%d", min_k, min_d);
-      printf(from_ckpt ? " — from checkpoint)" : ")");
-   }
+   if (from_ckpt)
+      printf("    (resuming from checkpoint at k=%d, d=%d; run began "
+             "k=%d, d=%d)", min_k, min_d, run_k, run_d);
+   else if (run_k != 3 || run_d != 0)
+      printf("    (starting at k=%d, d=%d)", run_k, run_d);
 
    printf("\n");
    printf("=====================================================\n\n");
@@ -735,12 +791,12 @@ int main(int argc, char *argv[]) {
             printf("    d=%2d..%2d  (skipped — saturated)\n",
                   d + 1, max_d);
           
-            write_checkpoint(max_d, max_k, k + 1, 0);
+            write_checkpoint(k + 1, 0);
             break;
          }
 
          // Checkpoint: next d-value to process 
-         write_checkpoint(max_d, max_k, k, d + 1);
+         write_checkpoint(k, d + 1);
       }
 
       printf("\n  k=%d summary: %d obstructions found out of %d "
@@ -748,7 +804,7 @@ int main(int argc, char *argv[]) {
             k, obstruction_count, tested_count);
 
       // Checkpoint: advance to next k 
-      write_checkpoint(max_d, max_k, k + 1, 0);
+      write_checkpoint(k + 1, 0);
 
       free(valid_firsts);
       free(is_valid_ending);
@@ -761,6 +817,6 @@ int main(int argc, char *argv[]) {
    printf("  Search complete.\n");
    printf("=====================================================\n\n");
 
-   remove(CKPT_FILE);
+   remove(g_ckpt);
    return 0;
 }
