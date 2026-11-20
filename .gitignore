@@ -106,3 +106,4 @@ hunt
 
 # --- Python bytecode ---
 __pycache__/
+*_san

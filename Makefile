@@ -14,7 +14,7 @@ PALS     = palsplit palcurve palbrute
 CHECKS   = check_d5 check_d7 check_d9 check_survivors
 TESTS    = test_curve test_curve_gmp test_palpred
 
-.PHONY: all pals checks test tests clean
+.PHONY: all pals checks test tests sanitize clean
 
 all: $(TARGET)
 
@@ -71,5 +71,23 @@ tests: $(TESTS)
 	./test_curve_gmp
 	./test_palpred
 
+# --- sanitizer pass: run before any long job, and after header edits ---
+# clang, not gcc: gcc cannot trap UNSIGNED wraps at all, and this box's
+# gcc lacks libasan/libubsan.  halt_on_error makes any report fail make.
+# The unit tests must run SILENT here (no runtime errors on a clean tree).
+SANCC    = clang
+SANFLAGS = -O1 -g -std=c99 -Wall -Wextra -fno-omit-frame-pointer \
+           -fsanitize=address,undefined,signed-integer-overflow,unsigned-integer-overflow
+SANENV   = UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
+SAN_BINS = $(addsuffix _san,$(TESTS))
+
+%_san: %.c curve.h curve_gmp.h
+	$(SANCC) $(SANFLAGS) -o $@ $< $(LDLIBS) -lm
+
+sanitize: $(SAN_BINS)
+	$(SANENV) ./test_curve_san
+	$(SANENV) ./test_curve_gmp_san
+	$(SANENV) ./test_palpred_san
+
 clean:
-	rm -f $(TARGET) $(PALS) $(CHECKS) hunt $(TESTS)	
+	rm -f $(TARGET) $(PALS) $(CHECKS) hunt $(TESTS) $(SAN_BINS)	
