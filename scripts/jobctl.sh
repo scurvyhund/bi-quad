@@ -9,7 +9,7 @@
 #   scripts/jobctl.sh stop   <name>             # kill + VERIFY it landed
 #   scripts/jobctl.sh wait   <name>             # block until gone
 #
-# WHY THIS EXISTS -- three traps, all of which have bitten this project:
+# WHY THIS EXISTS -- four traps, all of which have bitten this project:
 #
 #   1. `$!` after `nohup ... &` can report an intermediate wrapper, not
 #      the worker.  A d=27 hunt ran TWICE for 3.7 days because a kill
@@ -33,6 +33,24 @@ set -u
 cmd=${1:?usage: jobctl.sh launch/pid/count/stop/wait NAME [args]}
 name=${2:?need a process name}
 shift 2 || true
+
+# 4. The kernel truncates a process name (comm) to 15 characters, and
+#    pgrep -x matches against that.  A longer name NEVER matches: count
+#    reads 0 while the job runs, so launch starts a SECOND copy and stop
+#    reports "not running".  pgrep warns on stderr, but jc_count discards
+#    stderr, so it was silent.  Demonstrated 2026-11-19 with a 19-char
+#    name: two launches, two instances.  Refuse such names outright --
+#    matching the truncated prefix could hit an unrelated process.
+if [ "${#name}" -gt 15 ]; then
+   echo "REFUSING: name '$name' is ${#name} chars; the kernel truncates" \
+        "process names to 15, so pgrep -x can never see it. Rename the" \
+        "binary to 15 chars or fewer." >&2
+   exit 65
+fi
+case "$name" in
+   */*) echo "REFUSING: give the binary NAME, not a path: '$name'" >&2
+        exit 65 ;;
+esac
 
 # pgrep -xc PRINTS 0 and EXITS 1 when nothing matches, so a
 # `|| echo 0` fallback yields "0\n0" and every [ -eq ] then fails
