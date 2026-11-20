@@ -217,7 +217,9 @@ a reformulation that sidesteps the reversal, not more computation.
 ## Reproducibility
 
 All code and logs are in the bi-quad repository. The exhaustive
-checkers (`hunt.c`, `brute_validate.py`) enumerate every n directly;
+checker `hunt.c` enumerates every n directly; `brute_validate.py`
+independently re-checks the sieve's survivor model (k = 6) by
+enumerating every n, but tests no primality;
 the modular sieve (`mod_obstruct.c`) proves digit-length obstructions;
 `palhunt.c` searches palindromic primes directly. The four-way
 cross-validation of Problem 1 and the sieve/brute agreement underlying

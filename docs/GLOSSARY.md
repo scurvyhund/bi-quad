@@ -422,10 +422,10 @@ first a hypothesis that the command is broken.
 | `hunt.c` | exhaustive GMP brute; every n. Ground truth. |
 | `mod_obstruct.c` | fast modular sieve. Has had real bugs. |
 | `palhunt.c` | prime palindromes. Markers: 5, 181, 313, 3187813 |
-| `brute_validate.py` | independent Python ground truth |
+| `brute_validate.py` | independent check of the **sieve model** (k=6, d=12..14 → 0/8/30). Not an emirp ground truth: no primality, outer k digits only. |
 | `converse_pairs.py` | converse pairs; `--check` tests the mod-11 law |
 | `nearby_curves.py` | verifies `nearby_curves.md` (7 checks, <1s) |
 
 (Python tools live in `docs/`.)
 
-**Verification rule:** never declare "no emirp at d=X" from the fast engines alone. Always cross-check against `hunt.c` *and* `brute_validate.py`.
+**Verification rule:** never declare "no emirp at d=X" from the fast engines alone. Always cross-check against `hunt.c`, the only emirp brute force. (`brute_validate.py` checks the sieve's survivor model, not emirps — see the row above; corrected 2026-11-19.)

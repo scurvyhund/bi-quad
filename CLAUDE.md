@@ -80,10 +80,16 @@ computation. Session context is lost if the run outlasts the session.
 ## Verification Rule
 
 Never declare "no emirp at d=X" from the fast engines alone.
-Always cross-check with the brute-force pair:
+Always cross-check with the brute force:
 
-- bi-quad/hunt.c — exhaustive GMP brute; enumerates every n
-- bi-quad/docs/brute_validate.py — independent Python ground-truth
+- bi-quad/hunt.c — exhaustive GMP brute; enumerates every n. THE
+  ground truth for emirp claims (gmp-cvo/cvpipe matches it d=2..27).
+
+Sieve-model check — NOT an emirp ground truth:
+
+- bi-quad/docs/brute_validate.py — re-implements mod_obstruct's
+  survivor test in Python at k=6, d=12..14, enumerating every n; must
+  give 0/8/30. Tests no primality, so it can support no emirp claim.
 
 Fast engines (suspect until verified):
 - mod_obstruct.c — has had real bugs (interval over-approx; Hensel
