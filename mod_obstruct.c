@@ -41,6 +41,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
+#include <limits.h>
 #include <omp.h>
 #include <gmp.h>
 
@@ -50,6 +52,15 @@
 #define DEFAULT_MAX_K   6
 #define NUM_THREADS     8
 #define CKPT_FILE      "mod_obstruct.ckpt"
+
+/* Argument ceilings.  MAX_K: every fixed-width step is now exact far
+ * past this (u128 lift, long mod to 10^18); the binding limit is
+ * memory -- two 10^k-bit bitsets plus valid_firsts, ~6 GB at k=10,
+ * 1.25 TB of bitset alone at k=13, where calloc fails loudly.  k >= 1:
+ * k=0 makes mod = 1, every ending 0, and a FALSE "d=1 OBSTRUCTION"
+ * (p=1 is a real survivor) -- 2026-11-19, docs/audit_2026-11.md. */
+#define MAX_K          13
+#define MAX_D_ARG      200
 
 // Bitset macros -- compact bool array using 1 bit per entry 
 #define BITSET_WORDS(n) (((n) + 63) / 64)
@@ -255,16 +266,46 @@ static int solve_residues(long target, int k, long *sols, long *tmp,
    return (int)count;
 }
 
+/* Whole-string int parse: false on empty, junk or trailing text. */
+static bool parse_int(const char *s, int *out) {
+   char *end;
+   errno = 0;
+   long v = strtol(s, &end, 10);
+   if (errno || end == s || *end != '\0' || v < INT_MIN || v > INT_MAX)
+      return false;
+   *out = (int)v;
+   return true;
+}
+
 int main(int argc, char *argv[]) {
-   int max_d = (argc > 1) ? atoi(argv[1]) : DEFAULT_MAX_D;
-   int max_k = (argc > 2) ? atoi(argv[2]) : DEFAULT_MAX_K;
-   int min_k = (argc > 3) ? atoi(argv[3]) : 3;
-   int min_d = (argc > 4) ? atoi(argv[4]) : 0;
+   int max_d = DEFAULT_MAX_D, max_k = DEFAULT_MAX_K;
+   int min_k = 3, min_d = 0;
+   bool args_ok = (argc <= 5)
+      && (argc <= 1 || parse_int(argv[1], &max_d))
+      && (argc <= 2 || parse_int(argv[2], &max_k))
+      && (argc <= 3 || parse_int(argv[3], &min_k))
+      && (argc <= 4 || parse_int(argv[4], &min_d));
+   if (!args_ok || max_d < 1 || max_d > MAX_D_ARG
+         || min_k < 1 || max_k > MAX_K || min_k > max_k
+         || min_d < 0 || min_d > max_d) {
+      fprintf(stderr,
+         "usage: %s [max_d] [max_k] [min_k] [min_d]\n"
+         "  1 <= max_d <= %d,  1 <= min_k <= max_k <= %d,"
+         "  0 <= min_d <= max_d\n", argv[0], MAX_D_ARG, MAX_K);
+      return 1;
+   }
 
    // Auto-resume from checkpoint if no explicit min_k/min_d given 
    bool from_ckpt = false;
    if (argc <= 3) {
       from_ckpt = read_checkpoint(max_d, max_k, &min_k, &min_d);
+      if (from_ckpt && (min_k < 1 || min_k > max_k + 1
+                        || min_d < 0 || min_d > max_d + 1)) {
+         fprintf(stderr, "  *** CHECKPOINT REJECTED: %s names k=%d d=%d, "
+                 "outside this run -- starting from k=3\n",
+                 CKPT_FILE, min_k, min_d);
+         min_k = 3; min_d = 0; from_ckpt = false;
+      }
    }
 
    printf("\n");
@@ -414,6 +455,7 @@ int main(int argc, char *argv[]) {
 
       omp_set_num_threads(NUM_THREADS);
       int obstruction_count = 0;
+      int tested_count = 0;
       const long hcap = hensel_cap(k);
 
       int d_start = k + 1;
@@ -684,6 +726,7 @@ int main(int argc, char *argv[]) {
             tag = "  (saturated)";
          }
 
+         tested_count++;
          printf("    d=%2d  survivors = %6ld%s\n", d, survivors, tag);
          fflush(stdout);
 
@@ -702,7 +745,7 @@ int main(int argc, char *argv[]) {
 
       printf("\n  k=%d summary: %d obstructions found out of %d "
             "digit counts tested\n\n",
-            k, obstruction_count, max_d - k);
+            k, obstruction_count, tested_count);
 
       // Checkpoint: advance to next k 
       write_checkpoint(max_d, max_k, k + 1, 0);
