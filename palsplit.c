@@ -32,7 +32,9 @@
  *              values are never 0 mod 11, and every even-digit
  *              palindrome is divisible by 11, so no even d has a
  *              curve palindrome of any kind.
- *     t        split width (default d/4, the balance point).
+ *     t        split width, 1 <= t <= min(13, d-1) (default d/4, the
+ *              balance point).  d = 1 has no split and takes no t: it
+ *              is scanned directly.
  *     --keep5  keep palindromes divisible by 5.  These cannot be
  *              prime, but the pals_d*.txt regression sets list some
  *              of them, so the regression needs this flag.
@@ -49,6 +51,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdint.h>
 #include <omp.h>
 #include <gmp.h>
@@ -68,33 +73,76 @@
  * An earlier version estimated the edge in long double and needed an
  * 80-bit mantissa to be safe -- see palindrome_split_search.md sec. 4. */
 
+/* Whole-string int parse: false on empty, junk or trailing text. */
+static bool parse_int(const char *s, int *out) {
+   char *end;
+   errno = 0;
+   long v = strtol(s, &end, 10);
+   if (errno || end == s || *end != '\0' || v < INT_MIN || v > INT_MAX)
+      return false;
+   *out = (int)v;
+   return true;
+}
+
+static const char *pr_label(u128 p, int prime) {
+   return prime ? "PRIME" : (p < 2 ? "UNIT" : "COMPOSITE");
+}
+
 int main(int argc, char *argv[]) {
-   if (argc < 2) {
+   /* Strict: <d>, then at most one t and at most one --keep5.  atoi()
+    * used to accept anything -- "21 5 --keep" (a typo) ran WITHOUT
+    * keep5 and exited 0, a silently different count basis; "21 -5"
+    * became t=1, "21 x" the default, and a second t overrode the
+    * first.  2026-11-19, docs/audit_2026-11.md. */
+   int d = 0, t = 0, keep5 = 0, have_t = 0;
+   bool ok = (argc >= 2) && parse_int(argv[1], &d);
+   for (int i = 2; ok && i < argc; i++) {
+      if (strcmp(argv[i], "--keep5") == 0 && !keep5) keep5 = 1;
+      else if (!have_t && parse_int(argv[i], &t)) have_t = 1;
+      else ok = false;
+   }
+   if (!ok) {
       fprintf(stderr, "usage: %s <d> [t] [--keep5]\n", argv[0]);
       return 1;
    }
-
-   int d = atoi(argv[1]);
-   int t = 0;
-   int keep5 = 0;
-
-   for (int i = 2; i < argc; i++) {
-      if (strcmp(argv[i], "--keep5") == 0) keep5 = 1;
-      else t = atoi(argv[i]);
-   }
-   if (t == 0) t = d / 4;
-   if (t < 1) t = 1;
-
    if (d < 1 || d > MAX_D) {
       fprintf(stderr, "d must be in [1, %d] (u128 limit)\n", MAX_D);
       return 1;
    }
-   if (t > MAX_T || t >= d) {
+
+   init_pow10();
+
+   /* d = 1 has no split (t must be in [1, d-1]), but it is a real
+    * case -- p = 1 (n = 0) and p = 5 (n = 1) -- so scan it directly
+    * instead of refusing.  Output format as below. */
+   if (d == 1) {
+      if (have_t) {
+         fprintf(stderr, "d = 1 takes no t (it is scanned directly)\n");
+         return 1;
+      }
+      printf("d=1 (direct scan) keep5=%d\n", keep5);
+      int found = 0;
+      mpz_t z1;
+      mpz_init(z1);
+      for (int64_t n = 0; curve(n) < bq_pow10[1]; n++) {
+         u128 p = curve(n);
+         if (!keep5 && p % 5 == 0) continue;
+         mpz_set_ui(z1, (unsigned long)p);
+         printf("%d  n=%lld  %s\n", (int)p, (long long)n,
+                pr_label(p, mpz_probab_prime_p(z1, 40)));
+         found++;
+      }
+      mpz_clear(z1);
+      printf("found=%d  time=0.00s\n", found);
+      fflush(stdout);
+      return 0;
+   }
+
+   if (!have_t) t = (d / 4 < 1) ? 1 : d / 4;   /* default only */
+   if (t < 1 || t > MAX_T || t >= d) {
       fprintf(stderr, "t must be in [1, min(%d, d-1)]\n", MAX_T);
       return 1;
    }
-
-   init_pow10();
    omp_set_num_threads(NUM_THREADS);
 
    int64_t mod = (int64_t)bq_pow10[t];
@@ -186,7 +234,7 @@ int main(int argc, char *argv[]) {
       mpz_set_str(z, buf, 10);
       int pr = mpz_probab_prime_p(z, 40);
       printf("%s  n=%lld  %s\n", buf, (long long)hit_n[i],
-             pr ? "PRIME" : "COMPOSITE");
+             pr_label(hit_p[i], pr));
    }
    mpz_clear(z);
 
