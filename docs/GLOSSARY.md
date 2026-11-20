@@ -362,7 +362,7 @@ who skips these will misread our own tables.
 **width ceiling** (2026-11-19) — the largest input (usually `d`) for which a
 tool's fixed-width arithmetic is still exact, worked out from the **widest
 intermediate**, not the result. `hunt`: d ≤ 38 (its signed `long` index);
-`palsplit`/`palbrute`: d ≤ 37 (`u128`); `palcurve`: d ≤ 33 (a deliberate cap
+`palsplit`/`palbrute`: d ≤ 37 (`u128`; declared, audit pending); `palcurve`: d ≤ 33 (a deliberate cap
 below the arithmetic limit). A tool must state its ceiling and refuse past it;
 correct code with correct types still overflows when the input outgrows it —
 the d = 21 `mod_obstruct` overflow was this. See `audit_2026-11.md`.
