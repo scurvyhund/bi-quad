@@ -4,9 +4,12 @@ Pillow only (no matplotlib). Data: docs/palindrome_insights.md corpus.
 Build: python3 gen_ending_figure.py  ->  docs/palindrome_endings.png"""
 from PIL import Image, ImageDraw, ImageFont
 
-# (label, count, kind)  kind: 'gold' holds the primes; 'teal' eligible; 'div5'
+# (label, count, kind)  kind: 'gold' holds a prime; 'teal' eligible, all
+# composite; 'div5'.  Corpus: every palindromic curve-value d = 3..27
+# (= palsplit --keep5, rechecked 2026-11-19); d = 1 (p = 1, p = 5) omitted.
+# 2026-11-19: ...81 is 181, PRIME -- it was drawn teal ('composite').
 DATA = [("…13", 11, "gold"), ("…21", 4, "teal"), ("…01", 2, "teal"),
-        ("…61", 2, "teal"), ("…41", 2, "teal"), ("…81", 1, "teal"),
+        ("…61", 2, "teal"), ("…41", 2, "teal"), ("…81", 1, "gold"),
         ("…5", 11, "div5")]
 
 W, H = 1200, 760
@@ -33,6 +36,7 @@ text(W / 2, 40, "Endings of palindromic curve-values on  p = 2n²+2n+1",
      font(34, True), INK, "ma")
 text(W / 2, 86, "…13 is the densest prime-eligible ending — and holds both "
      "large prime palindromes (313, 3187813)", font(19), MUT, "ma")
+text(W / 2, 114, "all palindromic curve-values, d = 3..27  (d = 1, p = 5, omitted)", font(16), MUT, "ma")
 
 # axes
 ax_l, ax_r = 120, W - 60
@@ -55,11 +59,12 @@ for i, (lab, cnt, kind) in enumerate(DATA):
          (150, 110, 10) if kind == "gold" else INK, "ma")
     text(cx, A_b + 46, sub, font(14), MUT, "ma")
     if kind == "gold":
-        text(cx, BY(cnt) - 40, "313, 3187813", font(15), (150, 110, 10), "mb")
+        text(cx, BY(cnt) - 40, "181" if lab == "…81" else "313, 3187813",
+             font(15), (150, 110, 10), "mb")
 
 # legend
 ly = 690
-for col, lab, x in [(GOLD, "holds the prime palindromes", 120),
+for col, lab, x in [(GOLD, "holds a prime palindrome", 120),
                     (TEAL, "prime-eligible (composite)", 500),
                     (RED, "÷5 — trivially composite", 850)]:
     d.rectangle([x, ly - 8, x + 20, ly + 8], fill=col)

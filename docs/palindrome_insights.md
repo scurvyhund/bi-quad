@@ -142,7 +142,7 @@ no step rests on a `found=0` summary alone.
 ## 5. The ending signature — `…13` is the densest
 
 ![Ending distribution: …13 is the densest prime-eligible ending and holds
-313 and 3187813; after d = 25 the div-5 (…5) group ties …13 as the
+313 and 3187813 (…81 holds the third, 181); d = 3..27; after d = 25 the div-5 (…5) group ties …13 as the
 largest, all composite](palindrome_endings.png)
 
 Among prime-eligible palindromes (last digit 1 or 3), the two-digit
@@ -155,7 +155,7 @@ endings are far from uniform:
 | `…01` (`10…`) | 2 |
 | `…61` (`16…`) | 2 |
 | `…41` (`14…`) | 2 |
-| `…81` (`18…`) | 1 |
+| `…81` (`18…`) | 1 — `181`, **prime** |
 
 **What d = 25 added** (count-preserving dump, 2026-07-06) — it *sharpened*
 the signal rather than blurring it: three of its five palindromes landed
