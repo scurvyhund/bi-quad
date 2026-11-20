@@ -26,6 +26,8 @@
 #define BQ_CURVE_GMP_H
 
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <gmp.h>
 
 /* Is val on the curve?  If so store its index in m and return true.
@@ -106,6 +108,15 @@ static inline void curve_mpz(mpz_t p, const mpz_t n) {
  * fire, which dropped the true first 7-digit n = 707 and its two
  * successors.  Walking to the edge removes the whole class. */
 static inline void compute_n_bounds(int d, mpz_t n_min, mpz_t n_max) {
+   /* d < 1 has no meaning, and (unsigned long)(d - 1) below WRAPS to
+    * ULONG_MAX at d = 0: 10^ULONG_MAX, and the process dies on SIGFPE
+    * (hunt ./hunt 0 0 and mod_obstruct with k = -1 both did, 2026-11-19).
+    * Callers should validate d at entry; this is the backstop, and it
+    * is free -- the function runs once per digit-length. */
+   if (d < 1) {
+      fprintf(stderr, "compute_n_bounds: d = %d, must be >= 1\n", d);
+      exit(1);
+   }
    mpz_t lo, hi, p, t;
    mpz_inits(lo, hi, p, t, NULL);
    mpz_ui_pow_ui(lo, 10, (unsigned long)(d - 1));
