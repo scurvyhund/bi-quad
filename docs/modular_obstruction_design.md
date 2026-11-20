@@ -38,6 +38,13 @@ form 2n² + 2n + 1. If we can show that zero valid combinations survive for
 all d >= 6, combined with the exhaustive search through 10^28 (covering
 d <= 28), we have a **complete proof of uniqueness**.
 
+> **NOTE 2026-11-19:** "exhaustive search through 10^28" overstates. The
+> brute-force-verified bound is **d ≤ 27** (`hunt`; see README). The d = 28
+> run (`gmp-cvo/logs/run_10e28.log`) is `cvpipe` alone and is **not a claim**
+> under the project's verification rule — see `cvpipe_resweep_xcheck.md`.
+> Two other cvpipe logs (`run_10e22.log`, `10e25_to_10e30.txt`) were silently
+> truncated by `MAX_ZONES` and must not be cited at all.
+
 ---
 
 ## The Key Insight
@@ -279,7 +286,8 @@ combining) could extend the practical reach.
   for k ≤ 9, but essential for k ≥ 10 where arrays don't fit in memory.
 
 - **Proof coverage:** Even if obstruction doesn't cover all d to infinity,
-  proving it for d=6..50 (combined with exhaustive search through d=28) would
+  proving it for d=6..50 (combined with exhaustive search through d=27 --
+  d=28 is cvpipe-only, see the note in the Goal section) would
   be a significant result — far beyond what brute-force search alone achieves.
 
 ---
