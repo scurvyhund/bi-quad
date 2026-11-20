@@ -82,8 +82,13 @@ so far, the **only** — bi-quadratic emirp. The next one, if any, has
 
 The **only** prime palindromes on the curve through **27 digits** —
 confirmed exhaustively — are **5, 181, 313, 3187813**, all at ≤ 7
-digits. (**d = 8…27 by a direct GMP-certified hunt** — `palhunt_gmp`,
-every n, all `found = 0`. An earlier "d ≤ 21 via the modular sieve"
+digits. (**d = 8…27, and on to d = 37, by `palsplit`** — every
+palindromic curve value enumerated in exact 128-bit integer arithmetic,
+no floating point; none prime past d = 7. Corroborated by `palbrute`
+(every n, d ≤ 23), `hunt` (d ≤ 27) and `palhunt_gmp` (every n,
+`found = 0` for d = 8…27; its long-double digit filter was checked
+against all 49 curve palindromes to d = 37 and drops none — see
+`docs/audit_2026-11.md`). An earlier "d ≤ 21 via the modular sieve"
 is **withdrawn**: the sieve's k=10 d=21 obstruction was false, from an
 integer overflow fixed 2026-11-19 — see `docs/audit_2026-11.md`.) At d = 27 the emirp brute (`hunt.c`)
 independently corroborates this: it flags exactly **3** palindromic
@@ -130,8 +135,10 @@ All C99 + OpenMP; the GMP ones use arbitrary precision for large `p`.
 |---|---|
 | `mod_obstruct.c` | **Modular obstruction sieve** — proves whole digit-lengths impossible via first-k/last-k digit feasibility mod 10^k (exact for d ≤ 2k). |
 | `hunt.c` | **Exhaustive emirp brute force** (GMP) — enumerates every `n`, tests `rev(p)` on-curve + both prime. The trustworthy tool for d ≥ 21. |
-| `palhunt.c` | **Prime-palindrome hunter** (64-bit, ≤ 19 digits). |
-| `palhunt_gmp.c` | Prime-palindrome hunter **past the 64-bit wall** (uint64 `n`, `__int128` `p`, GMP-certified; reaches ~d=27). |
+| `palsplit.c` | **Palindrome enumerator**, head/tail split, O(10^(d/4)); exact u128, d ≤ 37. The basis of the palindrome bound. |
+| `palbrute.c` | Palindrome brute force (every `n`, leading-digit zones); independent cross-check of `palsplit`. |
+| `palhunt.c` | Prime-palindrome hunter (64-bit, ≤ 19 digits). FROZEN; corroboration. |
+| `palhunt_gmp.c` | Prime-palindrome hunter **past the 64-bit wall** (uint64 `n`, `__int128` `p`, GMP-certified; reaches ~d=27). FROZEN; corroboration. |
 | `palfirst.py` | **Palindrome-first** verifier — independent cross-check of `hunt.c` (loops palindromes, tests `2P−1` a perfect square). |
 | `generate_graph.py` | Renders the findings figure (pure Pillow — no matplotlib). |
 | `gen_ending_figure.py` | Renders the palindrome ending-distribution figure (Pillow). |
