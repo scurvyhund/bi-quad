@@ -35,6 +35,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <errno.h>
 #include <string.h>
 #include <stdint.h>
 #include <omp.h>
@@ -61,26 +63,61 @@
 /* the curve under search, p = g_a*m^2 + g_b*m + g_c */
 static int64_t g_a, g_b, g_c;
 
+/* Whole-string signed parse: false on empty, junk or trailing text.
+ * strtoll alone turns "x" into 0, which is a legal-looking B or C. */
+static bool parse_ll(const char *s, long long *out) {
+   char *end;
+   errno = 0;
+   long long v = strtoll(s, &end, 10);
+   if (errno || end == s || *end != '\0') return false;
+   *out = v;
+   return true;
+}
+
 int main(int argc, char *argv[]) {
-   if (argc < 5) {
+   long long a, b, c, dl, tl = 0;
+   int keep5 = 0, have_t = 0;
+   bool ok = (argc >= 5)
+          && parse_ll(argv[1], &a) && parse_ll(argv[2], &b)
+          && parse_ll(argv[3], &c) && parse_ll(argv[4], &dl);
+   for (int i = 5; ok && i < argc; i++) {
+      if (strcmp(argv[i], "--keep5") == 0) keep5 = 1;
+      else if (!have_t && parse_ll(argv[i], &tl)) have_t = 1;
+      else ok = false;
+   }
+   if (!ok) {
       fprintf(stderr, "usage: %s <A> <B> <C> <d> [t] [--keep5]\n",
               argv[0]);
       return 1;
    }
-   g_a = strtoll(argv[1], NULL, 10);
-   g_b = strtoll(argv[2], NULL, 10);
-   g_c = strtoll(argv[3], NULL, 10);
-   int d = atoi(argv[4]);
-   int t = 0, keep5 = 0;
-   for (int i = 5; i < argc; i++) {
-      if (strcmp(argv[i], "--keep5") == 0) keep5 = 1;
-      else t = atoi(argv[i]);
+   if (dl < 1 || dl > MAX_D) {
+      fprintf(stderr, "d must be in [1, %d]\n", MAX_D);
+      return 1;
    }
-   if (t == 0) t = d / 4;
+   int d = (int)dl;
+   if (have_t && (tl < 1 || tl > MAX_T)) {
+      fprintf(stderr, "t must be in [1, min(%d, d-1)]\n", MAX_T);
+      return 1;
+   }
+   int t = have_t ? (int)tl : d / 4;
    if (t < 1) t = 1;
+   g_a = a; g_b = b; g_c = c;
 
    if (g_a < 1 || g_a > 3) {
       fprintf(stderr, "A must be in [1,3] (u128 headroom)\n");
+      return 1;
+   }
+   /* B, C >= 0: m_at and curve_abc are written for non-negative
+    * coefficients, and a negative one is silently WRONG, not an error.
+    * Measured 2026-11-19 on 2m^2-2m+1 (our curve, shifted m = n+1):
+    * d=7 found 1 of 3 palindromes, d=13 found 0 of 2, each reported as
+    * a clean run.  Recentre the curve onto m >= 0 instead -- that is
+    * what gen_curve_palindromes.py does.  No upper bound is needed:
+    * with A <= 3 and d <= 33, 4*A*p + B^2 < 2^128 for every int64
+    * B >= 0, since m_at squares B in u128. */
+   if (g_b < 0 || g_c < 0) {
+      fprintf(stderr, "B and C must be >= 0 (recentre the curve onto "
+              "m >= 0; see palcurve.c)\n");
       return 1;
    }
    if (d < 1 || d > MAX_D) {
