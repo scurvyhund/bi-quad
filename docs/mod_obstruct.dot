@@ -16,7 +16,7 @@ digraph mod_obstruct {
     start  [shape=oval, style=filled, fillcolor="#d0e8ff",
             label="main(argc, argv)\nparse max_d, max_k, min_k, min_d"];
     ckpt   [shape=box,  style="rounded,filled", fillcolor="#eef5ff",
-            label="read_checkpoint()\n(if no min_k/min_d on cmdline)"];
+            label="ckpt_init(): file named by ALL 4 args\nread_checkpoint(): resume only that file\n(legacy mod_obstruct.ckpt never read)"];
     banner [shape=box,  style=rounded, label="print banner"];
 
     start  -> ckpt -> banner;
@@ -33,7 +33,7 @@ digraph mod_obstruct {
         fillcolor="#f5fff0";
         color="#88aa66";
         p1a [shape=box, style=rounded,
-             label="for n = 0 .. mod-1\n  e = ending_for_residue(n, mod)\n  set bit e"];
+             label="for n = 0 .. mod-1\n  e = ending_for_residue(n, mod)\n  set bit e  (skip ...5, ...0)"];
     }
     kloop -> p1a [lhead=cluster_p1];
 
@@ -59,43 +59,48 @@ digraph mod_obstruct {
         color="#cc8866";
 
         dloop [shape=hexagon, style=filled, fillcolor="#ffe0cc",
-               label="for d = k+1 .. max_d\ncompute_n_bounds(d)"];
+               label="for d = max(k+1, min_d) .. max_d\ncompute_n_bounds(d)"];
         rloop [shape=hexagon, style=filled, fillcolor="#ffe8d8",
                label="#pragma omp parallel\nfor r = 0 .. mod-1"];
 
         pside [shape=box, style=rounded,
-               label="p-side check\nfirst/last_n_with_residue\ncompute_first_k -> fk_min,fk_max\nsorted_has_value_in_range?"];
+               label="residue screen\nfirst_n_with_residue <= n_max ?\np_ending = ending_for_residue(r)\nis_valid_ending(p_ending) ?"];
 
         qf    [shape=diamond, style=filled, fillcolor="#ffeedd",
                label="q_first = reverse_k(p_ending)\n>= 10^(k-1) ?"];
 
-        floop [shape=hexagon, style=filled, fillcolor="#ffe8d8",
-               label="for f in valid_firsts\n    in [fk_min, fk_max]"];
+        nloop [shape=hexagon, style=filled, fillcolor="#ffe8d8",
+               label="for EACH actual n = r (mod 10^k)\nin [n_min, n_max]  (exact, 22a7121)"];
+
+        fchk  [shape=box, style=rounded,
+               label="f = compute_first_k(n)  (exact prefix)\nf in valid_firsts ?\nq_ending = reverse_k(f) valid ?"];
 
         hensel [shape=box, style="rounded,filled", fillcolor="#ffe0e0",
-                label="q_ending = reverse_k(f)\nis_valid_ending?\nsolve_residues() — Hensel lift\n-> m_sols[]"];
+                label="solve_residues(q_ending)\nHensel lift -> m_sols[]"];
 
         mloop [shape=box, style=rounded,
-               label="for m_r in m_sols:\n  first/last_n_with_residue\n  mk_min,mk_max = compute_first_k\n  q_first in [mk_min,mk_max] ?"];
+               label="for m_r in m_sols, EACH actual m = m_r:\n  compute_first_k(m) == q_first ?"];
 
         surv  [shape=box, style="rounded,filled", fillcolor="#e0ffe0",
-               label="if q_ok: survivors++"];
+               label="match: survivors++\n(next r)"];
 
         rpt   [shape=box, style=rounded,
                label="tag = OBSTRUCTION / saturated / \"\"\nprint d, survivors\nwrite_checkpoint(k, d+1)"];
 
         dloop  -> rloop;
         rloop  -> pside;
-        pside  -> qf    [label="p-side ok"];
+        pside  -> qf    [label="pass"];
         pside  -> rloop [label="skip", style=dashed, constraint=false];
-        qf     -> floop [label="yes"];
+        qf     -> nloop [label="yes"];
         qf     -> rloop [label="no",   style=dashed, constraint=false];
-        floop  -> hensel;
+        nloop  -> fchk;
+        fchk   -> hensel [label="pass"];
+        fchk   -> nloop  [label="fail: next n", style=dashed, constraint=false];
         hensel -> mloop;
-        mloop  -> surv  [label="q_ok"];
-        mloop  -> floop [label="next f", style=dashed, constraint=false];
+        mloop  -> surv  [label="match"];
+        mloop  -> nloop [label="none: next n", style=dashed, constraint=false];
         surv   -> rpt;
-        rpt    -> dloop [label="next d\n(break if saturated)", style=dashed, constraint=false];
+        rpt    -> dloop [label="next d\n(stop k if saturated;\nlarger d NOT COMPUTED)", style=dashed, constraint=false];
     }
     p2b -> dloop [ltail=cluster_p2, lhead=cluster_p3];
 
@@ -103,7 +108,7 @@ digraph mod_obstruct {
     kend  [shape=box, style=rounded,
            label="free buffers\nprint k summary\nwrite_checkpoint(k+1, 0)"];
     done  [shape=oval, style=filled, fillcolor="#d0ffd0",
-           label="Search complete\nremove(CKPT_FILE)"];
+           label="Search complete\nremove(g_ckpt)"];
 
     rpt   -> kend [ltail=cluster_p3, label="d-loop done"];
     kend  -> kloop [label="next k", style=dashed, constraint=false];

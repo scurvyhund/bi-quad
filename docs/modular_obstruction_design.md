@@ -77,11 +77,23 @@ The diagram is generated from [`mod_obstruct.dot`](mod_obstruct.dot):
 
     dot -Tpng docs/mod_obstruct.dot -o docs/mod_obstruct.png
 
-Verified against the source 2026-09-12: every function and constant it
-names is present in `mod_obstruct.c`, and the argument order it shows
-(`max_d max_k min_k min_d`) matches `main()`. Regenerating reproduces
-the committed image; a ~0.2% pixel difference confined to the Phase 2
-cluster label is graphviz rendering drift, not a content change.
+Verified against the source 2026-11-19 (re-checked after the audit's
+checkpoint fix `7320ce5`, which the 2026-09-12 version predated): every
+function and identifier it names is present in `mod_obstruct.c`, and the
+argument order it shows (`max_d max_k min_k min_d`) matches `main()`.
+Two corrections came out of that re-check:
+
+- **Phase 3 was drawn as the pre-`22a7121` interval method**
+  (`fk_min`/`fk_max`, `last_n_with_residue`, a loop over `valid_firsts`
+  in an interval). The source has enumerated each actual n per residue
+  since June. The 2026-09-12 "verified" note missed it: it checked that
+  names existed, and `first/last_n_with_residue` half-matched. Phase 3
+  now shows the exact per-n and per-m check.
+- **The checkpoint box** now shows the per-invocation file (`ckpt_init`);
+  the old box described the shared `mod_obstruct.ckpt` that let a sanity
+  run's checkpoint hijack a full run.
+
+Checking names is not checking the flow: this re-check read the loop.
 
 
 ### Phase 1: Build the Valid Endings Bitset
