@@ -22,11 +22,21 @@
  * Build:  gcc hunt.c -o hunt -O3 -march=znver2 -std=c99 -Wall \
  *             -fopenmp -lgmp
  * Usage:  ./hunt [min_d] [max_d]      (defaults 13 17)
+ *         1 <= min_d <= max_d <= HUNT_MAX_D (38); else exit 1.
+ *
+ * Width ceiling: p, q, n live in GMP and have no limit.  The only
+ * fixed-width values are the loop index i and the block bounds, all
+ * signed long.  At d=38 the n-range is < 2^63 with headroom for
+ * blk + BLOCK_SIZE; at d=39 it is not.  Hence HUNT_MAX_D = 38 --
+ * enforced at entry, and re-checked per d via mpz_fits_slong_p.
+ * (Academic: d=38 is ~10^19 iterations.)
  */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include <string.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <omp.h>
 #include <gmp.h>
@@ -35,6 +45,7 @@
 
 #define NUM_THREADS  8
 #define BLOCK_SIZE   5000000000L    /* 5 B iters per checkpoint block */
+#define HUNT_MAX_D   38   /* long-index ceiling; see header */
 
 /* n%10 in {1,3,6,8} -> p ends in 5 -> composite; skip those.
  * NOTE: LOSSY for counts -- see docs/skip_optimization.md. */
@@ -72,9 +83,28 @@ static void write_ckpt(const char *path, long blk_end,
    rename(tmp, path);
 }
 
+/* Parse a digit count; false on junk, trailing text or out-of-range. */
+static bool parse_d(const char *s, int *out) {
+   char *end;
+   errno = 0;
+   long v = strtol(s, &end, 10);
+   if (errno || end == s || *end != '\0') return false;
+   if (v < 1 || v > HUNT_MAX_D) return false;
+   *out = (int)v;
+   return true;
+}
+
 int main(int argc, char *argv[]) {
-   int min_d = (argc > 1) ? atoi(argv[1]) : 13;
-   int max_d = (argc > 2) ? atoi(argv[2]) : 17;
+   int min_d = 13, max_d = 17;
+   if (argc > 3
+         || (argc > 1 && !parse_d(argv[1], &min_d))
+         || (argc > 2 && !parse_d(argv[2], &max_d))
+         || min_d > max_d) {
+      fprintf(stderr,
+         "usage: %s [min_d] [max_d]   1 <= min_d <= max_d <= %d\n",
+         argv[0], HUNT_MAX_D);
+      return 1;
+   }
 
    printf("\n  Bi-Quadratic Emirp HUNT (direct brute force)\n");
    printf("  ============================================\n");
@@ -89,11 +119,14 @@ int main(int argc, char *argv[]) {
       mpz_t rng;
       mpz_init(rng);
       mpz_sub(rng, n_max, n_min);
-      if (!mpz_fits_slong_p(rng)) {
-         gmp_printf(
-            "  d=%2d: range too large (%Zd) — skip\n", d, rng);
+      if (!mpz_fits_slong_p(rng)
+            || mpz_get_si(rng) > LONG_MAX - 1 - BLOCK_SIZE) {
+         /* Unreachable while HUNT_MAX_D is right; refuse, never skip. */
+         gmp_fprintf(stderr,
+            "  d=%2d: range %Zd overflows long -- HUNT_MAX_D wrong\n",
+            d, rng);
          mpz_clears(n_min, n_max, rng, NULL);
-         continue;
+         return 1;
       }
       long range = mpz_get_si(rng) + 1;
       mpz_clear(rng);
@@ -158,7 +191,11 @@ int main(int argc, char *argv[]) {
             mpz_t n, p, q, m, s;
             mpz_inits(n, p, q, m, s, NULL);
             char *pbuf = malloc(d + 2);
-            char *qbuf = malloc(d + 2);
+            char *qbuf = malloc(d + 2);   /* d digits + NUL + sign */
+            if (!pbuf || !qbuf) {
+               fprintf(stderr, "  d=%d: malloc failed\n", d);
+               exit(1);
+            }
 
             #pragma omp for schedule(dynamic, 100000)
             for (long i = blk; i < blk_end; i++) {
