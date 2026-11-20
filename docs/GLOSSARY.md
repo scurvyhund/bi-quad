@@ -359,6 +359,14 @@ All four in `structural_attacks_2026-06-04.md`. Do not re-propose without a genu
 Terms this project coined for how it works, not for what it studies. A reader
 who skips these will misread our own tables.
 
+**width ceiling** (2026-11-19) — the largest input (usually `d`) for which a
+tool's fixed-width arithmetic is still exact, worked out from the **widest
+intermediate**, not the result. `hunt`: d ≤ 38 (its signed `long` index);
+`palsplit`/`palbrute`: d ≤ 37 (`u128`); `palcurve`: d ≤ 33 (a deliberate cap
+below the arithmetic limit). A tool must state its ceiling and refuse past it;
+correct code with correct types still overflows when the input outgrows it —
+the d = 21 `mod_obstruct` overflow was this. See `audit_2026-11.md`.
+
 **count basis** (2026-09-12) — *which* survivors a count includes. Two are in
 use and they disagree by design:
 
