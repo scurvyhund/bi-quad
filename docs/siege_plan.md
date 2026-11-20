@@ -359,9 +359,11 @@ duplicated functions (`isqrt128`, `ipow10`, `curve`, `is_pal`,
 `palsplit` gives the complete set ~670,000× faster. Retire or fold into
 `curve.h`.
 
-**[ ] 17.** `mod_obstruct_bkup.c` keeps its own `compute_n_bounds` and
+**[x] 17.** `mod_obstruct_bkup.c` keeps its own `compute_n_bounds` and
 five residue helpers. Backup file, not a build target — left alone
-deliberately.
+deliberately. **2026-11-19:** it was git-ignored, so docs cited a file
+no clone could see; now tracked in `archive/` with a do-not-revive
+banner (it carries the 4096 Hensel cap and int64 overflow).
 
 **[ ] 18. REVISIT — stop the entry points going stale.**
 *Parked 2026-09-06. This is documentation integrity, not code, and it
