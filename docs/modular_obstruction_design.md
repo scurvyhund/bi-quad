@@ -170,7 +170,8 @@ If survivors == 0 for a given d, no converse pair with d digits can exist.
 The original design precomputed a reverse lookup from each valid ending back
 to all residues that produce it. At k=10 (mod=10^10), these tables would
 require ~20GB+. Instead, we solve `2m² + 2m + 1 ≡ target (mod 10^k)` on
-the fly using iterative Hensel lifting:
+the fly using iterative Hensel lifting (background: Keith Conrad,
+[*Hensel's Lemma*](https://kconrad.math.uconn.edu/blurbs/gradnumthy/hensel.pdf)):
 
 1. **Base case:** brute-force solutions mod 10 (at most 4: endings 1,3,5 only)
 2. **Lift:** from mod 10^j to mod 10^(j+1) — try 10 digit extensions per
