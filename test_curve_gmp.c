@@ -95,7 +95,7 @@ int main(void) {
             fails++;
          }
          for (int off = -1; off <= 1; off += 2) {
-            u128_str(v + (u128)off, buf);
+            u128_str((off < 0) ? v - 1 : v + 1, buf);
             mpz_set_str(q, buf, 10);
             if (on_curve(q, m, s)) {
                printf("  FAIL curve(%lld)%+d accepted\n",

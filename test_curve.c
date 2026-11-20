@@ -45,8 +45,8 @@ int main(void) {
    for (int e = 0; e < 63; e++) {
       u128 k = (u128)1 << e;
       for (int off = -2; off <= 2; off++) {
-         u128 base = k + (u128)off;
-         if (e == 0 && off < 0) continue;
+         if (e == 0 && off < 0) continue;   /* before forming k+off */
+         u128 base = (off < 0) ? k - (u128)(-off) : k + (u128)off;
          u128 sq = base * base;
          if (sq > 0) check_isqrt(sq - 1);
          check_isqrt(sq);
