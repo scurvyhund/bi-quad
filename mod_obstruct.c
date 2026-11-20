@@ -171,57 +171,88 @@ static void first_n_with_residue(mpz_t result, mpz_t lo,
    mpz_add_ui(result, lo, (unsigned long)gap);
 }
 
-/* 
- * Solve 2m^2 + 2m + 1 == target (mod 10^k) via Hensel lifting.
- * Returns number of solutions stored in sols[].
- * Max solutions bounded by ~4 * 2^(k-1).
+/*
+ * Solve 2m^2 + 2m + 1 == target (mod 10^k) by digit-wise lifting.
+ * Returns the number of solutions stored in sols[].
  *
+ * EXACT SOLUTION BOUND.  Mod 2^k there are exactly 4 solutions (k>=2):
+ * m(m+1) == (t-1)/2 (mod 2^(k-1)) has 2 roots mod 2, each lifting
+ * uniquely (derivative 2m+1 is odd), and each doubles mod 2^k.  Mod 5^k
+ * the equation is (2m+1)^2 == 2t-1, whose root count peaks at
+ * max(2*5^floor((k-1)/2), 5^floor(k/2)).  So at most
+ *
+ *     hensel_cap(k) = 4 * max(2*5^floor((k-1)/2), 5^floor(k/2))
+ *
+ * -- 5000 at k=9, 12500 at k=10, 125000 at k=13.  The intermediate
+ * lists (mod 10^j, j<k) obey the same bound for j, which is smaller.
+ *
+ * HISTORY (2026-11-19, docs/audit_2026-11.md).  This used a fixed
+ * MAX_HENSEL_SOLS = 4096 that SILENTLY dropped solutions past it (k=9:
+ * targets with 5000 solutions kept 4096), and formed 2*r^2 in int64,
+ * which overflows once r > ~2^31 -- the last lift at k=10 and every
+ * lift past it.  Both only DROP m-residues, so both could only produce
+ * FALSE OBSTRUCTIONS.  At k=10 all 6 true d=21 survivors lost their
+ * m-residue this way, which is what made landscape_k10.log report
+ * "d=21 OBSTRUCTION".  Now the lift is exact u128 and the capacity is
+ * the proven bound; exceeding it is a fatal error, never a truncation.
  */
+static long hensel_cap(int k) {
+   long a = 2, b = 1;
+   for (int i = 0; i < (k - 1) / 2; i++) a *= 5;
+   for (int i = 0; i < k / 2; i++)       b *= 5;
+   return 4 * (a > b ? a : b);
+}
 
-#define MAX_HENSEL_SOLS 4096
+static int solve_residues(long target, int k, long *sols, long *tmp,
+                          long cap) {
+   long count = 0;
 
-static int solve_residues(long target, int k, long *sols) {
-   long tmp[MAX_HENSEL_SOLS];
-   int count = 0;
-
-   // Base: solutions mod 10 
+   // Base: solutions mod 10
    long t10 = target % 10;
 
    for (long r = 0; r < 10; r++) {
-      
       if ((2*r*r + 2*r + 1) % 10 == t10)
          sols[count++] = r;
    }
 
-   // Hensel lift: mod 10^j -> mod 10^(j+1) 
+   // Lift: mod 10^j -> mod 10^(j+1), exact in u128 (r < 10^13 here)
    long pow10j = 10;
-   
+
    for (int j = 1; j < k; j++) {
       long next_mod = pow10j * 10;
       long target_next = target % next_mod;
-      int new_count = 0;
+      long new_count = 0;
 
-      for (int i = 0; i < count; i++) {
+      for (long i = 0; i < count; i++) {
          long r = sols[i];
-   
+
          for (long c = 0; c < 10; c++) {
             long r_new = r + c * pow10j;
-            long long rn = (long long)r_new;
-            long long fr = (2*rn*rn + 2*rn + 1) % (long long)next_mod;
-         
-            if (fr == target_next && new_count < MAX_HENSEL_SOLS)
+            unsigned __int128 rn = (unsigned __int128)r_new;
+            long fr = (long)((2*rn*rn + 2*rn + 1)
+                             % (unsigned __int128)next_mod);
+
+            if (fr == target_next) {
+               if (new_count >= cap) {
+                  fprintf(stderr, "FATAL: solve_residues: more than %ld "
+                          "solutions at k=%d (target %ld) -- the proven "
+                          "bound is wrong; results would be truncated\n",
+                          cap, k, target);
+                  exit(1);
+               }
                tmp[new_count++] = r_new;
+            }
          }
       }
 
-      // Swap: copy tmp -> sols 
-      for (int i = 0; i < new_count; i++)
+      // Swap: copy tmp -> sols
+      for (long i = 0; i < new_count; i++)
          sols[i] = tmp[i];
       count = new_count;
       pow10j = next_mod;
    }
 
-   return count;
+   return (int)count;
 }
 
 int main(int argc, char *argv[]) {
@@ -383,6 +414,7 @@ int main(int argc, char *argv[]) {
 
       omp_set_num_threads(NUM_THREADS);
       int obstruction_count = 0;
+      const long hcap = hensel_cap(k);
 
       int d_start = k + 1;
       
@@ -424,6 +456,16 @@ int main(int argc, char *argv[]) {
             mpz_init(t_mfirst);
             mpz_init(t_n);
             mpz_init(t_m);
+
+            /* Hensel buffers, once per thread: at k=13 each holds 125000
+             * longs (1 MB), too big for a thread stack. */
+            long *m_sols = malloc((size_t)hcap * sizeof(long));
+            long *h_tmp  = malloc((size_t)hcap * sizeof(long));
+            if (!m_sols || !h_tmp) {
+               fprintf(stderr, "FATAL: cannot allocate Hensel buffers "
+                       "(2 x %ld longs)\n", hcap);
+               exit(1);
+            }
 
             /* per-thread tally, flushed to g_scanned in batches */
             long loc_scanned = 0;
@@ -561,8 +603,8 @@ int main(int argc, char *argv[]) {
 
                   /* Solve for m-residues achieving q_ending, then test
                    * whether any ACTUAL m-value yields q first-k == q_first. */
-                  long m_sols[MAX_HENSEL_SOLS];
-                  int qe_count = solve_residues(q_ending, k, m_sols);
+                  int qe_count = solve_residues(q_ending, k, m_sols,
+                                                h_tmp, hcap);
 
                   for (int mi = 0; mi < qe_count && !surv; mi++) {
                      long m_r = m_sols[mi];
@@ -624,6 +666,8 @@ int main(int argc, char *argv[]) {
             mpz_clear(t_mfirst);
             mpz_clear(t_n);
             mpz_clear(t_m);
+            free(m_sols);
+            free(h_tmp);
          }
 
          const char *tag = "";
