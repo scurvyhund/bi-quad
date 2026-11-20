@@ -197,16 +197,17 @@ Consequence for the final d=27 summary:
   by definition and cannot be emirps.
 - **`palindromes`**: **count IS affected** (corrected 2026-07-05). The
   opt drops div-5 palindromes (those ending in 5, e.g. `5258525` at
-  d=7). At d=27 the recorded count is **3 prime-eligible palindromes**;
-  any div-5 (ending-in-5) palindromes there were skipped and are not
-  listed in `pals.txt`. The **conjecture** is unaffected — div-5
-  palindromes are trivially composite, so "no *prime* palindrome at
-  d=27" still holds — but the palindrome *count/corpus* is partial.
+  d=7). At d=27 the recorded count is **3 prime-eligible palindromes**,
+  and that is the **exact** total (2026-11-19): `palsplit --keep5`
+  finds no div-5 palindrome at d=27, so the skip dropped none there.
 - **`survivors(raw)`**: undercounted, and by a **mixed convention** at
   d=27 specifically: the first 19.8% ran the old (count-preserving)
   binary and the remaining 80.2% ran the opt, so div-5 hits are counted
   for part of the range and skipped for the rest. The recorded d=27
-  `raw=5` is therefore a floor, not the true all-n total. This is a
+  `raw=5` is therefore a floor, not the true all-n total. Narrowed
+  2026-11-19: the div-5 survivor (n = 9654578976541) is in the
+  count-preserving part, and the full skip resweep (raw=4) leaves only
+  pairs with BOTH p and q of the form 5…5 unaccounted for. This is a
   bookkeeping total feeding the density graph — not a scientific claim.
   The emirp result is exact and unaffected.
 

@@ -315,13 +315,14 @@ raw:   6  0  7  2  6  0  5  2  4  6  6  2  1  0  3  0  7  0  3  2  7  6  5   tot
       lift (fixed 417ca34, 2026-11-19), not the range<mod cliff (§4) as
       first thought; see docs/audit_2026-11.md. hunt shows d=21 has 2
       composite emirp candidates + 5 palindromes.
-  NB2: d=5..26 counts INCLUDE div-5 (trivially composite) survivors &
-      palindromes. d=27's (cand=2, pal=3, raw=5) is div-5-EXCLUDED --
-      it came from the skip-optimized binary, which drops div-5 values
-      (see skip_optimization.md). So the true all-n d=27 totals are a
-      touch higher; the excluded values are all ÷5 composites, so the
-      emirp and prime-palindrome conclusions are unchanged. Mixed
-      convention footnoted rather than recomputed (that needs the slow
+  NB2: counts INCLUDE div-5 (trivially composite) survivors &
+      palindromes. d=27 (corrected 2026-11-19): its run was count-
+      preserving for 19.8% of n, skip-optimized after. pal=3 is EXACT
+      (palsplit --keep5: no div-5 palindrome exists at d=27). cand=2
+      is a FLOOR: only pairs with BOTH p and q of the form 5...5 could
+      be missing (the 2026-09-05 skip resweep rules out every other
+      kind). Such values are ÷5 composites, so the emirp and prime-
+      palindrome conclusions are unchanged. Not recomputed (that needs the slow
       pre-opt binary, ~days, for composite bookkeeping only).
 ```
 
