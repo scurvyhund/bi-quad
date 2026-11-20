@@ -33,6 +33,13 @@
  * If you need these primitives in NEW code, include curve.h.  If you
  * need to re-run this tool, rebuild from the Build line above and
  * re-run its cross-check; do not "modernise" it first.
+ *
+ * AMENDED 2026-11-19 (bounds audit, docs/audit_2026-11.md) -- the ONLY
+ * change since the freeze: max_n is parsed strictly and refused past
+ * MAX_N_U64 = 3037000499, the largest n with 2n^2+2n+1 < 2^64.  Past
+ * it p wrapped silently and the wrapped values were tested as if real.
+ * Shares no code with curve.h; the search itself is untouched, and
+ * output for every valid max_n is byte-identical.
  */
 
 
@@ -40,9 +47,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <errno.h>
 #include <omp.h>
 
 #define NUM_THREADS 8
+#define MAX_N_U64   3037000499ULL   /* largest n: 2n^2+2n+1 < 2^64 */
 
 /* 64-bit modular multiply via 128-bit */
 static inline uint64_t mulmod(uint64_t a, uint64_t b, uint64_t m) {
@@ -85,7 +94,24 @@ static inline bool is_palindrome(uint64_t x) {
 }
 
 int main(int argc, char *argv[]) {
-   uint64_t max_n = (argc > 1) ? strtoull(argv[1], NULL, 10) : 3000000000ULL;
+   uint64_t max_n = 3000000000ULL;
+   if (argc > 2) {
+      fprintf(stderr, "usage: %s [max_n]   (max_n <= %llu)\n", argv[0],
+              (unsigned long long)MAX_N_U64);
+      return 1;
+   }
+   if (argc > 1) {
+      char *end;
+      errno = 0;
+      unsigned long long v = strtoull(argv[1], &end, 10);
+      if (errno || end == argv[1] || *end != '\0' || argv[1][0] == '-'
+            || v < 1 || v > MAX_N_U64) {
+         fprintf(stderr, "max_n must be an integer in [1, %llu]: 2n^2+2n+1"
+                 " must fit 64 bits\n", (unsigned long long)MAX_N_U64);
+         return 1;
+      }
+      max_n = v;
+   }
 
    printf("\n  PRIME PALINDROMES on p = 2n^2+2n+1  (n <= %llu)\n",
          (unsigned long long)max_n);
