@@ -77,8 +77,10 @@ The diagram is generated from [`mod_obstruct.dot`](mod_obstruct.dot):
 
     dot -Tpng docs/mod_obstruct.dot -o docs/mod_obstruct.png
 
-Verified against the source 2026-11-19 (re-checked after the audit's
-checkpoint fix `7320ce5`, which the 2026-09-12 version predated): every
+Verified against `mod_obstruct.c` at `4c7cee3` (diagram source at
+`b8fa6e3`); still holds while `git log 4c7cee3.. -- mod_obstruct.c` is
+empty. Re-checked 2026-11-19 after the audit's checkpoint fix `7320ce5`,
+which the 2026-09-12 version predated: every
 function and identifier it names is present in `mod_obstruct.c`, and the
 argument order it shows (`max_d max_k min_k min_d`) matches `main()`.
 Two corrections came out of that re-check:
