@@ -97,4 +97,5 @@ def ground_truth(d):
 
 for d in (12, 13, 14):
     s, rng, ratio = ground_truth(d)
-    print("  d=%2d  GROUND-TRUTH survivors = %d   (range=%d, range/mod=%.3f)" % (d, s, rng, ratio))
+    print("  d=%2d  GROUND-TRUTH survivors = %d   (range=%d, "
+          "range/mod=%.3f)" % (d, s, rng, ratio))
