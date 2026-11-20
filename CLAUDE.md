@@ -37,7 +37,14 @@ Valgrind; run the normal build under `OMP_NUM_THREADS=1` instead.
 
 After ANY rebuild or code sync, run the k=6 sanity test FIRST:
 
-    ./mod_obstruct 50 6 6 11
+    cd "$(mktemp -d)"
+    ~/programming/c/BigFermat/bi-quad/mod_obstruct 50 6 6 11
+
+Run it in a FRESH EMPTY DIRECTORY, as above. The command never
+terminates, so it always leaves its own checkpoint
+(mod_obstruct_D50_K6_k6_d11.ckpt); rerun in the same directory it
+RESUMES near d=16 and never prints the markers. If the banner says
+"resuming from checkpoint", it is not a sanity test.
 
 Verify output includes:
 - Header with valid_endings count
