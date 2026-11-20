@@ -32,8 +32,19 @@ RAWDIR=logs/raw
 HUNT="${HUNT_BIN:-./hunt}"
 mkdir -p "$RAWDIR" || exit 1
 
-# never launch on top of a running hunt (never pgrep -f: it matches self)
-while pgrep -x hunt >/dev/null; do sleep 15; done
+# never launch on top of a running hunt (never pgrep -f: it matches self).
+# Watch BOTH the real name and $HUNT's own: a renamed HUNT_BIN was
+# invisible to a hard-coded `pgrep -x hunt`.  pgrep -x is blind past 15
+# chars (kernel comm truncation), so refuse such a name outright.
+HUNT_NAME=$(basename "$HUNT")
+if [ "${#HUNT_NAME}" -gt 15 ]; then
+   echo "resweep_leg: HUNT_BIN name '$HUNT_NAME' > 15 chars;" \
+        "pgrep -x cannot see it" >&2
+   exit 1
+fi
+while pgrep -x hunt >/dev/null || pgrep -x "$HUNT_NAME" >/dev/null; do
+   sleep 15
+done
 
 echo "=== resweep d=$D_LO..$D_HI on $(git rev-parse --short HEAD) ===" \
    >> "$LOG"

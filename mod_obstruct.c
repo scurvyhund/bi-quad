@@ -799,10 +799,12 @@ int main(int argc, char *argv[]) {
          printf("    d=%2d  survivors = %6ld%s\n", d, survivors, tag);
          fflush(stdout);
 
-         // If saturated, all larger d will also saturate -- skip
+         /* Saturated: stop this k.  The larger d are NOT computed --
+          * the line below must say so, not report them as saturated,
+          * or a log reads as results for d values never run. */
          if (survivors == sat_level) {
-            printf("    d=%2d..%2d  (skipped — saturated)\n",
-                  d + 1, max_d);
+            printf("    d=%2d..%2d  NOT COMPUTED (k=%d stopped at "
+                   "saturation, d=%d)\n", d + 1, max_d, k, d);
           
             write_checkpoint(k + 1, 0);
             break;
