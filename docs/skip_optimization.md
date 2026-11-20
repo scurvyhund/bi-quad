@@ -185,6 +185,14 @@ Committed 2026-06-29 as `7dd367e`; lossiness identified 2026-07-05.
 
 ## Effect on the d=27 run — the mixed-binary footnote
 
+> **Canonical statement of the d=27 count basis.** Other docs and
+> `generate_graph.py` point here instead of restating it — correct it
+> HERE. Bottom line (2026-11-19): **palindromes = 3 is exact; the
+> non-palindrome survivor count (2 n-values, one reciprocal pair) is a
+> floor**, raisable only by pairs with both p and q of the form 5…5.
+> Every such value is ÷5, so no emirp or prime-palindrome conclusion
+> depends on it.
+
 The d=27 emirp hunt was launched 2026-06-28 **without** the
 optimization (old binary). At approximately **19.8% completion**
 (i = 3,030,000,000,000 of 15,289,611,963,133), the run was stopped,
@@ -195,11 +203,10 @@ Consequence for the final d=27 summary:
 
 - **`EMIRPS`**: exact and unaffected. Skipped `n` have composite `p`
   by definition and cannot be emirps.
-- **`palindromes`**: **count IS affected** (corrected 2026-07-05). The
-  opt drops div-5 palindromes (those ending in 5, e.g. `5258525` at
-  d=7). At d=27 the recorded count is **3 prime-eligible palindromes**,
-  and that is the **exact** total (2026-11-19): `palsplit --keep5`
-  finds no div-5 palindrome at d=27, so the skip dropped none there.
+- **`palindromes`**: **exact — 3.** The opt *can* drop div-5
+  palindromes (those ending in 5, e.g. `5258525` at d=7; noted
+  2026-07-05), but at d=27 there are none to drop: `palsplit --keep5`
+  finds no div-5 palindrome at d=27 (checked 2026-11-19).
 - **`survivors(raw)`**: undercounted, and by a **mixed convention** at
   d=27 specifically: the first 19.8% ran the old (count-preserving)
   binary and the remaining 80.2% ran the opt, so div-5 hits are counted

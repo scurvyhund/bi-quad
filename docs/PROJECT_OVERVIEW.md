@@ -316,14 +316,8 @@ raw:   6  0  7  2  6  0  5  2  4  6  6  2  1  0  3  0  7  0  3  2  7  6  5   tot
       first thought; see docs/audit_2026-11.md. hunt shows d=21 has 2
       composite emirp candidates + 5 palindromes.
   NB2: counts INCLUDE div-5 (trivially composite) survivors &
-      palindromes. d=27 (corrected 2026-11-19): its run was count-
-      preserving for 19.8% of n, skip-optimized after. pal=3 is EXACT
-      (palsplit --keep5: no div-5 palindrome exists at d=27). cand=2
-      is a FLOOR: only pairs with BOTH p and q of the form 5...5 could
-      be missing (the 2026-09-05 skip resweep rules out every other
-      kind). Such values are ÷5 composites, so the emirp and prime-
-      palindrome conclusions are unchanged. Not recomputed (that needs the slow
-      pre-opt binary, ~days, for composite bookkeeping only).
+      palindromes. d=27: pal=3 exact, cand=2 a floor -- see
+      docs/skip_optimization.md, "Effect on the d=27 run".
 ```
 
 The landscape is **not** a simple low-`d` band that ends. After the lone emirp

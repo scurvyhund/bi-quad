@@ -13,13 +13,8 @@ emirp_pts = [(79, 12641), (85, 14621)]
 # (hunt.c, every n; cand matches check_survivors for d<=18). Among ALL of these, the
 # only PRIMES are the d=5 emirp (12641<->14621) and the d=7 palindrome 3187813.
 # Counts INCLUDE div-5 (trivially composite) values, d=5..27.
-# d=27 (corrected 2026-11-19; the 2026-07-05 note called it
-# "div-5-excluded"): its July run was count-preserving for the first
-# 19.8% of n, skip-optimized after.  pal=3 is EXACT -- palsplit --keep5
-# finds no div-5 palindrome at d=27.  cand=2 is a FLOOR: the div-5
-# survivor n=9654578976541 lies in the count-preserving part; the only
-# values the skip part could hide are pairs with BOTH p and q = 5...5
-# (the 2026-09-05 skip resweep rules out every other kind).
+# d=27 count basis (pal exact, cand a floor): see the canonical
+# statement in docs/skip_optimization.md, "Effect on the d=27 run".
 landscape = [(5,6,0),(6,0,0),(7,2,5),(8,2,0),(9,6,0),(10,0,0),(11,4,1),(12,2,0),
              (13,2,2),(14,6,0),(15,2,4),(16,2,0),(17,0,1),(18,0,0),(19,0,3),(20,0,0),
              (21,2,5),(22,0,0),(23,2,1),(24,2,0),(25,2,5),(26,6,0),(27,2,3)]
