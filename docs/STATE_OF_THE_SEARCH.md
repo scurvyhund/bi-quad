@@ -223,8 +223,9 @@ are now different boundaries, for different reasons.
   `palsplit` cut the exponent in half, so d = 37 costs seconds rather than the
   weeks the old bound implied. The current ceiling is **integer width, not
   compute**: `p < 10^37` keeps `2p` inside a `u128`, and d = 37 is the last odd
-  d whose `n` fits an `int64_t`. A 256-bit hot loop reaches d ≈ 51, where §5
-  puts the odds of an actual hit at 25–40%.
+  d whose `n` fits an `int64_t`. A 256-bit hot loop would reach d ≈ 51 —
+  but that range is already enumerated by others to d = 59, so it is no
+  longer a frontier for us (see `siege_plan.md`, Tier 2b).
 
 So the honest statement is no longer "search complete". It is: the emirp side
 is parked at a wall we cannot see past, and the palindrome side has a frontier

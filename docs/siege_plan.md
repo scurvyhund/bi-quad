@@ -208,6 +208,27 @@ residue class rather than digit position) breaks it.
 
 ## Tier 2b — the 256-bit extension (the road to d = 51, and past it)
 
+> **SUPERSEDED as a bi-quad goal (decided 2026-11-20; first re-scoped in
+> `session_2026-09-04_palindrome_conjecture_refuted.md`, the day after
+> this tier was written).** Canonical statement — other docs point here.
+>
+> - **The payoff is gone.** The pitch below is a 25–40% chance of a
+>   palindrome hit by d ≈ 51. But De Geest and Xiao's consecutive index
+>   already enumerates every palindromic curve value to **d = 59**, and
+>   the predicted hit exists: the 59-digit prime. The heuristic was right;
+>   the territory was simply not unsearched.
+> - **Verification alone does not pay.** Measured 2026-11-20: `palsplit`
+>   d = 35 in 13 s, d = 37 in 28 s. Projected (trend, not measured) at
+>   10^(d/4): about a day per d near 51 before any 256-bit slowdown, a
+>   week or more for d = 39..51, months to reach 59 — the cost of saying
+>   "the fifth" instead of "the fifth known".
+> - **No emirp use.** `hunt` is GMP and not width-bound; its wall is
+>   10^(d/2) compute, and brute force was declared over 2026-11-10.
+>
+> The 256-bit primitives (`isqrt256`, a fast u256 divide, Comba
+> multiply) remain worth building **as `c_gold` primitives**, on their
+> own merits. The text below is kept as the original design record.
+
 The current ceiling is **integer width, not algorithm**: `p < 10^37`
 keeps `2p` inside a u128, and d = 37 is the last odd d whose `n` fits an
 `int64_t`. Going wider is what unlocks §5's 25-40% chance of an actual

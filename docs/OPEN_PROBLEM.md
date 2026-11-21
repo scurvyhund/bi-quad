@@ -133,7 +133,8 @@ curves, so every expected cell count is below 5.
 For this curve C′ ≈ 1.9–3.3, a factor-of-two spread. That makes the
 d = 29..37 sweep an expected yield of 0.28–0.50 (so the null result
 there is weak evidence), and the reachable d ≈ 51 ceiling a 25–40%
-chance of an actual hit. The silence after 3187813 is statistically
+chance of an actual hit. (That range turned out to be already enumerated
+to d = 59, with a hit at 59 — see `siege_plan.md`, Tier 2b.) The silence after 3187813 is statistically
 ordinary — 3 observed against 4.5 predicted on this curve, and twelve
 siblings range from none at all (k=7, k=13) to d = 31 (k=19).
 
